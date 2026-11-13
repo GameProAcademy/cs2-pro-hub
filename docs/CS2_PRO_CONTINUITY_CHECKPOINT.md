@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-11 (America/Sao_Paulo), lote de metodologia · por: sessão Claude
+Atualizado em: 2026-11-13 (America/Sao_Paulo), PM1 + release R5.8.25 · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,22 +12,22 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                            |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | PM1 (Fases 4.2.1 + 4.2.2, Módulos A e B) em execução. Especificação v1.1 e divisão dos 5 Prompts Mestres confirmadas pelo dono (2026-11-12)                                      |
-| Etapa atual                        | PM1 — PR A (baseline, v1.1, `PARTIAL`); depois PRs B–D (módulo espacial, read model, UI). Detalhe em `docs/pm1/PM1_EXECUTION_REPORT.md`                                          |
-| Última etapa concluída             | Deploy controlado do parser `4badf606` (Railway `0ff96670`, SUCCESS; `/version` revision = semantic = build = `git:4badf606…`)                                                   |
-| Última operação concluída          | Variáveis `PARSER_REVISION`/`PARSER_BUILD_REVISION` com deploys ignorados → um único deploy; reparse local da demo autorizada com as dependências do build novo (saída idêntica) |
-| Operações em andamento             | Aguardando o dono enviar uma demo nova autorizada pela conta de teste (prova ponta a ponta das posições)                                                                         |
-| Processos em execução              | Nenhum                                                                                                                                                                           |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                          |
-| Branch ativa                       | `main` (+ `release/r5-8-24-repin`)                                                                                                                                               |
-| Último commit confirmado em `main` | `4badf6060e4e69a589179567f488f5d58a4a58dc` (merge do #267). #266 → `4c6f5067`; #265 → `f4460123`; #264 → `e60a70f6`                                                              |
-| Build validado em produção         | `e60a70f6` (Marco 1), validado em 2026-11-12: Raio-X CT 11/16, 13/12, 40,7%; TR 26/10, 25/22, 72,2% — iguais aos valores calculados no banco                                     |
-| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                              |
-| **Próxima ação exata**             | Seguir `docs/pm1/PM1_EXECUTION_REPORT.md` §C2 (próximo PR pendente)                                                                                                              |
-| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmark spatial-v1; deploy `0ff96670` (não fazer outro deploy do parser)                              |
-| Ações manuais necessárias          | Seção 22                                                                                                                                                                         |
+| Item                               | Valor                                                                                                                                                                                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | PM1 (Fases 4.2.1 + 4.2.2, Módulos A e B) **concluído e validado em produção** (2026-11-13). Próximo: PM2 (4.2.3–4.2.4, Módulos B e I), aguardando o dono                                                                                     |
+| Etapa atual                        | PM1 C6 (fechamento). Detalhe em `docs/pm1/PM1_EXECUTION_REPORT.md`                                                                                                                                                                           |
+| Última etapa concluída             | Validação real: job `aa968c9e` (tentativa 2 de `ced11a74`, conta de teste) `processed`; partida `41a04ba3` com 142/142 posições, igual à parse local (md5 `cee38990…`); `/maps` em produção mostra 17/17 mortes; admin isolado               |
+| Última operação concluída          | H.3-E PASS 18/18 (run 43366791839, alvo `67655b5a`) após o dono trocar as 4 secrets; app publicado (`debf8766`)                                                                                                                              |
+| Operações em andamento             | Nenhuma                                                                                                                                                                                                                                      |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                                       |
+| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                      |
+| Branch ativa                       | `main` (+ `docs/pm1-r5825-evidence`: relatório, checkpoint e matriz de release)                                                                                                                                                              |
+| Último commit confirmado em `main` | `67655b5a5ac3f821beb1531778cf7c6afd5d9b95` (merge do #276). #275 → `c3593d48`; #274 → `616c51f8`; #273 → `ea7ed8df`; #272 → `b7272b97`; #271 → `a2ab17a6`; #270 → `e6e507d3`                                                                 |
+| Build validado em produção         | `67655b5a` (R5.8.25 + `/maps`), validado em 2026-11-13 com a demo autorizada; worker `c3593d48` (Railway `d57b9089`, demoparser2 0.42.2)                                                                                                     |
+| Problemas abertos                  | Seção 21; metodologia §20; relatório de fundação §J                                                                                                                                                                                          |
+| **Próxima ação exata**             | Aguardar o dono iniciar o PM2. Não reprocessar outras demos; validar mapas além do Dust II só com demos novas autorizadas                                                                                                                    |
+| Ações que NÃO devem ser repetidas  | Auditorias da fundação; pesquisa de 2026-11-11; mapeamento 4.2; Marco 1; benchmarks spatial-v1/R5.8.25; deploy `d57b9089`; migration `20261113040000`; reenvio/validação da demo `furia-vs-vitality-m2-dust2` (job `aa968c9e` já processado) |
+| Ações manuais necessárias          | Seção 22                                                                                                                                                                                                                                     |
 
 ## 1. Identificação
 
@@ -120,20 +120,24 @@ idiomas ≠ pt-BR em produção.
 
 ## 16–17. Branches, commits e PRs
 
-| PR                                | Branch                            | Merge em `main` | Estado                                                     |
-| --------------------------------- | --------------------------------- | --------------- | ---------------------------------------------------------- |
-| #256 DNA v2                       | `fix/player-dna-v2`               | `0ebfedf2`      | merged                                                     |
-| #257 Score v1                     | `feat/pro-score-v1`               | `975c7d11`      | merged                                                     |
-| #258 Coach/Score                  | `fix/coach-score-facts`           | `f1276859`      | merged                                                     |
-| #259 Relatório de fundação        | `docs/foundation-report`          | `13cfcde8`      | merged                                                     |
-| #260 Protocolo de continuidade    | `docs/continuity-checkpoints`     | `72fb0cdb`      | merged                                                     |
-| #261 Checkpoint pós-#260          | `docs/continuity-after-260`       | `106f20c6`      | merged                                                     |
-| #262 Metodologia                  | `docs/product-methodology`        | `b2c8219c`      | merged (PR `82efb867`, 5 checks verdes)                    |
-| #263 Marco 0 Mapeamento 4.2       | `docs/fase-4-2-mapping`           | `bf57069e`      | merged, gates verdes                                       |
-| #264 Marco 1 round-context-v1     | `feat/round-context-v1`           | `e60a70f6`      | merged, gates verdes, publicado e validado                 |
-| #265 Textos do Raio-X             | `fix/xray-side-copy`              | `f4460123`      | merged                                                     |
-| #266 4.2.1 metric-contract-v1     | `feat/metric-contract-v1`         | `4c6f5067`      | merged, gates verdes                                       |
-| #267 spatial-v1 camada A (parser) | `feat/spatial-v1-event-positions` | `4badf606`      | merged; parser no ar (`0ff96670`); re-pin R5.8.24 em curso |
+| PR                                | Branch                             | Merge em `main`       | Estado                                         |
+| --------------------------------- | ---------------------------------- | --------------------- | ---------------------------------------------- |
+| #256 DNA v2                       | `fix/player-dna-v2`                | `0ebfedf2`            | merged                                         |
+| #257 Score v1                     | `feat/pro-score-v1`                | `975c7d11`            | merged                                         |
+| #258 Coach/Score                  | `fix/coach-score-facts`            | `f1276859`            | merged                                         |
+| #259 Relatório de fundação        | `docs/foundation-report`           | `13cfcde8`            | merged                                         |
+| #260 Protocolo de continuidade    | `docs/continuity-checkpoints`      | `72fb0cdb`            | merged                                         |
+| #261 Checkpoint pós-#260          | `docs/continuity-after-260`        | `106f20c6`            | merged                                         |
+| #262 Metodologia                  | `docs/product-methodology`         | `b2c8219c`            | merged (PR `82efb867`, 5 checks verdes)        |
+| #263 Marco 0 Mapeamento 4.2       | `docs/fase-4-2-mapping`            | `bf57069e`            | merged, gates verdes                           |
+| #264 Marco 1 round-context-v1     | `feat/round-context-v1`            | `e60a70f6`            | merged, gates verdes, publicado e validado     |
+| #265 Textos do Raio-X             | `fix/xray-side-copy`               | `f4460123`            | merged                                         |
+| #266 4.2.1 metric-contract-v1     | `feat/metric-contract-v1`          | `4c6f5067`            | merged, gates verdes                           |
+| #267 spatial-v1 camada A (parser) | `feat/spatial-v1-event-positions`  | `4badf606`            | merged; release R5.8.24 concluída (#268/#269)  |
+| #270–#273 PM1 A–D                 | `feat/pm1-*`                       | `e6e507d3`…`ea7ed8df` | merged, publicados (`/maps`)                   |
+| #274 Polimento do heatmap         | `fix/pm1-heatmap-ui-polish`        | `616c51f8`            | merged                                         |
+| #275 demoparser2 0.42.2 (R5.8.25) | `release/r5-8-25-demoparser2-0422` | `c3593d48`            | merged; worker no ar (`d57b9089`)              |
+| #276 Re-pin R5.8.25               | `release/r5-8-25-repin`            | `67655b5a`            | merged; migration aplicada; atestação VERIFIED |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
@@ -160,7 +164,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 1. Índices por dimensão do DNA não calibrados (regra "< 60" do Raio-X e prioridade de treino).
 2. Pesos do Score não ajustados estatisticamente.
-3. Posições: o parser no ar (`4badf606`) emite posição do atacante e da vítima no tick da morte; partidas antigas continuam sem posição (nada reprocessado); qualquer métrica espacial depende da revisão de L02.
+3. Posições: o parser no ar (`c3593d48`, demoparser2 0.42.2) emite posição do atacante e da vítima no tick da morte; partidas antigas continuam sem posição (nada reprocessado); qualquer métrica espacial depende da revisão de L02.
 4. `buy_context` e `survived` vazios em `round_players`; `weapon_fire` sem autor.
 5. H.3-E Activation Gate falha na 1ª execução de todo merge e passa na 2ª.
 6. `gate1d.test.ts` estourou 5 s uma vez no CI (hipótese: carga do runner).
@@ -174,8 +178,9 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 11. `L02` (domínio de ticks) e `L03` (usercmd) restringem densidade/replay/movimento e
     mira/counter-strafe da 4.2 (mapeamento §4).
 12. Não existe mecanismo de feature flag, embora a especificação mande reutilizá-lo.
-13. Dependências transitivas do parser não fixadas (pandas, numpy, polars, pyarrow): o build de 2026-11-12 resolveu versões novas; saída conferida idêntica na demo de benchmark. Fixá-las é uma mudança de runtime a decidir.
-14. `_EVENT_OTHER_PROPS` do parser nunca chegou às linhas de produção (pendente de validação).
+13. Dependências transitivas do parser não fixadas (pandas, numpy, polars, pyarrow): os builds de 2026-11-12/13 resolveram pandas 3.1.1 / numpy 2.5.4; saída conferida idêntica na demo de benchmark. Fixá-las é uma mudança de runtime a decidir.
+14. demoparser2 0.42.0 não lê demos atuais do CS2 (`EntityNotFound`); por isso a R5.8.25 (0.42.2). O parser de navegador A9.1 continua WASM 0.42.0 (fora de produção).
+15. `_EVENT_OTHER_PROPS` do parser nunca chegou às linhas de produção (pendente de validação).
 
 ## 22. Dependências de ações manuais (dono do projeto)
 
@@ -204,13 +209,13 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: missão de evolução estrutural; Marcos 0 e 1 concluídos; 4.2.1 e Marco 2 camada A merged
+- Fase atual: PM1 concluído e validado em produção (heatmaps de morte/eliminação, Dust II validado)
 - Estado: especificação mapeada; round-context-v1 validado em produção
 - Última etapa concluída: Marco 1 publicado e validado (`e60a70f6`)
-- Próxima ação: concluir release R5.8.24 (re-pin, migration, secrets, atestação, H.3-E)
+- Próxima ação: PM1 concluído; aguardar o PM2
 - Branch: `main`
-- Commit: `4badf606` (merge do #267)
-- PR: #256–#267 merged; re-pin R5.8.24 em PR
+- Commit: `67655b5a` (merge do #276)
+- PR: #256–#276 merged
 - CI: `main` verde em `e60a70f6`
 - Testes pendentes: E2E das telas novas; Score em celular com dados
 - Bloqueios: cinco PMs não definidos no original; L02/L03/L04

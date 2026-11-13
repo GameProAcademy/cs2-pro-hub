@@ -220,6 +220,17 @@ describe("release matrix", () => {
     expect(releaseEntry("match.winRate")?.release).toBe("UNAVAILABLE");
   });
 
+  it("death/kill heatmaps are PARTIAL (positions proven), density stays NOT_MEASURED", () => {
+    for (const key of ["spatial.death_heatmap", "spatial.kill_heatmap"]) {
+      const e = releaseEntry(key)!;
+      expect(e.release, key).toBe("PARTIAL");
+      expect(e.blockers, key).toEqual(["MAP_NOT_VALIDATED", "LEGACY_MATCHES_WITHOUT_POSITIONS"]);
+      expect(e.blockers, key).not.toContain("POSITIONS_NOT_PERSISTED");
+    }
+    expect(releaseEntry("spatial.density")?.release).toBe("NOT_MEASURED");
+    expect(releaseEntry("spatial.density")?.blockers).toContain("L02_TICK_DOMAIN");
+  });
+
   it("each capability the X-ray lists as unsupported has a non-SUPPORTED release entry", () => {
     const map: Record<(typeof UNSUPPORTED_CAPABILITIES)[number], string> = {
       enemiesFlashed: "utility.flash_affected",

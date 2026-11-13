@@ -128,8 +128,66 @@ Merges: #270 → `e6e507d3`; #271 → `a2ab17a6`; #272 → `b7272b97`; #273 → 
 - Imagem `/radars/cs2/de_dust2-default.png` servida em produção com SHA-256 `08282971…` = registro.
 - `/maps` em produção, conta admin: estado vazio (sem partidas próprias) — o read model não expõe dados de outro jogador mesmo com a política `is_staff` da RLS.
 - `/maps` em produção, conta de teste (dados reais, sem posições — parser antigo): Dust II "validado", Cache/Mirage "não validado"; camada mortes: `UNAVAILABLE`, cobertura **0/7**, motivo "Sem posição registrada 7"; camada eliminações lado CT: **0/2**. Conferido no banco (read-only): 7 mortes próprias no dust2; eliminações próprias por lado CT 2 / TR 11.
-- **Demo nova autorizada (furia-vs-vitality-m2-dust2):** job `ced11a74` → `blocked_raw_audit` / `RAW_AUDIT_BLOCKED` (artefato RAW `ready`, auditoria `blocked`; nada persistido). A demo de benchmark passa `PASS/APPROVED` com o mesmo código (`prepare_evidence` local). Causa exata pendente: MANUAL_REQUIRED — cópia do arquivo na pasta conectada para reproduzir a auditoria localmente.
+- **Demo nova autorizada (furia-vs-vitality-m2-dust2):** job `ced11a74` → `blocked_raw_audit` / `RAW_AUDIT_BLOCKED` (artefato RAW `ready`, auditoria `blocked`; nada persistido).
+  - **Causa raiz (reproduzida com o próprio arquivo, copiado da pasta Downloads do dono):** o demoparser2 **0.42.0** lança `EntityNotFound` em todo `parse_event` desta demo (servidor BLAST.tv, build recente do CS2; issues upstream #321/#339). O parser registra cada evento como indisponível, e os gates de cobertura bloqueiam corretamente. Não tem relação com as posições. A 0.42.1 ainda falha; a **0.42.2** lê a demo: 23 rounds, 6.977 eventos e **142/142 mortes com `position` e `victim_position`**, `PASS/APPROVED`. O único campo novo, `vote_cast`, foi revisado como RAW only.
+  - A demo de benchmark dá saída idêntica em 0.42.0 e 0.42.2 (rounds, eventos e jogadores); só o campo `stamina` e os digests da superfície do runtime mudam.
+- **Release R5.8.25** (procedimento da R5.8.24; `docs/reference/R5_8_25_DEMOPARSER2_0422.md`, `docs/H3E_RELEASE_IDENTITY_TRACEABILITY.md`):
+  - #275 (`c3593d48`, 8/8 checks):
+    - demoparser2 0.42.2 no worker;
+    - baseline estático do catálogo mantido, então os digests de mapeamento canônico `cf0549c2…`/`a276b030…` não mudam;
+    - `parse_weapons` revisado como RAW only;
+    - A9.1 fixado em 0.42.0;
+    - identidade do app 0.42.2.
+  - Deploy único e controlado: Railway `d57b9089` SUCCESS. `/version` = demoparser2 0.42.2, `git:c3593d48…`, `declared_revision_matches` true.
+  - #276 (`67655b5a`, 7/7 checks): re-pin.
+    - Migration `20261113040000` aplicada no banco gerenciado: recorder `cbb03f77…`, assertion `a3401a4b…`. Foi registrada em `schema_migrations` (`direct-main-67655b5a-20261113040000`).
+    - Antes, foi validada num PostgreSQL 16 local com as definições exatas de produção: idempotente, fail-closed e com rollback exato.
+  - App publicado (`b8c5cdea`). Atestação do runtime **VERIFIED**: run 43363586797, provenance `841c0bb9`, `assert_verified_parser_provenance` = VERIFIED.
+  - H.3-E (run 43363661529): FAIL só em `parser_lock` e `bridge_identity`, porque as secrets do app ainda nomeiam `4badf606`/0.42.0.
+  - O dono trocou as 4 secrets (2026-11-13 01:29) e o app foi publicado de novo (`debf8766`). **H.3-E: PASS 18/18** (run 43366791839, alvo `67655b5a`; `parser_lock`, `bridge_identity`, `runtime` e `managed_snapshot` em PASS).
 
-## C6
+## C5.1 — Validação real ponta a ponta (demo autorizada, 2026-11-13)
 
-Preenchido no fechamento.
+Fatos:
+
+- **Reenvio pelo dono, conta de teste.** Caminho legítimo do app: `reserve_demo_upload` criou o upload `8f8ebecd` (tentativa 2, `replacement_reason = raw_audit_blocked`, `supersedes_job_id = ced11a74`). O job é `aa968c9e`.
+  - Fila de 04:50:42 até `processed` às 05:07:20 (`stage done`).
+  - `parser_revision git:c3593d48…`; RAW `ready`/`approved` (107 chunks).
+  - Vinculado ao participante `76561197960690195`.
+  - O job antigo `ced11a74` ficou `blocked_raw_audit`, com `superseded_by_job_id = aa968c9e`; o histórico foi preservado.
+  - Nenhuma outra partida foi reprocessada e não houve backfill.
+- **Persistência (`round_events`, partida `41a04ba3`, `de_dust2`):**
+  - 142 kills, todas com `position` e `victim_position` x/y/z, nenhuma em (0,0,0);
+  - autor e vítima em todas; `round_id` em todas; 23 rounds; ticks 4.703–200.713;
+  - 142 chaves distintas (round, tick, autor, vítima), ou seja, **sem duplicação**;
+  - uma única partida para o fingerprint.
+  - Coordenadas: x de −2.158 a 1.787, y de −594 a 3.060, z de −128 a 139. Estão dentro dos limites de Dust II.
+- **Igual à parse local.** O md5 de (round, tick, autor, vítima e as 6 coordenadas arredondadas a 0,001), nas 142 kills, é `cee38990…` tanto no banco de produção quanto na saída local do demoparser2 0.42.2 sobre o mesmo arquivo.
+- **Read model** (`buildHeatmap` + `toHeatmapEvent` de produção sobre as linhas reais do participante):
+  - mortes 17/17 (CT 7, TR 10);
+  - eliminações 14/14 (CT 6, TR 8);
+  - nenhuma exclusão, nenhum ponto fora do mapa;
+  - nível `lower` em Dust II: `NOT_OBSERVED` (`OTHER_LEVEL`). O mapa tem um só nível.
+- **Frontend em produção (`/maps`, conta de teste, Claude in Chrome):**
+  - partida nova, mortes: "Todos os 17 eventos elegíveis estão desenhados"; cobertura 17/17; 0,74 por round (23 rounds); "Nenhum evento elegível ficou de fora";
+  - todas as partidas de Dust II: "Cobertura parcial: 17 de 24", "Sem posição registrada 7" (a partida de 23/10, analisada por parser antigo);
+  - eliminações como CT: 6/8, e "Amostra insuficiente: mínimo de 10" no valor por round. Nenhum valor é inventado.
+  - Screenshot: as mortes caem sobre o piso jogável do radar.
+- **Isolamento.** A conta admin (navegador embutido) vê "Nenhuma partida ainda" em `/maps`, mesmo com a política `is_staff` da RLS, porque o read model filtra pelo próprio participante. A sonda RLS de dois usuários passa no CI (Queue semantics, verde nos heads #270–#276).
+
+Hipóteses / não comprovado:
+
+- Só Dust II tem transformação validada com posições reais. Os outros 9 mapas continuam "não validado" e não desenham heatmap.
+
+Consequência no contrato: `spatial.death_heatmap` e `spatial.kill_heatmap` passam de `NOT_MEASURED`/`POSITIONS_NOT_PERSISTED` para `PARTIAL`, com os bloqueios `MAP_NOT_VALIDATED` e `LEGACY_MATCHES_WITHOUT_POSITIONS`. `spatial.density` continua `NOT_MEASURED` (L02; só posições no tick da morte são persistidas).
+
+## C6 — Fechamento
+
+PM1 entregue: Módulo A (4.2.1, `metric-contract-v1.1`) e Módulo B (4.2.2, `spatial-heatmap-v1`/`radar-transform-v1`, `/maps`). O módulo está implementado, testado (local e CI), publicado e validado em produção com a demo autorizada.
+
+Pendências conhecidas, fora do escopo ou dependentes de decisão:
+
+- validar a transformação dos outros 9 mapas quando houver demos com posições nesses mapas;
+- trocar os radares oficiais da Valve por radares vetorizados próprios (a camada já é desacoplada, `radarAssets.ts`);
+- partidas antigas não têm posições, por regra (sem backfill sem autorização);
+- dependências transitivas do parser continuam sem versão fixa (risco 13 do checkpoint).
