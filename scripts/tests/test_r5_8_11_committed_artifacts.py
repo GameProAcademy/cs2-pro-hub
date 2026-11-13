@@ -25,7 +25,7 @@ def test_candidate_spec_matches_active_application_pins_and_target_hashes():
     # R5.8.15 (D13b) and R5.8.16 (D22) advanced them again the same way. The R5.8.11 spec
     # itself stays frozen; the active pins are the R5.8.22 spec (D35/D36 changed adapter.py; R5.8.22 raw_evidence.py).
     r5813 = json.loads((ROOT / "docs/reference/r5_8_13/spec.json").read_text(encoding="utf-8"))
-    active = json.loads((ROOT / "docs/reference/r5_8_24/spec.json").read_text(encoding="utf-8"))
+    active = json.loads((ROOT / "docs/reference/r5_8_25/spec.json").read_text(encoding="utf-8"))
     assert SPEC["deployment_id"] == "ce9b760d-c92f-4da1-a3e6-dd105d49585c"
     assert r5813["observed"]["railway_deployment"]["redeploy_of"] == SPEC["deployment_id"]
     assert (r5813["semantic_commit"], r5813["build_commit"]) == (SPEC["semantic_commit"], SPEC["build_commit"])
@@ -35,7 +35,8 @@ def test_candidate_spec_matches_active_application_pins_and_target_hashes():
         active["branch"], active["deployment_id"], active["deployment_commit"], f"git:{active['semantic_commit']}")
     assert {Path(k).name: v for k, v in EXPECTED_HASHES.items()} == active["critical_hashes"]
     changed = {k for k in SPEC["critical_hashes"] if SPEC["critical_hashes"][k] != active["critical_hashes"][k]}
-    assert changed == {"parser.py", "adapter.py", "raw_evidence.py"}
+    # R5.8.25 (demoparser2 0.42.2) also changed settings.py.
+    assert changed == {"parser.py", "adapter.py", "raw_evidence.py", "settings.py"}
     assert r5_8_11.targets(SPEC) == {
         "record_parser_runtime_attestation": "72df9c518f5573db232a6759301e4360",
         "assert_verified_parser_provenance": "f5e27fc3961d7d4bee50d440862f39cc",

@@ -124,7 +124,7 @@ def test_every_active_repository_pin_names_the_released_runtime():
     """R5.8.21 is historical since R5.8.22 (player_disconnect field review): no active pin may still name it."""
     successor = json.loads((ROOT / "docs/reference/r5_8_22/spec.json").read_text(encoding="utf-8"))
     assert successor["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
-    head = json.loads((ROOT / "docs/reference/r5_8_24/spec.json").read_text(encoding="utf-8"))  # active head
+    head = json.loads((ROOT / "docs/reference/r5_8_25/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
@@ -134,10 +134,11 @@ def test_every_active_repository_pin_names_the_released_runtime():
     adapter = (ROOT / "src/lib/pipeline/parser/adapter.ts").read_text(encoding="utf-8")
     assert f'DEPLOYED_WORKER_REVISION = "git:{head["semantic_commit"]}"' in adapter
     assert f'DEPLOYED_WORKER_BUILD_REVISION = "git:{head["build_commit"]}"' in adapter
-    # adapter.py did not change in R5.8.22..R5.8.24: its R5.8.21 blob stays active. parser.py changed
-    # in R5.8.24 (spatial-v1 layer A): neither the R5.8.21 nor the R5.8.20 parser blob is still active.
+    # adapter.py did not change in R5.8.22..R5.8.24 but did in R5.8.25 (demoparser2 0.42.2): neither the
+    # R5.8.21 nor the R5.8.20 adapter blob is still active. parser.py changed in R5.8.24 and R5.8.25.
     for path in ("scripts/parser_runtime_attestation.py", "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
         assert head["critical_hashes"]["parser.py"] in text, path
         assert NEW_PARSER not in text and OLD_PARSER not in text, path
-        assert NEW_ADAPTER in text and OLD_ADAPTER not in text, path
+        assert head["critical_hashes"]["adapter.py"] in text, path
+        assert NEW_ADAPTER not in text and OLD_ADAPTER not in text, path

@@ -24,10 +24,10 @@ ENDPOINT = "https://gamepro.network/api/public/parser-attestation"
 PROJECT = "aa2176ec-0e35-45f0-8cfa-9f8c0707dca4"
 SERVICE = "706fa246-a263-484f-a986-c74516be862b"
 ENVIRONMENT = "2385d707-795d-4e32-a00b-0afaba0a9b7e"
-DEPLOYMENT = "0ff96670-e373-4beb-90c9-f1967eee3195"
+DEPLOYMENT = "d57b9089-ea97-44b0-b236-6868f84459e2"
 BRANCH = "main"
-SOURCE_COMMIT = "4badf6060e4e69a589179567f488f5d58a4a58dc"
-PARSER_REVISION = "git:4badf6060e4e69a589179567f488f5d58a4a58dc"
+SOURCE_COMMIT = "c3593d48e3b8923048def625cf59144100f59892"
+PARSER_REVISION = "git:c3593d48e3b8923048def625cf59144100f59892"
 RUNTIME_DOMAINS = ("https://parser.gamepro.network", "https://cs2-demo-parser-production.up.railway.app")
 
 
@@ -101,7 +101,7 @@ def collect() -> dict[str, Any]:
     identities = [runtime_identity(item[3]) for item in runtime_results]
     available = [item[0] == 200 and item[2] == 200 for item in runtime_results]
     health_values = [(item[1] or {}).get("status") for item in runtime_results]
-    expected_identity = {"name": "demoparser2", "version": "0.42.0", "revision": PARSER_REVISION, "contract": 1}
+    expected_identity = {"name": "demoparser2", "version": "0.42.2", "revision": PARSER_REVISION, "contract": 1}
 
     endpoint_secret = os.getenv("PARSER_ATTESTATION_ENDPOINT", "")
     collector_workflow_sha = os.getenv("GITHUB_WORKFLOW_SHA", "")

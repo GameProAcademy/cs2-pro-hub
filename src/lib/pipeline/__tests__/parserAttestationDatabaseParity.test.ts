@@ -38,7 +38,12 @@ const r5813DeploymentMigration = readFileSync(
 // R5.8.19 after D30 (PR #196); R5.8.20 after D33 (PR #202); R5.8.21 after D35/D36 (PR #209);
 // R5.8.22 after the player_disconnect.ever_fully_connected review (PR #232, raw_evidence.py blob);
 // R5.8.23 after the parser field-governance review (PR #239, raw_evidence.py blob);
-// R5.8.24 after spatial-v1 layer A (PR #267, parser.py and raw_evidence.py blobs).
+// R5.8.24 after spatial-v1 layer A (PR #267, parser.py and raw_evidence.py blobs);
+// R5.8.25 after demoparser2 0.42.2 (PR #275, parser version and parser/adapter/raw_evidence/settings blobs).
+const r5825ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261113040000_r5_8_25_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5824ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261112090000_r5_8_24_repin_runtime_release.sql"),
   "utf8",
@@ -123,13 +128,23 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    expect(r5824ReleaseMigration).toContain(
-      `_new_deployment constant text := '${PARSER_ATTESTATION_EXPECTED.deploymentId}'`,
+    // R5.8.25 lists its pins as arrays: the head identity is in the new-pin list.
+    const r5825NewPins = r5825ReleaseMigration.slice(
+      r5825ReleaseMigration.indexOf("_new_pins constant"),
+      r5825ReleaseMigration.indexOf("_counts constant"),
     );
-    expect(r5824ReleaseMigration).toContain(
-      `_new_commit constant text := '${PARSER_ATTESTATION_EXPECTED.commit}'`,
+    expect(r5825NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
+    expect(r5825NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5825NewPins).toContain(
+      `'_p.parser_version<>''${PARSER_ATTESTATION_EXPECTED.parserVersion}'''`,
     );
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(PARSER_ATTESTATION_EXPECTED.commit);
+    expect(r5825ReleaseMigration).toContain("'0ff96670-e373-4beb-90c9-f1967eee3195'");
+    // The R5.8.24 link stays committed with its own pins.
+    expect(r5824ReleaseMigration).toContain(
+      "_new_deployment constant text := '0ff96670-e373-4beb-90c9-f1967eee3195'",
+    );
+    expect(r5824ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5824ReleaseMigration).toContain(
       "_old_deployment constant text := '7324404e-f15d-45a0-8ec7-518a0770ca81'",
     );

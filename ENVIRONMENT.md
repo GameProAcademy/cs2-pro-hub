@@ -30,7 +30,7 @@ Rules that apply to every variable below:
 | `DEMO_PARSER_URL`                     | yes                          | HTTPS `/v1/parse` endpoint of the external parser worker                                   |
 | `DEMO_PARSER_TOKEN`                   | yes                          | **secret** bearer token, never logged, returned, or sent to the browser                    |
 | `DEMO_PARSER_EXPECTED_NAME`           | yes                          | expected parser name (`demoparser2`)                                                       |
-| `DEMO_PARSER_EXPECTED_VERSION`        | yes                          | expected parser version (`0.42.0`)                                                         |
+| `DEMO_PARSER_EXPECTED_VERSION`        | yes                          | expected parser version (`0.42.2`)                                                         |
 | `DEMO_PARSER_EXPECTED_REVISION`       | yes in production            | exact worker build revision; the revision lock fails closed on any divergence              |
 | `DEMO_PARSER_REVISION_REQUIRED`       | optional                     | `true`/`false` override of the lock; defaults to `true` when `NODE_ENV=production`         |
 | `DEMO_PARSER_EXPECTED_BUILD_REVISION` | during exact-build promotion | exact `git:<40-hex>` Railway build identity; separate from the semantic compatibility lock |

@@ -37,7 +37,7 @@ DOMAINS = (
     "https://cs2-demo-parser-production.up.railway.app/version",
 )
 EXPECTED_IDENTITY = {
-    "name": "demoparser2", "version": "0.42.0",
+    "name": "demoparser2", "version": "0.42.2",
     "revision": f"git:{COMMIT}", "semantic_revision": f"git:{COMMIT}",
     "build_revision": f"git:{BUILD_COMMIT}", "contract_version": 1,
 }

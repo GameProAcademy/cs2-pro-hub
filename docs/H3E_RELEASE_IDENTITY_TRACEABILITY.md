@@ -975,3 +975,36 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `4badf6060e4e69a589179567f488f5d58a4a58dc` (bare commit).
 - Correction before the managed apply (PR #269): the two `COMMENT ON FUNCTION` statements of the merged migration (#268) still carried the R5.8.23 text, because the substitution only matched quoted literals. Function bodies, counts and md5 targets were correct. Comments are fixed and a test now pins them; the migration had not been applied to the managed database.
 - Rollback: Railway rollback to `7324404e` (commit `94c6460b`), `docs/reference/r5_8_24/rollback.sql` (release-owner authorization), and restore the three secrets to the R5.8.23 values.
+
+## 2026-11-13 — R5.8.25: demoparser2 0.42.0 → 0.42.2 (controlled)
+
+- Change (PR #275, merge `c3593d48`):
+  - demoparser2 0.42.0 raises `EntityNotFound` on every `parse_event` of current CS2 demos. The owner-authorized test demo therefore produced 0 rounds and was correctly blocked (`RAW_AUDIT_BLOCKED`). 0.42.1 still fails; 0.42.2 reads it (23 rounds, 142/142 deaths with positions).
+  - The new `vote_cast` event and the new `parse_weapons` API were reviewed as RAW only.
+  - The static capability baseline (0.42.0) stays, so the reconciled matrix and the canonical mapping digests (`cf0549c2…`/`a276b030…`) do not change.
+  - The A9.1 browser parser stays WASM 0.42.0.
+  - The app parser identity (`PARSER_VERSION`) is 0.42.2.
+  - Evidence and rollback: `docs/reference/R5_8_25_DEMOPARSER2_0422.md`.
+- Release:
+  - Merge `c3593d48` under the standing watch-pattern freeze, with the queue idle.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:c3593d48…` with skipped deploys.
+  - Exactly one deployment, `d57b9089`, via the Railway agent: SUCCESS, BUILD_INFO commit `c3593d48`, healthcheck OK at 03:09:49Z.
+  - `parser.gamepro.network/version`: demoparser2 0.42.2, revision = semantic = build = `git:c3593d48…`, `declared_revision_matches` true.
+- Pins:
+  - parser version `0.42.0` → `0.42.2`: one literal in the recorder, one in the assertion;
+  - blobs: parser.py `4102f617…` → `5d39478c…`, adapter.py `b9581168…` → `4e6f43c7…`, raw_evidence.py `5b7b674c…` → `a71a99e8…`, settings.py `dc76db86…` → `8bcadce3…`;
+  - worker.py and the workflow blob are unchanged.
+- R5.8.25 migration (`supabase/migrations/20261113040000_r5_8_25_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_25/`):
+  - recorder `c28ed93d…` → `cbb03f77…`; assertion `c661f1f3…` → `a3401a4b…`; workflow guard unchanged.
+  - The generator target (`r5_8_11.target_md5`, now with an optional `parser_version`) equals the read-only production computation.
+  - The migration was applied to the exact managed function definitions on a local PostgreSQL 16. It is idempotent, rejects unknown, mixed and previous-version pins, and the rollback restores R5.8.24 exactly.
+  - `r5_real_dem_execution_gate` (A9.1, WASM 0.42.0) is intentionally untouched.
+- Owner action (app secrets: delete, re-create, then publish):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:c3593d48e3b8923048def625cf59144100f59892`;
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:c3593d48e3b8923048def625cf59144100f59892`;
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `c3593d48e3b8923048def625cf59144100f59892` (bare commit);
+  - `DEMO_PARSER_EXPECTED_VERSION` = `0.42.2`, if that secret exists. `ENVIRONMENT.md` lists it as required, and it overrides the code default.
+- Rollback:
+  - Railway rollback to `0ff96670` (commit `4badf606`, demoparser2 0.42.0);
+  - `docs/reference/r5_8_25/rollback.sql` (release-owner authorization);
+  - restore the secrets to the R5.8.24 values.

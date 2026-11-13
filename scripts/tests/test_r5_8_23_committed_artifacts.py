@@ -117,8 +117,10 @@ def test_rollback_restores_the_r5_8_22_bodies_and_fails_closed():
 
 def test_every_active_repository_pin_names_the_released_runtime():
     """R5.8.23 is historical since R5.8.24 (spatial-v1 layer A): no active pin may still name it."""
-    successor = json.loads((ROOT / "docs/reference/r5_8_24/spec.json").read_text(encoding="utf-8"))  # active head
+    successor = json.loads((ROOT / "docs/reference/r5_8_24/spec.json").read_text(encoding="utf-8"))
     assert successor["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
+    # R5.8.24 is itself historical since R5.8.25; every active pin names the head.
+    successor = json.loads((ROOT / "docs/reference/r5_8_25/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")

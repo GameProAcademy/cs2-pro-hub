@@ -1,0 +1,88 @@
+{
+  "deployment_id": "d57b9089-ea97-44b0-b236-6868f84459e2",
+  "branch": "main",
+  "semantic_commit": "c3593d48e3b8923048def625cf59144100f59892",
+  "build_commit": "c3593d48e3b8923048def625cf59144100f59892",
+  "deployment_commit": "c3593d48e3b8923048def625cf59144100f59892",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "parser_version": "0.42.2",
+  "critical_hashes": {
+    "parser.py": "5d39478c611b57b2dd17f93c9cdce8faa84860f9",
+    "adapter.py": "4e6f43c7916bb7d855cfd1abcd26637bb0f3f942",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "a71a99e8df282f761326e4e8211f80a64c4083e5",
+    "settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "a3401a4b1da8553296b6d541afd44bf4",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "cbb03f77e6e3dae28c567483c3ba252b",
+  "observed": {
+    "observed_at": "2026-11-13T03:20:00Z",
+    "railway_deployment": {
+      "id": "d57b9089-ea97-44b0-b236-6868f84459e2",
+      "status": "SUCCESS",
+      "commitHash": "c3593d48e3b8923048def625cf59144100f59892",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-11-13T03:08:37.140Z",
+      "finished_at": "2026-11-13T03:09:49Z",
+      "release_control": "watchPatterns frozen to /services/cs2-demo-parser/.release-freeze-r5-8-17 (unchanged since R5.8.17) while merging PR #275 (merge c3593d48); PARSER_REVISION/PARSER_BUILD_REVISION set to git:c3593d48... with skipped deploys; exactly one deployment of that commit triggered through the Railway agent; queue idle (0 pending/processing jobs) before the merge",
+      "failed_builds_never_served": [],
+      "build_info": "BUILD_INFO.json commit c3593d48e3b8923048def625cf59144100f59892 (build step [6/7]); demoparser2 0.42.2 pinned; unpinned transitive deps resolved to pandas 3.1.1, numpy 2.5.4, polars 2.1.0, pyarrow 26.0.1 (the same as R5.8.24)",
+      "health": "Container started 03:09:49Z; healthcheck /health succeeded 03:09:49Z (deploy log)"
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:c3593d48e3b8923048def625cf59144100f59892",
+      "PARSER_BUILD_REVISION": "git:c3593d48e3b8923048def625cf59144100f59892",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: the gate fetches both /version hosts and refuses any other identity; parser.gamepro.network/version observed 2026-11-13T03:15Z: parser demoparser2 0.42.2, revision = semantic = build = git:c3593d48..., build.commit c3593d48, declared_revision_matches true",
+    "dependency_drift_check": "the authorized benchmark demo yields identical rounds, events and players under demoparser2 0.42.0 and 0.42.2 (only the stamina tick-sample field and the runtime-surface digests differ); docs/reference/R5_8_25_DEMOPARSER2_0422.md",
+    "before": {
+      "deployment_id": "0ff96670-e373-4beb-90c9-f1967eee3195",
+      "semantic_revision": "git:4badf6060e4e69a589179567f488f5d58a4a58dc",
+      "build_revision": "git:4badf6060e4e69a589179567f488f5d58a4a58dc",
+      "parser_version": "0.42.0"
+    },
+    "managed_start_state": {
+      "read_at": "2026-11-13T03:00:00Z",
+      "record_parser_runtime_attestation": "c28ed93d37612ffdbe02653d8ea980eb",
+      "assert_verified_parser_provenance": "c661f1f3adf774a3376c2ed510bfe607",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "parser_blob": 1,
+          "adapter_blob": 1,
+          "raw_evidence_blob": 1,
+          "settings_blob": 1,
+          "worker_blob": 1,
+          "parser_version_0_42_0": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "parser_blob": 0,
+          "adapter_blob": 0,
+          "raw_evidence_blob": 0,
+          "settings_blob": 0,
+          "worker_blob": 0,
+          "parser_version_0_42_0": 1
+        }
+      },
+      "other_functions_with_0_42_0": "r5_real_dem_execution_gate (A9.1 browser parser, WASM 0.42.0) is intentionally untouched",
+      "target_md5_computed_read_only": "md5 of prosrc after the same substitutions (read-only SELECT on the managed database); the recorder target equals scripts/repin/r5_8_11.target_md5(spec)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_24/spec.json",
+  "pin_role": "R5.8.25: re-pin semantic/build commit, Railway deployment, the parser runtime version (demoparser2 0.42.0 -> 0.42.2) and the parser.py, adapter.py, raw_evidence.py and settings.py critical blobs (PR #275, controlled deployment of its merge commit); worker.py and workflow blobs unchanged",
+  "r5_8_24_database_target_md5": {
+    "assert_verified_parser_provenance": "c661f1f3adf774a3376c2ed510bfe607",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_24_recorder_target_md5": "c28ed93d37612ffdbe02653d8ea980eb"
+}
