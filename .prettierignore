@@ -12,3 +12,5 @@ supabase/seed/training-catalog/
 
 # Original Phase 4.2 specification: preserved byte-for-byte (sha256 recorded in docs/specifications/README.md)
 docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre.md
+docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre_v1.1.md
+docs/specifications/CS2_PRO_PROMPT_MESTRE_1.txt

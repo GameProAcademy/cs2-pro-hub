@@ -1,13 +1,38 @@
 # Especificações de fase
 
-## Fase 4.2 — especificação mestre: **REGISTRADA e MAPEADA (2026-11-12)**
+## Fase 4.2 — especificação mestre **v1.1** e Prompt Mestre 1: **REGISTRADOS (2026-11-12)**
+
+- **v1.1 (vigente)**, preservada byte a byte:
+  `docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre_v1.1.md`.
+  - 1.913 linhas, SHA-256 `a081c7e0d70e0674eb920beac96570118342fc5d793d937f7a32e2624645535b`.
+  - Versão 1.1 de 12/11/2026.
+- Diferenças em relação à v1.0:
+  - estado `PARTIAL` na taxonomia (§4);
+  - semântica espacial estrita: posições pontuais de morte ≠ presença, rota ou exposição (§1.1.1, §10.1, §11.4, §25);
+  - side por jogador/round;
+  - responsabilidades dos Módulos I e J (§8, §9).
+- A v1.0 continua preservada como registro histórico (abaixo).
+- **Prompts Mestres confirmados pelo dono (2026-11-12):**
+
+  | Prompt Mestre | Entregas     | Módulos                                             |
+  | ------------- | ------------ | --------------------------------------------------- |
+  | PM1           | 4.2.1–4.2.2  | A, B (fundação)                                     |
+  | PM2           | 4.2.3–4.2.4  | B, I (navegação/replay)                             |
+  | PM3           | 4.2.5–4.2.6  | C, D                                                |
+  | PM4           | 4.2.7–4.2.8  | E, F, G (+ J: DNA/snapshots/evolução)               |
+  | PM5           | 4.2.9–4.2.10 | H, I (biblioteca), J (comparativos Pro licenciados) |
+
+- Texto do PM1, preservado byte a byte: `docs/specifications/CS2_PRO_PROMPT_MESTRE_1.txt`.
+- Execução do PM1: `docs/pm1/PM1_EXECUTION_REPORT.md`.
+
+## Fase 4.2 — especificação mestre v1.0: **REGISTRADA e MAPEADA (2026-11-12)**
 
 - Original preservado byte a byte: `docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre.md`
   (1.886 linhas, 85.023 bytes, SHA-256 `989ec11f04d8b31b0566e4ba6c084179b5400f00b266ced8ccdab9d01862e01a`,
   versão 1.0 de 05/11/2026, status "Proposta para revisão"). Protegido do formatador em `.prettierignore`.
 - Mapeamento: `docs/specifications/FASE_4_2_MAPEAMENTO.md` (entregas, módulos, diferenciais,
   comparação com `main`, dependências, conflitos, matriz de prontidão).
-- **Achado:** o original **não define os cinco Prompts Mestres**. Ver o mapeamento §1.
+- **Achado:** o original **não define os cinco Prompts Mestres**. Ver o mapeamento §1. Resolvido em 2026-11-12: o dono confirmou a divisão (tabela acima).
 
 Histórico desta seção (antes do recebimento) abaixo, preservado.
 

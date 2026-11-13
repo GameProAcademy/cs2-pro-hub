@@ -25,7 +25,7 @@ import type { OverviewMatch } from "@/lib/playerOverview";
 const spec = readFileSync(
   resolve(
     process.cwd(),
-    "docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre.md",
+    "docs/specifications/CS2_PRO_Fase_4_2_Especificacao_Tecnica_Funcional_Mestre_v1.1.md",
   ),
   "utf8",
 );
@@ -39,13 +39,50 @@ const base = {
 };
 
 describe("taxonomy", () => {
-  it("is exactly the specification's §4 states, in order", () => {
+  it("is exactly the specification v1.1 §4 states, in order", () => {
     const table = spec.slice(
       spec.indexOf("# 4. Contratos, proveniência e qualidade"),
       spec.indexOf("Manter compatibilidade com coach-context-v1"),
     );
     const states = [...table.matchAll(/^\| ([A-Z_]+) \|/gm)].map((m) => m[1]);
     expect(states).toEqual([...METRIC_STATUSES]);
+  });
+});
+
+describe("PARTIAL (spec v1.1 §4)", () => {
+  const partialBase = { ...base, unit: "count", coverage: { measured: 7, eligible: 10 } };
+  it("carries the value of the measured part with its coverage", () => {
+    const e = envelope({ ...partialBase, status: "PARTIAL", value: 7 });
+    expect(e).toMatchObject({
+      status: "PARTIAL",
+      value: 7,
+      coverage: { measured: 7, eligible: 10 },
+    });
+  });
+  it("an incomplete coverage is never presented as a complete total", () => {
+    for (const status of ["OBSERVED", "DERIVED", "INFERRED"] as const)
+      expect(() => envelope({ ...partialBase, status, value: 7 })).toThrow(
+        /incomplete_coverage_must_be_partial/,
+      );
+  });
+  it("needs coverage with something measured and something missing", () => {
+    expect(() => envelope({ ...base, status: "PARTIAL", value: 1, coverage: null })).toThrow(
+      /partial_without_incomplete_coverage/,
+    );
+    expect(() =>
+      envelope({ ...base, status: "PARTIAL", value: 10, coverage: { measured: 10, eligible: 10 } }),
+    ).toThrow(/partial_without_incomplete_coverage/);
+    expect(() =>
+      envelope({ ...base, status: "PARTIAL", value: 0, coverage: { measured: 0, eligible: 10 } }),
+    ).toThrow(/partial_without_incomplete_coverage/);
+    expect(() => envelope({ ...partialBase, status: "PARTIAL", value: null })).toThrow(
+      /measure_without_value/,
+    );
+  });
+  it("coverage must be whole units within range", () => {
+    expect(() =>
+      envelope({ ...base, status: "OBSERVED", value: 1, coverage: { measured: 1.5, eligible: 2 } }),
+    ).toThrow(/coverage_out_of_range/);
   });
 });
 
