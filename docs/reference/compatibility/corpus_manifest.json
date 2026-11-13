@@ -1,0 +1,759 @@
+{
+  "schema": "cs2pro.compatibility-corpus.v1",
+  "generated_at": "2026-11-13",
+  "parser": {
+    "package": "demoparser2",
+    "version": "0.42.2",
+    "worker_commit": "c3593d48e3b8923048def625cf59144100f59892"
+  },
+  "privacy": "No binaries, Steam IDs, player names, chat text or server names are stored here. Server names are reduced to platform tokens.",
+  "states": [
+    "SUPPORTED_AND_VALIDATED",
+    "SUPPORTED_WITH_PARTIAL_COVERAGE",
+    "NOT_PRESENT_IN_DEMO",
+    "NOT_SUPPORTED_BY_PARSER",
+    "UNREADABLE",
+    "INVALID",
+    "CORRUPTED",
+    "UNKNOWN",
+    "NOT_TESTED"
+  ],
+  "fixtures": [
+    {
+      "fixture_id": "valve-public-2024-mirage",
+      "sha256": "84a1a4191302bdd2a3bbb5a727842093744b1fb1a228aeec630369e44b622cb2",
+      "bytes": 60601900,
+      "origin": {
+        "value": "VALVE_PROBABLE",
+        "basis": "observable signals only (PROBABLE/UNKNOWN)",
+        "signals": {
+          "server_name_platform_tokens": ["valve"],
+          "addons": null
+        }
+      },
+      "recording": "GOTV_UNKNOWN",
+      "map": "de_mirage",
+      "patch_version": "13984",
+      "header": {
+        "demo_version_name": "valve_demo_2",
+        "demo_version_guid": "8e9d71ab-04a1-4c01-bb61-acfede27c046",
+        "fullpackets_version": "2"
+      },
+      "game_events_registered": 46,
+      "integrity": "COMPLETE_PROBABLE (CDemoFileInfo offset at end of file; parser read to the end)",
+      "authorization": "public fixture of LaihoE/demoparser (MIT), src/parser/test_demo.dem, commit 4131a4f (2024-01-18)",
+      "probe": {
+        "events": {
+          "player_death": 73,
+          "player_hurt": 264,
+          "weapon_fire": 1590,
+          "round_start": 10,
+          "round_end": 10,
+          "round_freeze_end": 9,
+          "round_officially_ended": 9,
+          "begin_new_match": 1,
+          "round_announce_match_start": 1,
+          "bomb_planted": 7,
+          "bomb_defused": 1,
+          "bomb_exploded": 2,
+          "smokegrenade_detonate": 40,
+          "flashbang_detonate": 48,
+          "hegrenade_detonate": 34,
+          "inferno_startburn": 25,
+          "inferno_expire": 25,
+          "player_blind": 72,
+          "item_purchase": 509,
+          "cs_win_panel_match": 1,
+          "round_announce_warmup": 0,
+          "cs_pre_restart": 10,
+          "announce_phase_end": 0,
+          "player_connect": 0,
+          "player_disconnect": 10,
+          "player_team": 0,
+          "bot_takeover": 0,
+          "vote_cast": 0,
+          "server_cvar": 1177
+        },
+        "usercmd_on_death_ticks": {
+          "ticks": 40,
+          "props": {
+            "usercmd_viewangle_x": {
+              "column": false
+            },
+            "usercmd_buttons_held": {
+              "column": false
+            },
+            "usercmd_subtick_moves": {
+              "column": false
+            },
+            "usercmd_input_history": {
+              "column": false
+            },
+            "usercmd_forward_move": {
+              "column": false
+            },
+            "usercmd_mouse_dx": {
+              "column": false
+            }
+          }
+        },
+        "player_info_rows": 10,
+        "elapsed_s": 10.1,
+        "ru_maxrss_mb": 209
+      },
+      "cs2pro_pipeline": {
+        "parse": "OK",
+        "rounds": 10,
+        "events": 2727,
+        "deaths": 62,
+        "deaths_with_position": 62,
+        "deaths_with_victim_position": 62,
+        "players": 10,
+        "raw_audit_status": "APPROVED",
+        "raw_block_reasons": [],
+        "extraction_confidence": 1.0,
+        "seconds": 19.9,
+        "ru_maxrss_mb": 1024,
+        "warnings": [
+          "142 events could not be assigned to a deterministic round and were omitted.",
+          "event_times_from_game_clock: header tickrate unavailable; times from the sampled tick/game_time relation",
+          "tickrate_unavailable: round durations not derived"
+        ],
+        "gates_not_pass": {}
+      }
+    },
+    {
+      "fixture_id": "tournament-blast-2026-dust2-a",
+      "sha256": "1c2710967417153a3fa9a9ae09b1c320d032a176a4317f0cbaf904df638f1259",
+      "bytes": 311024457,
+      "origin": {
+        "value": "TOURNAMENT_UNKNOWN_ORGANIZER",
+        "basis": "observable signals only (PROBABLE/UNKNOWN)",
+        "signals": {
+          "server_name_platform_tokens": [],
+          "addons": null
+        }
+      },
+      "recording": "GOTV",
+      "map": "de_dust2",
+      "patch_version": "14180",
+      "header": {
+        "demo_version_name": "valve_demo_2",
+        "demo_version_guid": "8e9d71ab-04a1-4c01-bb61-acfede27c046",
+        "fullpackets_version": "2"
+      },
+      "game_events_registered": 41,
+      "integrity": "COMPLETE_PROBABLE (CDemoFileInfo offset at end of file; parser read to the end)",
+      "authorization": "owner-authorized benchmark demo (R5.8.24, 2026-11-12); local sandbox only",
+      "probe": {
+        "events": {
+          "player_death": 108,
+          "player_hurt": 431,
+          "weapon_fire": 2623,
+          "round_start": 18,
+          "round_end": 18,
+          "round_freeze_end": 18,
+          "round_officially_ended": 15,
+          "begin_new_match": 1,
+          "round_announce_match_start": 2,
+          "bomb_planted": 12,
+          "bomb_defused": 0,
+          "bomb_exploded": 6,
+          "smokegrenade_detonate": 109,
+          "flashbang_detonate": 149,
+          "hegrenade_detonate": 59,
+          "inferno_startburn": 82,
+          "inferno_expire": 82,
+          "player_blind": 0,
+          "item_purchase": 1157,
+          "cs_win_panel_match": 1,
+          "round_announce_warmup": 1,
+          "cs_pre_restart": 16,
+          "announce_phase_end": 1,
+          "player_connect": 0,
+          "player_disconnect": 0,
+          "player_team": 20,
+          "bot_takeover": 0,
+          "vote_cast": 0,
+          "server_cvar": 1967
+        },
+        "usercmd_on_death_ticks": null,
+        "player_info_rows": 10,
+        "elapsed_s": 60.4,
+        "ru_maxrss_mb": 497
+      },
+      "cs2pro_pipeline": {
+        "parse": "OK",
+        "raw_audit_status": "APPROVED",
+        "source": "R5.8.25 benchmark (docs/reference/R5_8_25_DEMOPARSER2_0422.md); scratch bench_r5825.json",
+        "rounds": 16,
+        "deaths_with_both_positions": "100/100"
+      }
+    },
+    {
+      "fixture_id": "tournament-blast-2026-dust2-b",
+      "sha256": "b5af62a77cf3a560aab3d0290eedae9d200403b7f7046557908d6a8d4ef27908",
+      "bytes": 358548108,
+      "origin": {
+        "value": "TOURNAMENT_BLAST_PROBABLE",
+        "basis": "observable signals only (PROBABLE/UNKNOWN)",
+        "signals": {
+          "server_name_platform_tokens": ["blast"],
+          "addons": null
+        }
+      },
+      "recording": "GOTV",
+      "map": "de_dust2",
+      "patch_version": "14197",
+      "header": {
+        "demo_version_name": "valve_demo_2",
+        "demo_version_guid": "8e9d71ab-04a1-4c01-bb61-acfede27c046",
+        "fullpackets_version": "2"
+      },
+      "game_events_registered": 43,
+      "integrity": "COMPLETE_PROBABLE (CDemoFileInfo offset at end of file; parser read to the end)",
+      "authorization": "owner-authorized test demo (PM1, 2026-11-12); processed once in production as job aa968c9e",
+      "probe": {
+        "events": {
+          "player_death": 142,
+          "player_hurt": 649,
+          "weapon_fire": 3383,
+          "round_start": 24,
+          "round_end": 24,
+          "round_freeze_end": 23,
+          "round_officially_ended": 22,
+          "begin_new_match": 1,
+          "round_announce_match_start": 1,
+          "bomb_planted": 14,
+          "bomb_defused": 7,
+          "bomb_exploded": 4,
+          "smokegrenade_detonate": 152,
+          "flashbang_detonate": 184,
+          "hegrenade_detonate": 80,
+          "inferno_startburn": 118,
+          "inferno_expire": 118,
+          "player_blind": 0,
+          "item_purchase": 1504,
+          "cs_win_panel_match": 1,
+          "round_announce_warmup": 0,
+          "cs_pre_restart": 23,
+          "announce_phase_end": 1,
+          "player_connect": 0,
+          "player_disconnect": 0,
+          "player_team": 10,
+          "bot_takeover": 0,
+          "vote_cast": 4,
+          "server_cvar": 2156
+        },
+        "usercmd_on_death_ticks": {
+          "ticks": 40,
+          "props": {
+            "usercmd_viewangle_x": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 382,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_buttons_held": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 382,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_subtick_moves": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 382,
+              "list_len_min": 0,
+              "list_len_max": 3,
+              "type": "list"
+            },
+            "usercmd_input_history": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 382,
+              "list_len_min": 0,
+              "list_len_max": 4,
+              "type": "list"
+            },
+            "usercmd_forward_move": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 382,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_mouse_dx": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 382,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            }
+          }
+        },
+        "player_info_rows": 10,
+        "elapsed_s": 74.7,
+        "ru_maxrss_mb": 554
+      },
+      "cs2pro_pipeline": {
+        "parse": "OK",
+        "raw_audit_status": "APPROVED",
+        "source": "R5.8.25 benchmark (docs/reference/R5_8_25_DEMOPARSER2_0422.md); scratch vit_r5825.json",
+        "rounds": 23,
+        "deaths_with_both_positions": "142/142"
+      }
+    },
+    {
+      "fixture_id": "faceit-2026-mirage",
+      "sha256": "8425f49ce38fda7b135f0faa41964651d8032eab1770b142423d699ab361391d",
+      "bytes": 362213168,
+      "origin": {
+        "value": "FACEIT",
+        "basis": "owner declaration",
+        "signals": {
+          "server_name_platform_tokens": ["faceit"],
+          "addons": null
+        }
+      },
+      "recording": "GOTV_PROBABLE",
+      "map": "de_mirage",
+      "patch_version": "14196",
+      "header": {
+        "demo_version_name": "valve_demo_2",
+        "demo_version_guid": "8e9d71ab-04a1-4c01-bb61-acfede27c046",
+        "fullpackets_version": "2"
+      },
+      "game_events_registered": 50,
+      "integrity": "COMPLETE_PROBABLE (CDemoFileInfo offset at end of file; parser read to the end)",
+      "authorization": "owner-provided for PM6 (2026-11-13), origin declared by the owner; local sandbox only, never uploaded or persisted",
+      "probe": {
+        "events": {
+          "player_death": 216,
+          "player_hurt": 739,
+          "weapon_fire": 4384,
+          "round_start": 31,
+          "round_end": 30,
+          "round_freeze_end": 30,
+          "round_officially_ended": 54,
+          "begin_new_match": 1,
+          "round_announce_match_start": 2,
+          "bomb_planted": 10,
+          "bomb_defused": 2,
+          "bomb_exploded": 3,
+          "smokegrenade_detonate": 165,
+          "flashbang_detonate": 148,
+          "hegrenade_detonate": 79,
+          "inferno_startburn": 127,
+          "inferno_expire": 127,
+          "player_blind": 313,
+          "item_purchase": 2017,
+          "cs_win_panel_match": 1,
+          "round_announce_warmup": 1,
+          "cs_pre_restart": 28,
+          "announce_phase_end": 3,
+          "player_connect": 0,
+          "player_disconnect": 11,
+          "player_team": 22,
+          "bot_takeover": 0,
+          "vote_cast": 0,
+          "server_cvar": 2574
+        },
+        "usercmd_on_death_ticks": {
+          "ticks": 40,
+          "props": {
+            "usercmd_viewangle_x": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 366,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_buttons_held": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 360,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_subtick_moves": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 360,
+              "list_len_min": 0,
+              "list_len_max": 4,
+              "type": "list"
+            },
+            "usercmd_input_history": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 366,
+              "list_len_min": 0,
+              "list_len_max": 4,
+              "type": "list"
+            },
+            "usercmd_forward_move": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 366,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_mouse_dx": {
+              "column": true,
+              "rows": 400,
+              "non_empty": 366,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            }
+          }
+        },
+        "player_info_rows": 10,
+        "elapsed_s": 72.6,
+        "ru_maxrss_mb": 707
+      },
+      "cs2pro_pipeline": {
+        "parse": "OK",
+        "rounds": 28,
+        "events": 8333,
+        "deaths": 206,
+        "deaths_with_position": 204,
+        "deaths_with_victim_position": 204,
+        "players": 10,
+        "raw_audit_status": "BLOCKED",
+        "raw_block_reasons": [
+          "gate:RAW-EVIDENCE-01",
+          "gate:RAW→CANONICAL",
+          "unmapped_but_available:show_survival_respawn_status.__event__",
+          "unmapped_but_available:show_survival_respawn_status.duration",
+          "unmapped_but_available:show_survival_respawn_status.loc_token",
+          "unmapped_but_available:show_survival_respawn_status.tick",
+          "unmapped_but_available:show_survival_respawn_status.user_name",
+          "unmapped_but_available:show_survival_respawn_status.user_steamid"
+        ],
+        "extraction_confidence": 1.0,
+        "seconds": 184.6,
+        "ru_maxrss_mb": 3514,
+        "warnings": [
+          "337 events could not be assigned to a deterministic round and were omitted.",
+          "event_times_from_game_clock: header tickrate unavailable; times from the sampled tick/game_time relation",
+          "round_boundaries_observed_from_game_state: round_start/round_end events unavailable",
+          "rounds_voided_by_match_reset: 1 round(s) ended before the game reset its round counter (end ticks [2811]); not part of the match",
+          "tickrate_unavailable: round durations not derived"
+        ],
+        "gates_not_pass": {
+          "RAW-EVIDENCE-01": "FAIL",
+          "RAW→CANONICAL": "FAIL"
+        }
+      }
+    },
+    {
+      "fixture_id": "gamersclub-2026-mirage",
+      "sha256": "1ef9baebd969f6ff8f4454156b846383b4e292f2178e76622a0d936be1325aed",
+      "bytes": 390819015,
+      "origin": {
+        "value": "GAMERSCLUB",
+        "basis": "owner declaration",
+        "signals": {
+          "server_name_platform_tokens": ["gamersclub"],
+          "addons": "3522005620"
+        }
+      },
+      "recording": "GOTV_PROBABLE",
+      "map": "de_mirage",
+      "patch_version": "14197",
+      "header": {
+        "demo_version_name": "valve_demo_2",
+        "demo_version_guid": "8e9d71ab-04a1-4c01-bb61-acfede27c046",
+        "fullpackets_version": "2"
+      },
+      "game_events_registered": 53,
+      "integrity": "COMPLETE_PROBABLE (CDemoFileInfo offset at end of file; parser read to the end)",
+      "authorization": "owner-provided for PM6 (2026-11-13), origin declared by the owner; local sandbox only",
+      "probe": {
+        "events": {
+          "player_death": 253,
+          "player_hurt": 1135,
+          "weapon_fire": 6996,
+          "round_start": 40,
+          "round_end": 36,
+          "round_freeze_end": 36,
+          "round_officially_ended": 69,
+          "begin_new_match": 4,
+          "round_announce_match_start": 2,
+          "bomb_planted": 18,
+          "bomb_defused": 6,
+          "bomb_exploded": 2,
+          "smokegrenade_detonate": 209,
+          "flashbang_detonate": 191,
+          "hegrenade_detonate": 153,
+          "inferno_startburn": 117,
+          "inferno_expire": 116,
+          "player_blind": 301,
+          "item_purchase": 2664,
+          "cs_win_panel_match": 0,
+          "round_announce_warmup": 1,
+          "cs_pre_restart": 39,
+          "announce_phase_end": 5,
+          "player_connect": 0,
+          "player_disconnect": 9,
+          "player_team": 43,
+          "bot_takeover": 0,
+          "vote_cast": 0,
+          "server_cvar": 2095
+        },
+        "usercmd_on_death_ticks": {
+          "ticks": 40,
+          "props": {
+            "usercmd_viewangle_x": {
+              "column": true,
+              "rows": 379,
+              "non_empty": 326,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_buttons_held": {
+              "column": true,
+              "rows": 379,
+              "non_empty": 303,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_subtick_moves": {
+              "column": true,
+              "rows": 379,
+              "non_empty": 293,
+              "list_len_min": 0,
+              "list_len_max": 3,
+              "type": "list"
+            },
+            "usercmd_input_history": {
+              "column": true,
+              "rows": 379,
+              "non_empty": 326,
+              "list_len_min": 0,
+              "list_len_max": 4,
+              "type": "list"
+            },
+            "usercmd_forward_move": {
+              "column": true,
+              "rows": 379,
+              "non_empty": 326,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_mouse_dx": {
+              "column": true,
+              "rows": 379,
+              "non_empty": 326,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            }
+          }
+        },
+        "player_info_rows": 10,
+        "elapsed_s": 85.8,
+        "ru_maxrss_mb": 810
+      },
+      "cs2pro_pipeline": {
+        "parse": "OK",
+        "rounds": 34,
+        "events": 12010,
+        "deaths": 237,
+        "deaths_with_position": 237,
+        "deaths_with_victim_position": 237,
+        "players": 10,
+        "raw_audit_status": "BLOCKED",
+        "raw_block_reasons": [
+          "gate:RAW-EVIDENCE-01",
+          "gate:RAW→CANONICAL",
+          "unmapped_but_available:player_chat.__event__",
+          "unmapped_but_available:player_chat.teamonly",
+          "unmapped_but_available:player_chat.text",
+          "unmapped_but_available:player_chat.tick",
+          "unmapped_but_available:player_chat.user_name",
+          "unmapped_but_available:player_chat.user_steamid"
+        ],
+        "extraction_confidence": 1.0,
+        "seconds": 178.8,
+        "ru_maxrss_mb": 4791,
+        "warnings": [
+          "647 events could not be assigned to a deterministic round and were omitted.",
+          "event_times_from_game_clock: header tickrate unavailable; times from the sampled tick/game_time relation",
+          "round_boundaries_observed_from_game_state: round_start/round_end events unavailable",
+          "rounds_voided_by_match_reset: 1 round(s) ended before the game reset its round counter (end ticks [10061]); not part of the match",
+          "tickrate_unavailable: round durations not derived"
+        ],
+        "gates_not_pass": {
+          "RAW-EVIDENCE-01": "FAIL",
+          "RAW→CANONICAL": "FAIL"
+        }
+      }
+    },
+    {
+      "fixture_id": "gamersclub-2026-cache",
+      "sha256": "985f5b78847003737acbc3d732edecc5a46056c74c360a743ef71d387d51daa5",
+      "bytes": 112183291,
+      "origin": {
+        "value": "GAMERSCLUB",
+        "basis": "owner declaration",
+        "signals": {
+          "server_name_platform_tokens": ["gamersclub"],
+          "addons": "3522005620"
+        }
+      },
+      "recording": "GOTV_PROBABLE",
+      "map": "de_cache",
+      "patch_version": "14197",
+      "header": {
+        "demo_version_name": "valve_demo_2",
+        "demo_version_guid": "8e9d71ab-04a1-4c01-bb61-acfede27c046",
+        "fullpackets_version": "2"
+      },
+      "game_events_registered": 45,
+      "integrity": "COMPLETE_PROBABLE (CDemoFileInfo offset at end of file; parser read to the end)",
+      "authorization": "owner-provided for PM6 (2026-11-13), origin declared by the owner; local sandbox only",
+      "probe": {
+        "events": {
+          "player_death": 94,
+          "player_hurt": 285,
+          "weapon_fire": 1758,
+          "round_start": 16,
+          "round_end": 12,
+          "round_freeze_end": 12,
+          "round_officially_ended": 23,
+          "begin_new_match": 4,
+          "round_announce_match_start": 2,
+          "bomb_planted": 4,
+          "bomb_defused": 0,
+          "bomb_exploded": 3,
+          "smokegrenade_detonate": 13,
+          "flashbang_detonate": 25,
+          "hegrenade_detonate": 18,
+          "inferno_startburn": 22,
+          "inferno_expire": 22,
+          "player_blind": 30,
+          "item_purchase": 582,
+          "cs_win_panel_match": 0,
+          "round_announce_warmup": 0,
+          "cs_pre_restart": 15,
+          "announce_phase_end": 0,
+          "player_connect": 0,
+          "player_disconnect": 1,
+          "player_team": 22,
+          "bot_takeover": 0,
+          "vote_cast": 0,
+          "server_cvar": 1865
+        },
+        "usercmd_on_death_ticks": {
+          "ticks": 40,
+          "props": {
+            "usercmd_viewangle_x": {
+              "column": true,
+              "rows": 394,
+              "non_empty": 362,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_buttons_held": {
+              "column": true,
+              "rows": 394,
+              "non_empty": 348,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_subtick_moves": {
+              "column": true,
+              "rows": 394,
+              "non_empty": 277,
+              "list_len_min": 0,
+              "list_len_max": 2,
+              "type": "list"
+            },
+            "usercmd_input_history": {
+              "column": true,
+              "rows": 394,
+              "non_empty": 362,
+              "list_len_min": 0,
+              "list_len_max": 4,
+              "type": "list"
+            },
+            "usercmd_forward_move": {
+              "column": true,
+              "rows": 394,
+              "non_empty": 362,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            },
+            "usercmd_mouse_dx": {
+              "column": true,
+              "rows": 394,
+              "non_empty": 362,
+              "list_len_min": null,
+              "list_len_max": null,
+              "type": "float"
+            }
+          }
+        },
+        "player_info_rows": 0,
+        "elapsed_s": 25.4,
+        "ru_maxrss_mb": 287
+      },
+      "cs2pro_pipeline": {
+        "parse": "OK",
+        "rounds": 11,
+        "events": 3177,
+        "deaths": 83,
+        "deaths_with_position": 81,
+        "deaths_with_victim_position": 83,
+        "players": 0,
+        "raw_audit_status": "BLOCKED",
+        "raw_block_reasons": [
+          "gate:PLAYER-COVERAGE",
+          "gate:RAW-EVIDENCE-01",
+          "gate:RAW→CANONICAL",
+          "unmapped_but_available:player_chat.__event__",
+          "unmapped_but_available:player_chat.teamonly",
+          "unmapped_but_available:player_chat.text",
+          "unmapped_but_available:player_chat.tick",
+          "unmapped_but_available:player_chat.user_name",
+          "unmapped_but_available:player_chat.user_steamid"
+        ],
+        "extraction_confidence": 0.6,
+        "seconds": 35.3,
+        "ru_maxrss_mb": 1342,
+        "warnings": [
+          "293 events could not be assigned to a deterministic round and were omitted.",
+          "bomb_defused_absent_from_event_inventory: no occurrence in this demo",
+          "event_times_from_game_clock: header tickrate unavailable; times from the sampled tick/game_time relation",
+          "round_boundaries_derived_from_game_state: end ticks and winners unavailable",
+          "round_end_unavailable",
+          "round_state_transitions_unavailable",
+          "tickrate_unavailable: round durations not derived"
+        ],
+        "gates_not_pass": {
+          "RAW-EVIDENCE-01": "FAIL",
+          "PLAYER-COVERAGE": "FAIL",
+          "RAW→CANONICAL": "FAIL"
+        }
+      }
+    }
+  ]
+}
