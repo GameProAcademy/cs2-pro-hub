@@ -2,8 +2,9 @@
 """Two-user RLS isolation on a LOCAL DISPOSABLE database (Supabase local, built
 from supabase/migrations). Everything runs in one transaction that is rolled back.
 
-Two players A and B each get a profile, an upload, a demo job, a match and a
-metric row. Then, as the `authenticated` role with each player's JWT subject
+Two players A and B each get a profile, an upload, a demo job, a match, a
+metric row, a kill event with death-tick positions (PM1 heatmap source) and a
+round side row. Then, as the `authenticated` role with each player's JWT subject
 (exactly what PostgREST does for a signed-in session), the probe counts what
 each can read of the other's rows in every table the product reads
 (`getPlayerOverview`, demo history), and tries to write the other's rows.
@@ -28,6 +29,10 @@ TABLES = {
     "demo_jobs": "id",
     "matches": "id",
     "match_metrics": "id",
+    # PM1 / 4.2.2: the spatial heatmap reads death-tick positions from round_events.data and the
+    # player's side per round from round_players.
+    "round_events": "id",
+    "round_players": "id",
 }
 
 
@@ -48,6 +53,11 @@ VALUES ('{up}', '{u}', 'demo', 'probe-{p['prefix']}.dem', '{u}/{up}.dem', 520, '
 SELECT (public.enqueue_demo_job('{up}', '{u}') ->> 'job_id') AS job_{p['prefix']} \\gset
 INSERT INTO public.matches(id, upload_id, player_id, map, result) VALUES ('{m}', '{up}', :'player_{p['prefix']}', 'de_probe', 'win');
 INSERT INTO public.match_metrics(id, match_id, player_id, kills, deaths) VALUES ('{mm}', '{m}', :'player_{p['prefix']}', 20, 10);
+INSERT INTO public.round_events(match_id, round_number, event_type, actor_steam_id, victim_steam_id, data)
+VALUES ('{m}', 1, 'kill', '7656119800000000{p['prefix'] == 'a' and 1 or 2}', '76561198000000099',
+        '{{"position": {{"x": 100.5, "y": -20.25, "z": 3}}, "victim_position": {{"x": 90, "y": -10, "z": 3}}}}'::jsonb);
+INSERT INTO public.round_players(match_id, round_number, participant_key, side)
+VALUES ('{m}', 1, '7656119800000000{p['prefix'] == 'a' and 1 or 2}', 'CT');
 """
 
 
@@ -60,7 +70,8 @@ def visible(viewer: str, label: str, a: dict, b: dict) -> str:
     def key(table: str, p: dict) -> str:
         return {"player_profiles": f"user_id = '{p['user']}'", "uploads": f"id = '{p['upload']}'",
                 "demo_jobs": f"upload_id = '{p['upload']}'", "matches": f"id = '{p['match']}'",
-                "match_metrics": f"id = '{p['metric']}'"}[table]
+                "match_metrics": f"id = '{p['metric']}'", "round_events": f"match_id = '{p['match']}'",
+                "round_players": f"match_id = '{p['match']}'"}[table]
     out = []
     for table in TABLES:
         for owner, p in (("a", a), ("b", b)):
@@ -116,12 +127,13 @@ def script(a: dict, b: dict) -> str:
             attempt("a_deletes_b_metric", f"DELETE FROM public.match_metrics WHERE id = '{b['metric']}'"),
             attempt("a_updates_b_match", f"UPDATE public.matches SET map = 'x' WHERE id = '{b['match']}'"),
             attempt("a_updates_b_job", f"UPDATE public.demo_jobs SET status = 'failed' WHERE upload_id = '{b['upload']}'"),
+            attempt("a_rewrites_b_positions", f"UPDATE public.round_events SET data = '{{}}'::jsonb WHERE match_id = '{b['match']}'"),
             "RESET ROLE;\n"]
     out += [as_user(b["user"]), visible("b", "seen_by_b", a, b), "RESET ROLE;\n"]
     out += [as_user(None), visible("anon", "seen_by_anon", a, b), "RESET ROLE;\n"]
     labels = ["seen_by_a", "seen_by_b", "seen_by_anon"]
     writes = ["a_updates_b_profile", "a_inserts_upload_for_b", "a_deletes_b_metric", "a_updates_b_match",
-              "a_updates_b_job"]
+              "a_updates_b_job", "a_rewrites_b_positions"]
     obj = ", ".join([f"'{l}', :'{l}'::jsonb" for l in labels] + [f"'{w}', :'{w}'" for w in writes])
     out += [f"SELECT 'RESULT:' || jsonb_build_object({obj})::text;\nROLLBACK;\n"]
     return "".join(out)
@@ -138,7 +150,8 @@ def check(r: dict) -> list[str]:
         # anon reads nothing: no row, or no privilege at all.
         if any(v not in ("0", "denied") for v in r["seen_by_anon"][table].values()):
             problems.append(f"anon sees {table}: {r['seen_by_anon'][table]}")
-    for write in ("a_updates_b_profile", "a_deletes_b_metric", "a_updates_b_match", "a_updates_b_job"):
+    for write in ("a_updates_b_profile", "a_deletes_b_metric", "a_updates_b_match", "a_updates_b_job",
+                  "a_rewrites_b_positions"):
         if r[write] not in ("ok:0",) and not str(r[write]).startswith("denied:"):
             problems.append(f"{write}: {r[write]}")
     if not str(r["a_inserts_upload_for_b"]).startswith("denied:"):

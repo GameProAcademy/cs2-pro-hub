@@ -43,7 +43,7 @@ export const getXRay = createServerFn({ method: "GET" })
  * Marco 1 — the caller's own participant in each match (one per match; two own participants in
  * the same match is ambiguous and the match is left out). RLS: `owns_canonical_match`.
  */
-async function ownParticipantKeys(
+export async function ownParticipantKeys(
   supabase: SupabaseClient<Database>,
   playerIds: string[],
   matchIds: string[],
