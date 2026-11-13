@@ -480,6 +480,16 @@
     "services/cs2-demo-parser/tests/test_raw_evidence.py"
    ]
   },
+  "player_chat": {
+   "consumers": [],
+   "introduced_in": "PM6 (demoparser2 0.42.2, GamersClub 2026 demos)",
+   "reason": "IGNORED_APPROVED: player chat. Observed on 2026-11-13 in the two owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78..., local sandbox only): the only UNMAPPED_BUT_AVAILABLE event; every row mirrors a chat_message row at the same tick and adds `teamonly`. Same class as chat_message: no analytic value, preserved as RAW evidence by contract, never consumed, never blocks. adapter.py and the Canonical mapping never read it.",
+   "reviewed": "2026-11-13",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
   "player_connect": {
    "consumers": [],
    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
@@ -789,6 +799,16 @@
    "introduced_in": "R5.8.23 field governance (previously RAW_ONLY)",
    "reason": "IGNORED_APPROVED: spectator camera, server housekeeping or player chat/pings; no analytic value for CS2 PRO; preserved as RAW evidence by contract, never consumed, never blocks.",
    "reviewed": "2026-11-04",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_raw_evidence.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "show_survival_respawn_status": {
+   "consumers": [],
+   "introduced_in": "PM6 (demoparser2 0.42.2, FACEIT 2026 demo)",
+   "reason": "IGNORED_APPROVED: FACEIT HUD overlay, not player behaviour. Observed on 2026-11-13 in the owner-provided FACEIT demo (sha256 8425f49c..., local sandbox only): 4,611 rows, all with the same loc_token (an <img> hosted on distribution.faceit-cdn.net), duration 5, user_name/user_steamid always null. The only UNMAPPED_BUT_AVAILABLE event of that demo. No analytic value; preserved as RAW evidence by contract, never consumed, never blocks.",
+   "reviewed": "2026-11-13",
    "tests": [
     "services/cs2-demo-parser/tests/test_raw_evidence.py",
     "services/cs2-demo-parser/tests/test_field_governance.py"

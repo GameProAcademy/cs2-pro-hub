@@ -180,10 +180,17 @@ REVIEWED_IGNORED_EVENT_FIELDS: dict[str, frozenset[str]] = {
     "hltv_chase": frozenset({"__event__", "distance", "inertia", "ineye", "phi", "target1", "target2", "theta", "tick"}),
     "hltv_fixed": frozenset({"__event__", "fov", "offset", "phi", "posx", "posy", "posz", "target", "theta", "tick"}),
     "hltv_versioninfo": frozenset({"__event__", "tick", "version"}),
+    # PM6 (2026-11-13), owner-provided GamersClub demos (sha256 1ef9baeb..., 985f5b78...): player_chat
+    # mirrors chat_message row for row (same ticks) plus `teamonly`. Chat, never consumed.
+    "player_chat": frozenset({"__event__", "teamonly", "text", "tick", "user_name", "user_steamid"}),
     "player_ping": frozenset({"__event__", "entityid", "tick", "urgent", "user_name", "user_steamid", "x", "y", "z"}),
     "player_ping_stop": frozenset({"__event__", "entityid", "tick", "user_name", "user_steamid"}),
     "server_cvar": frozenset({"__event__", "name", "tick", "value"}),
     "server_message": frozenset({"__event__", "server_message", "tick"}),
+    # PM6 (2026-11-13), owner-provided FACEIT demo (sha256 8425f49c...): a FACEIT HUD overlay. All
+    # 4,611 rows carry the same loc_token (an <img> on distribution.faceit-cdn.net), duration 5 and
+    # null user_name/user_steamid. Not a game event of any player; never consumed.
+    "show_survival_respawn_status": frozenset({"__event__", "duration", "loc_token", "tick", "user_name", "user_steamid"}),
 }
 
 REVIEWED_GRENADE_FIELDS = frozenset({
