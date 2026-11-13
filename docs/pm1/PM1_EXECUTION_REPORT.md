@@ -128,7 +128,22 @@ Merges: #270 → `e6e507d3`; #271 → `a2ab17a6`; #272 → `b7272b97`; #273 → 
 - Imagem `/radars/cs2/de_dust2-default.png` servida em produção com SHA-256 `08282971…` = registro.
 - `/maps` em produção, conta admin: estado vazio (sem partidas próprias) — o read model não expõe dados de outro jogador mesmo com a política `is_staff` da RLS.
 - `/maps` em produção, conta de teste (dados reais, sem posições — parser antigo): Dust II "validado", Cache/Mirage "não validado"; camada mortes: `UNAVAILABLE`, cobertura **0/7**, motivo "Sem posição registrada 7"; camada eliminações lado CT: **0/2**. Conferido no banco (read-only): 7 mortes próprias no dust2; eliminações próprias por lado CT 2 / TR 11.
-- **Demo nova autorizada (furia-vs-vitality-m2-dust2):** job `ced11a74` → `blocked_raw_audit` / `RAW_AUDIT_BLOCKED` (artefato RAW `ready`, auditoria `blocked`; nada persistido). A demo de benchmark passa `PASS/APPROVED` com o mesmo código (`prepare_evidence` local). Causa exata pendente: MANUAL_REQUIRED — cópia do arquivo na pasta conectada para reproduzir a auditoria localmente.
+- **Demo nova autorizada (furia-vs-vitality-m2-dust2):** job `ced11a74` → `blocked_raw_audit` / `RAW_AUDIT_BLOCKED` (artefato RAW `ready`, auditoria `blocked`; nada persistido).
+  - **Causa raiz (reproduzida com o próprio arquivo, copiado da pasta Downloads do dono):** o demoparser2 **0.42.0** lança `EntityNotFound` em todo `parse_event` desta demo (servidor BLAST.tv, build recente do CS2; issues upstream #321/#339). O parser registra cada evento como indisponível, e os gates de cobertura bloqueiam corretamente. Não tem relação com as posições. A 0.42.1 ainda falha; a **0.42.2** lê a demo: 23 rounds, 6.977 eventos e **142/142 mortes com `position` e `victim_position`**, `PASS/APPROVED`. O único campo novo, `vote_cast`, foi revisado como RAW only.
+  - A demo de benchmark dá saída idêntica em 0.42.0 e 0.42.2 (rounds, eventos e jogadores); só o campo `stamina` e os digests da superfície do runtime mudam.
+- **Release R5.8.25** (procedimento da R5.8.24; `docs/reference/R5_8_25_DEMOPARSER2_0422.md`, `docs/H3E_RELEASE_IDENTITY_TRACEABILITY.md`):
+  - #275 (`c3593d48`, 8/8 checks):
+    - demoparser2 0.42.2 no worker;
+    - baseline estático do catálogo mantido, então os digests de mapeamento canônico `cf0549c2…`/`a276b030…` não mudam;
+    - `parse_weapons` revisado como RAW only;
+    - A9.1 fixado em 0.42.0;
+    - identidade do app 0.42.2.
+  - Deploy único e controlado: Railway `d57b9089` SUCCESS. `/version` = demoparser2 0.42.2, `git:c3593d48…`, `declared_revision_matches` true.
+  - #276 (`67655b5a`, 7/7 checks): re-pin.
+    - Migration `20261113040000` aplicada no banco gerenciado: recorder `cbb03f77…`, assertion `a3401a4b…`. Foi registrada em `schema_migrations` (`direct-main-67655b5a-20261113040000`).
+    - Antes, foi validada num PostgreSQL 16 local com as definições exatas de produção: idempotente, fail-closed e com rollback exato.
+  - App publicado (`b8c5cdea`). Atestação do runtime **VERIFIED**: run 43363586797, provenance `841c0bb9`, `assert_verified_parser_provenance` = VERIFIED.
+  - H.3-E (run 43363661529): FAIL só em `parser_lock` e `bridge_identity`, porque as secrets do app ainda nomeiam `4badf606`/0.42.0. Pendente: o dono trocar as 4 secrets.
 
 ## C6
 
