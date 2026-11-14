@@ -44,7 +44,7 @@ CREATE TABLE public.matches (id uuid PRIMARY KEY, player_id uuid);
 CREATE TABLE public.match_participants (match_id uuid REFERENCES public.matches(id), participant_key text,
   internal_player_id uuid REFERENCES public.player_profiles(id));
 CREATE TABLE public.round_events (id uuid PRIMARY KEY, match_id uuid REFERENCES public.matches(id),
-  event_type text, actor_steam_id text, victim_steam_id text);
+  round_number integer, tick integer, event_type text, actor_steam_id text, victim_steam_id text);
 ALTER TABLE public.player_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.match_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.round_events ENABLE ROW LEVEL SECURITY;
@@ -101,9 +101,9 @@ def main() -> None:  # noqa: PLR0915
         "a_death", "b_death", "a_kill", "a_priv_death", "b_priv_death")}
 
     def ins(user: str, event: str, match: str, rule: str = "'TRADE_NOT_OBSERVED'",
-            verdict: str = "USEFUL", extra: str = "") -> str:
-        return (f"INSERT INTO public.death_feedback (match_id, round_event_id, rule_id, rules_version, verdict{', note' if extra else ''}) "
-                f"VALUES ('{match}', '{event}', {rule}, 'cs2.death-rules.v1', '{verdict}'{', ' + extra if extra else ''});")
+            verdict: str = "USEFUL", extra: str = "", tick: int = 500) -> str:
+        return (f"INSERT INTO public.death_feedback (match_id, round_event_id, round_number, death_tick, rule_id, rules_version, verdict{', note' if extra else ''}) "
+                f"VALUES ('{match}', '{event}', 1, {tick}, {rule}, 'cs2.death-rules.v1', '{verdict}'{', ' + extra if extra else ''});")
 
     try:
         subprocess.run(as_user + [pg_bin("initdb"), "-D", str(data), "-A", "trust", "--no-locale"],
@@ -119,11 +119,11 @@ INSERT INTO public.matches VALUES ('{i['shared']}','{i['pa']}'),('{i['priv_a']}'
 INSERT INTO public.match_participants VALUES ('{i['shared']}','100','{i['pa']}'),('{i['shared']}','200','{i['pb']}'),
   ('{i['priv_a']}','100','{i['pa']}'),('{i['priv_b']}','200','{i['pb']}');
 INSERT INTO public.round_events VALUES
-  ('{i['a_death']}','{i['shared']}','kill','200','100'),
-  ('{i['b_death']}','{i['shared']}','kill','100','200'),
-  ('{i['a_kill']}','{i['shared']}','kill','100','300'),
-  ('{i['a_priv_death']}','{i['priv_a']}','kill','900','100'),
-  ('{i['b_priv_death']}','{i['priv_b']}','kill','900','200');
+  ('{i['a_death']}','{i['shared']}',1,500,'kill','200','100'),
+  ('{i['b_death']}','{i['shared']}',1,500,'kill','100','200'),
+  ('{i['a_kill']}','{i['shared']}',1,500,'kill','100','300'),
+  ('{i['a_priv_death']}','{i['priv_a']}',1,500,'kill','900','100'),
+  ('{i['b_priv_death']}','{i['priv_b']}',1,500,'kill','900','200');
 """)
         rc, _, err = psql(MIGRATION.read_text(), check=False)
         checks["migration_applies"] = rc == 0
@@ -143,8 +143,9 @@ INSERT INTO public.round_events VALUES
         checks["a_cannot_feedback_own_kill"] = fails("authenticated", a, ins(a, i["a_kill"], i["shared"]), rls)
         checks["a_cannot_mismatch_event_and_match"] = fails("authenticated", a, ins(a, i["a_death"], i["priv_a"]), rls)
         checks["a_cannot_write_as_b"] = fails("authenticated", a,
-            f"INSERT INTO public.death_feedback (user_id, match_id, round_event_id, rules_version, verdict) "
-            f"VALUES ('{b}', '{i['shared']}', '{i['b_death']}', 'cs2.death-rules.v1', 'USEFUL');", rls)
+            f"INSERT INTO public.death_feedback (user_id, match_id, round_event_id, round_number, death_tick, rules_version, verdict) "
+            f"VALUES ('{b}', '{i['shared']}', '{i['b_death']}', 1, 500, 'cs2.death-rules.v1', 'USEFUL');", rls)
+        checks["a_cannot_claim_another_tick"] = fails("authenticated", a, ins(a, i["a_death"], i["shared"], rule="'OPENING_DEATH'", tick=501), rls)
         upd_b = as_role("authenticated", a, "UPDATE public.death_feedback SET verdict='INCORRECT' WHERE verdict='USEFUL' AND round_event_id = "
                         f"'{i['b_death']}' RETURNING 1;")
         checks["a_cannot_update_b_row"] = upd_b[0] == 0 and upd_b[1].strip() == ""
@@ -160,10 +161,15 @@ INSERT INTO public.round_events VALUES
         checks["verdict_constrained"] = fails("authenticated", a, ins(a, i["a_death"], i["shared"], rule="'OPENING_DEATH'", verdict="GREAT"), "death_feedback_verdict")
         checks["rule_id_constrained"] = fails("authenticated", a, ins(a, i["a_death"], i["shared"], rule="'drop table'"), "death_feedback_rule_id_shape")
         checks["note_length_constrained"] = fails("authenticated", a, ins(a, i["a_death"], i["shared"], rule="'OPENING_DEATH'", extra="repeat('x', 501)"), "death_feedback_note_length")
+        # A canonical rewrite (DELETE + INSERT of the match's events) neither fails nor erases feedback.
+        rc_rw, _, _ = psql(f"DELETE FROM public.round_events WHERE match_id = '{i['shared']}';", check=False)
+        checks["canonical_rewrite_not_blocked"] = rc_rw == 0
+        checks["feedback_survives_event_rewrite"] = count("authenticated", a, "SELECT 1 FROM public.death_feedback") == 2
+        checks["round_events_truncatable"] = psql("TRUNCATE public.round_events;", check=False)[0] == 0
         checks["a_deletes_own_row"] = as_role("authenticated", a,
             f"DELETE FROM public.death_feedback WHERE round_event_id = '{i['a_death']}' RETURNING 1;")[1].strip() == "1"
         checks["service_role_reads_all"] = count("service_role", None, "SELECT 1 FROM public.death_feedback") == 3
-        checks["anon_cannot_execute_helper"] = fails("anon", None, f"SELECT public.owns_death_event('{i['a_death']}', '{i['shared']}');", "permission denied")
+        checks["anon_cannot_execute_helper"] = fails("anon", None, f"SELECT public.owns_death_event('{i['a_death']}', '{i['shared']}', 1, 500);", "permission denied")
     finally:
         if started:
             subprocess.run(as_user + [pg_bin("pg_ctl"), "-D", str(data), "-m", "immediate", "-w", "stop"],
