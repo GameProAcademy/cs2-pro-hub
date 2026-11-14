@@ -153,11 +153,20 @@ const observed = <T>(value: T | null | undefined): Field<T> =>
 const derived = <T>(value: T): Field<T> => ({ value, provenance: "DERIVED" });
 const notMeasured = <T>(): Field<T> => ({ value: null, provenance: "NOT_MEASURED" });
 
+/**
+ * Weapons recorded on kills without an attacker that come from the world, not a player. Measured
+ * in production (2026-11-14): the 2 attacker-less kills are `planted_c4` (bomb explosion).
+ */
+export const WORLD_WEAPONS: ReadonlySet<string> = new Set([
+  "world",
+  "worldspawn",
+  "planted_c4",
+  "trigger_hurt",
+]);
+
 function kindOf(kill: KillEventRow, sides: Map<string, Side | null>): DeathKind {
   if (!kill.actor)
-    return kill.weapon === "world" || kill.weapon === "worldspawn"
-      ? "WORLD_KILL"
-      : "UNKNOWN_ATTACKER";
+    return kill.weapon && WORLD_WEAPONS.has(kill.weapon) ? "WORLD_KILL" : "UNKNOWN_ATTACKER";
   if (kill.actor === kill.victim) return "SELF_KILL";
   const a = sides.get(kill.actor) ?? null;
   const v = kill.victim ? (sides.get(kill.victim) ?? null) : null;

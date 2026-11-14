@@ -104,6 +104,9 @@ describe("cs2.death-context.v1", () => {
     expect(only(base({ kills: [kill({ actor: ME })] })).kind).toBe("SELF_KILL");
     expect(only(base({ kills: [kill({ actor: "p-m1" })] })).kind).toBe("TEAM_KILL");
     expect(only(base({ kills: [kill({ actor: null, weapon: "world" })] })).kind).toBe("WORLD_KILL");
+    expect(only(base({ kills: [kill({ actor: null, weapon: "planted_c4" })] })).kind).toBe(
+      "WORLD_KILL",
+    );
     const unknown = only(base({ kills: [kill({ actor: null, weapon: null })] }));
     expect(unknown.kind).toBe("UNKNOWN_ATTACKER");
     expect(unknown.trade.status).toBe("NOT_APPLICABLE");
