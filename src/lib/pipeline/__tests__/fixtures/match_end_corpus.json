@@ -1184,5 +1184,139 @@
       }
     ],
     "sha256_prefix": "1ef9baeb"
+  },
+  "public_fixture_surrender": {
+    "match_end_evidence": {
+      "game_phase_available": true,
+      "rounds": [
+        {
+          "end_tick": 8971,
+          "game_phase": 2,
+          "number": 1,
+          "reason": "ct_killed"
+        },
+        {
+          "end_tick": 15232,
+          "game_phase": 2,
+          "number": 2,
+          "reason": "bomb_defused"
+        },
+        {
+          "end_tick": 21457,
+          "game_phase": 2,
+          "number": 3,
+          "reason": "ct_killed"
+        },
+        {
+          "end_tick": 26064,
+          "game_phase": 2,
+          "number": 4,
+          "reason": "ct_killed"
+        },
+        {
+          "end_tick": 31197,
+          "game_phase": 2,
+          "number": 5,
+          "reason": "t_killed"
+        },
+        {
+          "end_tick": 38820,
+          "game_phase": 2,
+          "number": 6,
+          "reason": "bomb_exploded"
+        },
+        {
+          "end_tick": 45092,
+          "game_phase": 2,
+          "number": 7,
+          "reason": "ct_killed"
+        },
+        {
+          "end_tick": 51718,
+          "game_phase": 2,
+          "number": 8,
+          "reason": "bomb_exploded"
+        },
+        {
+          "end_tick": 55959,
+          "game_phase": 2,
+          "number": 9,
+          "reason": "ct_killed"
+        },
+        {
+          "end_tick": 56705,
+          "game_phase": 2,
+          "number": 10,
+          "reason": "ct_surrender"
+        }
+      ],
+      "schema_version": 1,
+      "voided_rounds": 0,
+      "win_panel_ticks": [56898]
+    },
+    "players": 10,
+    "rounds": [
+      {
+        "end_tick": 8971,
+        "number": 1,
+        "start_tick": 65,
+        "winner_side": "T"
+      },
+      {
+        "end_tick": 15232,
+        "number": 2,
+        "start_tick": 9419,
+        "winner_side": "CT"
+      },
+      {
+        "end_tick": 21457,
+        "number": 3,
+        "start_tick": 15680,
+        "winner_side": "T"
+      },
+      {
+        "end_tick": 26064,
+        "number": 4,
+        "start_tick": 21905,
+        "winner_side": "T"
+      },
+      {
+        "end_tick": 31197,
+        "number": 5,
+        "start_tick": 26512,
+        "winner_side": "CT"
+      },
+      {
+        "end_tick": 38820,
+        "number": 6,
+        "start_tick": 31645,
+        "winner_side": "T"
+      },
+      {
+        "end_tick": 45092,
+        "number": 7,
+        "start_tick": 39268,
+        "winner_side": "T"
+      },
+      {
+        "end_tick": 51718,
+        "number": 8,
+        "start_tick": 45540,
+        "winner_side": "T"
+      },
+      {
+        "end_tick": 55959,
+        "number": 9,
+        "start_tick": 52166,
+        "winner_side": "T"
+      },
+      {
+        "end_tick": 56705,
+        "number": 10,
+        "start_tick": 56407,
+        "winner_side": "T"
+      }
+    ],
+    "sha256_prefix": "test_demo.dem (LaihoE/demoparser, MIT)"
   }
 }

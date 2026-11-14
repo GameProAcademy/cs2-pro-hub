@@ -76,6 +76,23 @@ describe("cs2.match-integrity.v1 on real worker output (PM6 corpus)", () => {
     expect(d.validRounds).toBeGreaterThanOrEqual(9);
   });
 
+  it("public fixture (LaihoE test_demo.dem): a real official surrender after 10 rounds is eligible", () => {
+    const d = decide(corpus["public_fixture_surrender"]!);
+    expect([d.status, d.eligible, d.endedBy, d.validRounds]).toEqual([
+      "MATCH_SURRENDER_COMPLETED",
+      true,
+      "SURRENDER",
+      10,
+    ]);
+    // On a surrender the phase at the final round_end is still "playing" (2): the surrender
+    // reason, not the phase, is the official end signal.
+    expect(d.signals.map((s) => s.signal)).toEqual([
+      "SURRENDER_ROUND_END",
+      "WIN_PANEL_MATCH",
+      "END_OF_FILE",
+    ]);
+  });
+
   it("an older worker without match_end_evidence fails closed", () => {
     const faceit = corpus["faceit"]!;
     const d = evaluateMatchIntegrity(
