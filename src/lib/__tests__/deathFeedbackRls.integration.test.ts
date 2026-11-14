@@ -56,6 +56,10 @@ describe("PM2 death feedback RLS", () => {
       "traj_player_cannot_write",
       "traj_player_cannot_delete",
       "traj_samples_bounded",
+      "a_cannot_claim_another_tick",
+      "canonical_rewrite_not_blocked",
+      "feedback_survives_event_rewrite",
+      "round_events_truncatable",
     ])
       expect(result.checks[name], name).toBe(true);
   }, 240_000);
@@ -64,7 +68,7 @@ describe("PM2 death feedback RLS", () => {
     const dir = mkdtempSync(join(tmpdir(), "pm2-fb-mut-"));
     const mutated = join(dir, "mutated.sql");
     const sql = readFileSync(MIGRATION, "utf8").replace(
-      " AND public.owns_death_event(round_event_id, match_id));",
+      " AND public.owns_death_event(round_event_id, match_id, round_number, death_tick));",
       ");",
     );
     writeFileSync(mutated, sql);

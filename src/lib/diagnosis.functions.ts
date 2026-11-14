@@ -115,7 +115,7 @@ export const getMatchDeathReview = createServerFn({ method: "GET" })
     // Own feedback only (RLS death_feedback_select_own); stored apart, never changes a rule.
     const { data: fb, error: fbError } = await context.supabase
       .from("death_feedback")
-      .select("round_event_id, rule_id, verdict")
+      .select("round_number, death_tick, rule_id, verdict")
       .eq("match_id", match.matchId);
     if (fbError) throw new Error(`DIAGNOSIS_FEEDBACK_READ_FAILED:${fbError.code ?? "unknown"}`);
     const feedback = feedbackByEvent(fb ?? []);
@@ -123,7 +123,7 @@ export const getMatchDeathReview = createServerFn({ method: "GET" })
       context: ctx,
       rules: evaluateDeathRules(ctx),
       radar: radarFor(ctx, match.map),
-      feedback: feedback.get(ctx.ref.eventId) ?? {},
+      feedback: feedback.get(deathKey(ctx.ref.roundNumber, ctx.ref.tick)) ?? {},
     }));
     console.info(
       JSON.stringify({
@@ -193,10 +193,24 @@ export const submitDeathFeedback = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => deathFeedbackInput.parse(input))
   .handler(async ({ context, data }): Promise<DeathFeedbackResponse> => {
     const rule = data.ruleId === WHOLE_REVIEW ? null : data.ruleId;
+    // The death is keyed by (match, round, tick): event ids change when a match is re-observed.
+    // Read under the caller's session (RLS); a foreign or unknown event is REFUSED.
+    const { data: event, error: eventError } = await context.supabase
+      .from("round_events")
+      .select("round_number, tick")
+      .eq("id", data.roundEventId)
+      .eq("match_id", data.matchId)
+      .eq("event_type", "kill")
+      .maybeSingle();
+    if (eventError)
+      throw new Error(`DIAGNOSIS_FEEDBACK_READ_FAILED:${eventError.code ?? "unknown"}`);
+    if (!event || event.round_number === null || event.tick === null) return { status: "REFUSED" };
     const existing = context.supabase
       .from("death_feedback")
       .select("id")
-      .eq("round_event_id", data.roundEventId)
+      .eq("match_id", data.matchId)
+      .eq("round_number", event.round_number)
+      .eq("death_tick", event.tick)
       .eq("user_id", context.userId);
     const { data: rows, error } = await (rule === null
       ? existing.is("rule_id", null)
@@ -214,6 +228,8 @@ export const submitDeathFeedback = createServerFn({ method: "POST" })
           .insert({
             match_id: data.matchId,
             round_event_id: data.roundEventId,
+            round_number: event.round_number,
+            death_tick: event.tick,
             rule_id: rule,
             rules_version: DEATH_RULES_VERSION,
             verdict: data.verdict,
@@ -231,16 +247,26 @@ export const submitDeathFeedback = createServerFn({ method: "POST" })
     return { status: "SAVED" };
   });
 
-/** Pure: own feedback rows grouped by event, keyed by rule id (`REVIEW` for the whole death). */
+/** Stable key of a death: canonical rewrites change event ids, never (round, tick). */
+export const deathKey = (round: number | null, tick: number | null) =>
+  `${round ?? "?"}:${tick ?? "?"}`;
+
+/** Pure: own feedback rows grouped by death (round:tick), keyed by rule id (`REVIEW` = whole death). */
 export function feedbackByEvent(
-  rows: Array<{ round_event_id: string; rule_id: string | null; verdict: string }>,
+  rows: Array<{
+    round_number: number;
+    death_tick: number;
+    rule_id: string | null;
+    verdict: string;
+  }>,
 ): Map<string, Record<string, FeedbackVerdict>> {
   const out = new Map<string, Record<string, FeedbackVerdict>>();
   for (const r of rows) {
     if (!(FEEDBACK_VERDICTS as readonly string[]).includes(r.verdict)) continue;
-    const entry = out.get(r.round_event_id) ?? {};
+    const key = deathKey(r.round_number, r.death_tick);
+    const entry = out.get(key) ?? {};
     entry[r.rule_id ?? WHOLE_REVIEW] = r.verdict as FeedbackVerdict;
-    out.set(r.round_event_id, entry);
+    out.set(key, entry);
   }
   return out;
 }

@@ -205,12 +205,12 @@ describe("death feedback", () => {
 
   it("groups own rows by event and ignores unknown verdicts", () => {
     const m = feedbackByEvent([
-      { round_event_id: "e1", rule_id: null, verdict: "USEFUL" },
-      { round_event_id: "e1", rule_id: "OPENING_DEATH", verdict: "NOT_USEFUL" },
-      { round_event_id: "e2", rule_id: "OPENING_DEATH", verdict: "LOVE_IT" },
+      { round_number: 3, death_tick: 100, rule_id: null, verdict: "USEFUL" },
+      { round_number: 3, death_tick: 100, rule_id: "OPENING_DEATH", verdict: "NOT_USEFUL" },
+      { round_number: 4, death_tick: 9, rule_id: "OPENING_DEATH", verdict: "LOVE_IT" },
     ]);
-    expect(m.get("e1")).toEqual({ REVIEW: "USEFUL", OPENING_DEATH: "NOT_USEFUL" });
-    expect(m.has("e2")).toBe(false);
+    expect(m.get("3:100")).toEqual({ REVIEW: "USEFUL", OPENING_DEATH: "NOT_USEFUL" });
+    expect(m.has("4:9")).toBe(false);
   });
 
   it("accepts only evaluable rule ids, known verdicts and short notes", () => {
