@@ -173,7 +173,7 @@ describe("cs2.death-context.v1", () => {
     const pos = { x: 1, y: 2, z: 3 };
     const k = kill({ victimPosition: pos, attackerPosition: pos });
     expect(only(base({ kills: [k] })).positions.drawable).toBe(true);
-    const mirage = only(base({ map: "de_mirage", mapValidation: "NOT_VALIDATED", kills: [k] }));
+    const mirage = only(base({ map: "de_inferno", mapValidation: "NOT_VALIDATED", kills: [k] }));
     expect(mirage.positions.drawable).toBe(false);
     expect(mirage.positions.victim.provenance).toBe("OBSERVED");
   });

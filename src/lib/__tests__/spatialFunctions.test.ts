@@ -90,7 +90,7 @@ describe("read path", () => {
 describe("pure helpers", () => {
   it("map options list supported maps first, then not validated, by matches", () => {
     const maps = mapOptions([
-      { map: "de_mirage" },
+      { map: "de_inferno" },
       { map: "de_cache" },
       { map: "de_cache" },
       { map: "de_dust2" },
@@ -100,7 +100,7 @@ describe("pure helpers", () => {
     expect(maps).toEqual([
       { map: "de_dust2", support: "SUPPORTED", matches: 2 },
       { map: "de_cache", support: "NOT_VALIDATED", matches: 2 },
-      { map: "de_mirage", support: "NOT_VALIDATED", matches: 1 },
+      { map: "de_inferno", support: "NOT_VALIDATED", matches: 1 },
     ]);
     expect(defaultMap(maps)).toBe("de_dust2");
   });
