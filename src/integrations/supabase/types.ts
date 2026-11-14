@@ -472,6 +472,59 @@ export type Database = {
           },
         ]
       }
+      death_feedback: {
+        Row: {
+          created_at: string
+          death_tick: number
+          id: string
+          match_id: string
+          note: string | null
+          round_event_id: string
+          round_number: number
+          rule_id: string | null
+          rules_version: string
+          updated_at: string
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          death_tick: number
+          id?: string
+          match_id: string
+          note?: string | null
+          round_event_id: string
+          round_number: number
+          rule_id?: string | null
+          rules_version: string
+          updated_at?: string
+          user_id?: string
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          death_tick?: number
+          id?: string
+          match_id?: string
+          note?: string | null
+          round_event_id?: string
+          round_number?: number
+          rule_id?: string | null
+          rules_version?: string
+          updated_at?: string
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "death_feedback_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_identity_decisions: {
         Row: {
           confidence_label: string | null
@@ -4191,6 +4244,15 @@ export type Database = {
       jsonb_has_sensitive_key: { Args: { _value: Json }; Returns: boolean }
       owns_analysis: { Args: { _analysis_id: string }; Returns: boolean }
       owns_canonical_match: { Args: { _match_id: string }; Returns: boolean }
+      owns_death_event: {
+        Args: {
+          _death_tick: number
+          _match_id: string
+          _round_event_id: string
+          _round_number: number
+        }
+        Returns: boolean
+      }
       owns_canonical_series: { Args: { _series_id: string }; Returns: boolean }
       owns_conversation: {
         Args: { _conversation_id: string }

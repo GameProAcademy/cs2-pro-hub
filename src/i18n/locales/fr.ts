@@ -10,10 +10,12 @@ import { adminNotifyFr } from "./adminNotify/fr";
 import { scoreFr } from "./score/fr";
 import { profileFr } from "./profile/fr";
 import { spatialFr } from "./spatial/fr";
+import { diagnosisFr } from "./diagnosis/fr";
 
 export const fr: Dictionary = {
   ...profileFr,
   ...spatialFr,
+  ...diagnosisFr,
   ...catalogFr,
   ...demoFlowFr,
   ...guidanceFr,

@@ -14,10 +14,12 @@ import { adminNotifyPtBR } from "./adminNotify/pt-BR";
 import { scorePtBR } from "./score/pt-BR";
 import { profilePtBR } from "./profile/pt-BR";
 import { spatialPtBR } from "./spatial/pt-BR";
+import { diagnosisPtBR } from "./diagnosis/pt-BR";
 
 export const ptBR = {
   ...profilePtBR,
   ...spatialPtBR,
+  ...diagnosisPtBR,
   ...catalogPtBR,
   ...demoFlowPtBR,
   ...guidancePtBR,
