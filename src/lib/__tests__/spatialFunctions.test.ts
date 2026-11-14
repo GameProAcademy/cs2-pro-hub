@@ -90,17 +90,17 @@ describe("read path", () => {
 describe("pure helpers", () => {
   it("map options list supported maps first, then not validated, by matches", () => {
     const maps = mapOptions([
-      { map: "de_inferno" },
-      { map: "de_cache" },
-      { map: "de_cache" },
+      { map: "de_overpass" },
+      { map: "de_train" },
+      { map: "de_train" },
       { map: "de_dust2" },
       { map: null },
       { map: "workshop/1/de_dust2" },
     ]);
     expect(maps).toEqual([
       { map: "de_dust2", support: "SUPPORTED", matches: 2 },
-      { map: "de_cache", support: "NOT_VALIDATED", matches: 2 },
-      { map: "de_inferno", support: "NOT_VALIDATED", matches: 1 },
+      { map: "de_train", support: "NOT_VALIDATED", matches: 2 },
+      { map: "de_overpass", support: "NOT_VALIDATED", matches: 1 },
     ]);
     expect(defaultMap(maps)).toBe("de_dust2");
   });

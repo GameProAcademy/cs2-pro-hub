@@ -223,8 +223,19 @@ Continua **NOT_VERIFIED**. Nenhuma policy de storage foi alterada no PM2. Hipót
 
 Orientação e escala consistentes, sem espelhamento. A sobreposição foi inspecionada visualmente.
 
-- `de_cache`: NÃO VALIDADO. A única demo de Cache legível pelo staging tem 112 MB, mas o demoparser2 dá `EntityNotFound` nela. A demo FURIA de Cache tem 473 MB, acima do limite de 400 MB de staging.
-- Demais mapas: NOT_VALIDATED ou UNKNOWN_MAP. Nada é desenhado nesses mapas, nem na ficha, nem no heatmap, nem no replay.
+- **Inferno, Nuke, Ancient, Anubis e Cache: VALIDATED neste PM** (2026-11-14). Cada mapa foi validado com uma demo FACEIT autorizada, enviada pelo dono para Downloads e parseada com demoparser2 0.42.2, a versão de produção. A sobreposição foi inspecionada visualmente.
+
+| Mapa         | Mortes dentro / sobre o desenho                                   | Spawn T (média) | Spawn CT (média) | Plants                                                  |
+| ------------ | ----------------------------------------------------------------- | --------------- | ---------------- | ------------------------------------------------------- |
+| `de_inferno` | 169/169 / 169                                                     | (95, 711)       | (919, 370)       | 6, em dois sites: B ~(540, 205) e A ~(801–852, 714–753) |
+| `de_nuke`    | 199/199 / 197 (170 no nível superior, 29 no inferior, `z < -495`) | (225, 563)      | (857, 473)       | 3 no A (nível superior) e 3 no B (nível inferior)       |
+| `de_ancient` | 127/127 / 127                                                     | (499, 885)      | (520, 90)        | 7, num site só (a partida não teve plant no outro)      |
+| `de_anubis`  | 167/167 / 167                                                     | (484, 941)      | (444, 222)       | 11, em dois sites                                       |
+| `de_cache`   | 144/144 / 143                                                     | (917, 593)      | (98, 447)        | 3, num site só                                          |
+
+Ancient e Cache têm plants em um único site: a orientação é confirmada pelos spawns em lados opostos e por todas as mortes sobre a área desenhada.
+
+- `de_overpass`, `de_train`, `de_vertigo`: NOT_VALIDATED, sem demo autorizada. Nada é desenhado nesses mapas.
 
 ## 23. Integridade das partidas
 
@@ -245,6 +256,26 @@ Orientação e escala consistentes, sem espelhamento. A sobreposição foi inspe
 | `demo1.dem` (Mirage)                      | demoparser2 `EntityNotFound` já na leitura de eventos | não é efeito do PM2                            |
 | GamersClub Mirage                         | sem janelas: `UNAVAILABLE` / `NO_ROUND_WINDOW`        | já documentado no PM6                          |
 | GamersClub Cache                          | sem janelas: `UNAVAILABLE` / `NO_ROUND_WINDOW`        | já documentado no PM6                          |
+
+**Correção de método.** As linhas acima, exceto as FACEIT, foram medidas com demoparser2 **0.42.0** instalado no sandbox. A produção usa **0.42.2**: `demo1.dem` e a GamersClub Cache, que falhavam em 0.42.0, não foram reavaliadas. As medições FACEIT abaixo usam 0.42.2.
+
+| Demo FACEIT (0.42.2) | Rounds | Kills | Vítima ou atacante desconhecido | Trajetórias | HOT     | RSS     | Parse | Bot substituto omitido |
+| -------------------- | ------ | ----- | ------------------------------- | ----------- | ------- | ------- | ----- | ---------------------- |
+| Nuke                 | 24     | 181   | 0                               | COMPLETE 24 | 5,11 MB | 3299 MB | 98 s  | 3                      |
+| Ancient              | 17     | 120   | 0                               | COMPLETE 17 | 4,58 MB | 1930 MB | 63 s  | 0                      |
+| Dust2                | 16     | 111   | 0                               | COMPLETE 16 | 4,54 MB | 2116 MB | 62 s  | 0                      |
+| Cache                | 19     | 137   | 0                               | COMPLETE 19 | 4,75 MB | 2472 MB | 71 s  | 0                      |
+| Mirage               | 23     | 159   | 0                               | COMPLETE 23 | 4,92 MB | 3421 MB | 95 s  | 1                      |
+| Anubis               | 22     | 154   | 0                               | COMPLETE 22 | 4,90 MB | 3118 MB | 107 s | 0                      |
+| Inferno              | 22     | 159   | 0                               | COMPLETE 22 | 4,95 MB | 3314 MB | 105 s | 2                      |
+
+Todas terminam com `game_phase = 5` (fim oficial).
+
+**Defeito encontrado pelo upload real do dono (job `10c88d1b`, FACEIT Nuke, 2026-11-14 22:18Z).**
+
+- A admissão v3 bloqueou a partida: `RAW-V2-14-combat: kill_victim_unknown`.
+- Causa provada: quando o jogador desconectado reconecta, o BOT que o substituía é expulso, e o jogo emite um `player_death` sem vítima, sem atacante e com arma `world`, no tick exato do `player_disconnect` desse BOT (`networkid BOT`, `xuid 0`). O roster continua com 10 jogadores. 3 das 7 demos FACEIT seriam bloqueadas por isso.
+- Correção no worker (`adapter.drop_bot_replacement_world_deaths`): omite só a linha com todas essas evidências, mantém a linha na evidência RAW e informa a contagem. O gate de admissão não muda. Exige release R5.8.29.
 
 Nenhuma demo foi enviada a serviço externo ou ao GitHub.
 

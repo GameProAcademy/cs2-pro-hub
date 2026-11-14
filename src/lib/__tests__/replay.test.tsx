@@ -215,7 +215,7 @@ describe("replay segment", () => {
   });
 
   it("draws nothing on a map that is not validated", () => {
-    expect(buildReplaySegment({ map: "de_inferno", round, ownKey: ME, events })).toBeNull();
+    expect(buildReplaySegment({ map: "de_overpass", round, ownKey: ME, events })).toBeNull();
   });
 });
 
@@ -279,7 +279,7 @@ describe("replay page states", () => {
     (status) => {
       const r = (
         status === "MAP_NOT_VALIDATED"
-          ? { status, map: "de_inferno", rounds: [] }
+          ? { status, map: "de_overpass", rounds: [] }
           : status === "UNAVAILABLE"
             ? { status, map: "de_dust2", reason: "READ_FAILED" }
             : { status, map: "de_dust2" }

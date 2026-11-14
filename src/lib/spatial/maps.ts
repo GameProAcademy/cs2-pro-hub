@@ -78,8 +78,9 @@ export const MAP_OVERVIEWS: Readonly<Record<string, MapOverview>> = {
     lowerLevelMaxZ: null,
     sourcePath: "resource/overviews/de_inferno.txt",
     sourceSha256: "6a1816bde20f19ba25b7b3bf464c39c0671716ef48ec93697e33517bf61ed9b3",
-    validation: "NOT_VALIDATED",
-    validationEvidence: NOT_VALIDATED_YET,
+    validation: "VALIDATED",
+    validationEvidence:
+      "PM2 (2026-11-14), authorized FACEIT demo (demo-faceit-inferno, demoparser2 0.42.2): deaths 169/169 inside the radar and on drawn map pixels; T spawn at freeze end radar mean (95, 711) and CT spawn (919, 370), inside the spawn areas (120 samples per side); bomb plants in two clusters at B ~(538–542, 205) and A ~(801–852, 714–753). Orientation and scale consistent, no mirroring. docs/pm2/PM2_FINAL_REPORT.md §22.",
   },
   de_nuke: {
     map: "de_nuke",
@@ -89,8 +90,9 @@ export const MAP_OVERVIEWS: Readonly<Record<string, MapOverview>> = {
     lowerLevelMaxZ: -495,
     sourcePath: "resource/overviews/de_nuke.txt",
     sourceSha256: "35d6313b94087ec99ad62b6cd3cd3e7647ed2040cdde037a4e30c9c37c3f5c9d",
-    validation: "NOT_VALIDATED",
-    validationEvidence: NOT_VALIDATED_YET,
+    validation: "VALIDATED",
+    validationEvidence:
+      "PM2 (2026-11-14), authorized FACEIT demo (demo-faceit-nuke, demoparser2 0.42.2): deaths 199/199 inside the radar, 197 on drawn pixels of their level (170 default, 29 lower by z < -495); T spawn radar mean (225, 563) and CT spawn (857, 473), inside the spawn areas (130 samples per side); bomb plants on the upper A site (3, default level) and the lower B site (3, lower level). Orientation, scale and level split consistent. docs/pm2/PM2_FINAL_REPORT.md §22.",
   },
   de_ancient: {
     map: "de_ancient",
@@ -100,8 +102,9 @@ export const MAP_OVERVIEWS: Readonly<Record<string, MapOverview>> = {
     lowerLevelMaxZ: null,
     sourcePath: "resource/overviews/de_ancient.txt",
     sourceSha256: "91b1312014d08aa5b5610b0c3c120a2b950ae4f83604643cbeb546843bd9b245",
-    validation: "NOT_VALIDATED",
-    validationEvidence: NOT_VALIDATED_YET,
+    validation: "VALIDATED",
+    validationEvidence:
+      "PM2 (2026-11-14), authorized FACEIT demo (demo-faceit-ancient, demoparser2 0.42.2): deaths 127/127 inside the radar and on drawn map pixels; T spawn radar mean (499, 885) and CT spawn (520, 90), inside the spawn areas (95 samples per side); 7 bomb plants clustered on one site ~(749–786, 417–448) (the match had no plant on the other site). Orientation and scale consistent, no mirroring. docs/pm2/PM2_FINAL_REPORT.md §22.",
   },
   de_anubis: {
     map: "de_anubis",
@@ -111,8 +114,9 @@ export const MAP_OVERVIEWS: Readonly<Record<string, MapOverview>> = {
     lowerLevelMaxZ: null,
     sourcePath: "resource/overviews/de_anubis.txt",
     sourceSha256: "efc7d90f751c69ed0f7c2bca97dda1ae0ce645bec4a2449108a31e60876d7ace",
-    validation: "NOT_VALIDATED",
-    validationEvidence: NOT_VALIDATED_YET,
+    validation: "VALIDATED",
+    validationEvidence:
+      "PM2 (2026-11-14), authorized FACEIT demo (demo-faceit-anubis, demoparser2 0.42.2): deaths 167/167 inside the radar and on drawn map pixels; T spawn radar mean (484, 941) and CT spawn (444, 222), inside the spawn areas (115 samples per side); bomb plants in two clusters ~(316–335, 484–523) and ~(722–783, 256–299). Orientation and scale consistent, no mirroring. docs/pm2/PM2_FINAL_REPORT.md §22.",
   },
   de_cache: {
     map: "de_cache",
@@ -122,8 +126,9 @@ export const MAP_OVERVIEWS: Readonly<Record<string, MapOverview>> = {
     lowerLevelMaxZ: null,
     sourcePath: "resource/overviews/de_cache.txt",
     sourceSha256: "f449c1acf7abe2b4ec460f80c232c5b1a1834bbed404f9781b06ce6dc9973063",
-    validation: "NOT_VALIDATED",
-    validationEvidence: NOT_VALIDATED_YET,
+    validation: "VALIDATED",
+    validationEvidence:
+      "PM2 (2026-11-14), authorized FACEIT demo (demo-faceit-cache, demoparser2 0.42.2): deaths 144/144 inside the radar, 143 on drawn map pixels; T spawn radar mean (917, 593) and CT spawn (98, 447), inside the spawn areas (105 samples per side); 3 bomb plants on one site ~(317–332, 816–868) (no plant on the other site in this match). Orientation and scale consistent, no mirroring. docs/pm2/PM2_FINAL_REPORT.md §22.",
   },
   de_overpass: {
     map: "de_overpass",
