@@ -106,6 +106,8 @@ export const fr: Dictionary = {
   "analyze.recommendation":
     "Recommandation : les démos permettent une analyse plus approfondie de votre jeu.",
   "analyze.selectFile": "Sélectionner un fichier",
+  "analyze.demo.eligibility":
+    "Pour une analyse fiable, envoyez des démos de parties terminées officiellement, y compris les parties terminées par abandon (surrender), à condition qu'elles comptent au moins 9 manches valides. Les démos interrompues sans fin officielle, incomplètes ou corrompues ne peuvent pas être analysées.",
   "analyze.notSent": "À cette étape, le fichier n'est ni envoyé ni traité.",
   "analyze.ready": "prêt à être envoyé (traitement indisponible à cette étape)",
   "analyze.pipelineTitle": "État du traitement",

@@ -49,6 +49,10 @@ export interface DemoJobView {
   extractionConfidence: number | null;
   partialParse: boolean;
   roundsValid: number | null;
+  /** PM6 C: cs2.match-integrity.v1 status code of this attempt (null before the contract). */
+  matchIntegrityStatus?: string | null | undefined;
+  /** PM6 C: how the match ended when it was eligible (NORMAL | SURRENDER). */
+  matchEndedBy?: string | null | undefined;
   /** FASE 2.7.2A: whether the canonical match got this player's projection. */
   attachmentState: "attached" | "unattached" | "conflict";
   attachmentReason: string | null;
@@ -262,6 +266,7 @@ function toView(
     extraction_confidence: number | null;
     partial_parse: boolean;
     rounds_valid: number | null;
+    match_integrity?: unknown;
     attachment_state: string;
     attachment_reason: string | null;
     attachment_method: string | null;
@@ -302,6 +307,8 @@ function toView(
     extractionConfidence: row.extraction_confidence,
     partialParse: row.partial_parse,
     roundsValid: row.rounds_valid,
+    matchIntegrityStatus: integrityField(row.match_integrity, "status"),
+    matchEndedBy: integrityField(row.match_integrity, "endedBy"),
     attachmentState:
       row.attachment_state === "attached"
         ? "attached"
@@ -337,7 +344,7 @@ function toView(
 }
 
 const JOB_COLUMNS =
-  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, storage_deleted_at, extraction_confidence, partial_parse, rounds_valid, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason, parser_revision";
+  "id, upload_id, status, stage, error_code, retry_count, max_retries, match_id, storage_deleted_at, extraction_confidence, partial_parse, rounds_valid, match_integrity, attachment_state, attachment_reason, attachment_method, attachment_source, attachment_confidence_label, attachment_confirmation_status, attachment_participant_key, observed_nickname, queued_at, finished_at, attempt_number, supersedes_job_id, superseded_by_job_id, replacement_reason, parser_revision";
 
 export const getDemoJobStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -801,3 +808,10 @@ export const reportDemoProblem = createServerFn({ method: "POST" })
     );
     return { protocol, state: claim.state, email: accepted ? "sent" : "not_sent" };
   });
+
+/** Reads one controlled string field of the stored match-integrity decision. */
+function integrityField(value: unknown, key: "status" | "endedBy"): string | null {
+  if (!value || typeof value !== "object") return null;
+  const field = (value as Record<string, unknown>)[key];
+  return typeof field === "string" && /^[A-Z_]{2,48}$/.test(field) ? field : null;
+}

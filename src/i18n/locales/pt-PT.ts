@@ -106,6 +106,8 @@ export const ptPT: Dictionary = {
   "analyze.recommendation":
     "Recomendação: as demos permitem uma análise mais profunda do seu jogo.",
   "analyze.selectFile": "Selecionar ficheiro",
+  "analyze.demo.eligibility":
+    "Para uma análise fiável, envie demos de partidas concluídas oficialmente, incluindo partidas terminadas por surrender, desde que tenham pelo menos 9 rondas válidas. Demos interrompidas sem encerramento oficial, incompletas ou corrompidas não podem ser analisadas.",
   "analyze.notSent": "Nesta etapa o ficheiro não é enviado nem processado.",
   "analyze.ready": "pronto para envio (processamento indisponível nesta etapa)",
   "analyze.pipelineTitle": "Estado do processamento",

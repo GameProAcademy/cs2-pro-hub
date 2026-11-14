@@ -29,6 +29,7 @@ import {
   RAW_MAX_CHUNKS_PER_SECTION,
   RAW_MAX_CHUNKS_TOTAL,
 } from "@/lib/pipeline/durableBridge.server";
+import { sanitizeMatchEndEvidence } from "@/lib/pipeline/matchIntegrity";
 
 const RAW_BUCKET = "cs2-raw-evidence";
 const HEX_64 = /^[0-9a-f]{64}$/;
@@ -788,6 +789,7 @@ export function hotToRawParserOutput(hot: HotDemoPayloadV1): RawParserOutput {
     rounds: hot.rounds,
     events: [...hot.combat_events, ...hot.utility_events, ...hot.objective_events],
     warnings: hot.warnings,
+    match_end_evidence: sanitizeMatchEndEvidence(hot.match_end_evidence),
     hot_semantic_data: {
       schema_version: 1,
       aim_observations: hot.aim_observations,

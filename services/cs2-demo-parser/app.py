@@ -193,6 +193,8 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
         "rounds": parsed.get("rounds") or [],
         "events": parsed.get("events") or [],
         "warnings": parsed.get("warnings") or [],
+        # PM6 C: official-end evidence for cs2.match-integrity.v1 (absent => the app fails closed).
+        "match_end_evidence": parsed.get("match_end_evidence"),
         "_performance": {
             "download_ms": download_ms,
             "parser_ms": parse_ms,

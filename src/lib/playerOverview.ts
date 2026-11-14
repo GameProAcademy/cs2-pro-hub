@@ -36,6 +36,8 @@ export interface OverviewJobRow {
   /** Admission contract v3 verdict and limitations, when the job was admitted by v3. */
   admission_verdict?: string | null;
   admission_limitations?: string[] | null;
+  /** PM6 C: cs2.match-integrity.v1 decision of the job (null before the contract). */
+  match_integrity?: unknown;
 }
 
 /**
@@ -144,6 +146,11 @@ export interface OverviewMatch {
   roundsPlayed: number | null;
   admission: MatchAdmission | null;
   limitations: string[];
+  /**
+   * PM6 C: how the match ended and how many valid rounds were analysed (from the
+   * cs2.match-integrity.v1 decision). null when the match predates the contract.
+   */
+  matchEnd?: { endedBy: "NORMAL" | "SURRENDER"; validRounds: number } | null;
 }
 
 export interface OverviewAggregates {
@@ -245,6 +252,7 @@ export function shapeMatches(
 ): OverviewMatch[] {
   const byId = new Map(matches.map((m) => [m.id, m]));
   const admission = admissionByMatch(jobs);
+  const ends = matchEndByMatch(jobs);
   return metrics
     .flatMap((row) => {
       const match = byId.get(row.match_id);
@@ -286,6 +294,7 @@ export function shapeMatches(
           roundsPlayed: row.rounds_played ?? null,
           admission: admitted?.admission ?? null,
           limitations: admitted?.limitations ?? [],
+          matchEnd: ends.get(match.id) ?? null,
         },
       ];
     })
@@ -313,6 +322,29 @@ export function admissionByMatch(
         ? "LIMITED"
         : "CERTIFIED";
     out.set(job.match_id, { admission, limitations });
+  }
+  return out;
+}
+
+/** PM6 C: official end of each match from its eligible match-integrity decisions. */
+export function matchEndByMatch(
+  jobs: OverviewJobRow[],
+): Map<string, { endedBy: "NORMAL" | "SURRENDER"; validRounds: number }> {
+  const out = new Map<string, { endedBy: "NORMAL" | "SURRENDER"; validRounds: number }>();
+  for (const job of jobs) {
+    if (job.status !== "processed" || !job.match_id) continue;
+    const d = job.match_integrity;
+    if (!d || typeof d !== "object") continue;
+    const r = d as Record<string, unknown>;
+    if (r["contract"] !== "cs2.match-integrity.v1" || r["eligible"] !== true) continue;
+    const endedBy = r["endedBy"];
+    const validRounds = r["validRounds"];
+    if ((endedBy !== "NORMAL" && endedBy !== "SURRENDER") || !Number.isInteger(validRounds))
+      continue;
+    // A surrender on any admitting job is never hidden by another observation.
+    const current = out.get(job.match_id);
+    if (current?.endedBy === "SURRENDER" && endedBy === "NORMAL") continue;
+    out.set(job.match_id, { endedBy, validRounds: validRounds as number });
   }
   return out;
 }

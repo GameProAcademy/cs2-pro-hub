@@ -37,6 +37,21 @@ export const guidanceEn: Record<keyof typeof guidancePtBR, string> = {
     "The demo is valid but has too few usable rounds for an honest analysis.",
   "guidance.insufficient_sample.todo":
     "Upload another demo from a longer match. Uploading this same demo again will give the same result.",
+  "guidance.match_not_finished.title": "No confirmed official end",
+  "guidance.match_not_finished.body":
+    "The demo does not show the official end of the match: it may have been interrupted before the end, recorded only in part, or end in the middle of a round.",
+  "guidance.match_not_finished.todo":
+    "Upload the demo of an officially finished match (win or surrender). Uploading this same demo again will give the same result.",
+  "guidance.match_insufficient_rounds.title": "Fewer than 9 valid rounds",
+  "guidance.match_insufficient_rounds.body":
+    "The match ended officially but has fewer than 9 valid rounds played, the minimum for a reliable analysis. Rounds that were never played are never invented.",
+  "guidance.match_insufficient_rounds.todo":
+    "Upload the demo of a match with at least 9 rounds played. Uploading this same demo again will give the same result.",
+  "guidance.match_player_coverage.title": "Not enough player data",
+  "guidance.match_player_coverage.body":
+    "The demo does not identify the participants reliably enough to attribute the statistics to each player.",
+  "guidance.match_player_coverage.todo":
+    "Upload another demo of the match, if there is one. Uploading this same demo again will give the same result.",
   "guidance.temporary_failure.title": "A temporary failure occurred",
   "guidance.temporary_failure.body":
     "Our system hit a temporary failure during the analysis. Your demo is still recorded in the history.",

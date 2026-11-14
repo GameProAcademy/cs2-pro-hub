@@ -229,6 +229,22 @@ def test_success_response_shape_has_no_invented_data(client_factory, ok_download
     assert payload["players"] == [] and payload["rounds"] == [] and payload["events"] == []
 
 
+def test_parse_response_carries_match_end_evidence(client_factory, ok_download):
+    """PM6 C: the HTTP payload must forward match_end_evidence (the app fails closed without it)."""
+    evidence = {"schema_version": 1, "game_phase_available": True, "voided_rounds": 0,
+                "win_panel_ticks": [10], "rounds": [{"number": 1, "end_tick": 9, "reason": "t_killed",
+                                                     "game_phase": 5}]}
+
+    def with_evidence(_path):
+        payload = empty_parse(_path)
+        payload["match_end_evidence"] = evidence
+        return payload
+
+    client = client_factory(parse_fn=with_evidence, download=ok_download)
+    payload = client.post("/v1/parse", json=parse_body(), headers=auth()).json()
+    assert payload["match_end_evidence"] == evidence
+
+
 def test_error_responses_never_leak_secrets(client_factory, ok_download):
     from conftest import TOKEN
 

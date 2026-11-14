@@ -112,6 +112,11 @@ export function UploadBox({
         <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
           {t(copy.dropHint)} {t("analyze.notSent")}
         </p>
+        {kind === "demo" ? (
+          <p className="mt-2 max-w-sm text-xs leading-relaxed text-muted-foreground">
+            {t("analyze.demo.eligibility")}
+          </p>
+        ) : null}
         <input
           ref={inputRef}
           type="file"

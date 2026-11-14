@@ -109,6 +109,8 @@ export const ptBR = {
   "analyze.report.invalid": "Formato inválido. Envie imagens, CSV, JSON ou PDF.",
   "analyze.recommendation": "Recomendação: demos permitem uma análise mais profunda do seu jogo.",
   "analyze.selectFile": "Selecionar arquivo",
+  "analyze.demo.eligibility":
+    "Para uma análise confiável, envie demos de partidas concluídas oficialmente, inclusive partidas encerradas por surrender, desde que tenham pelo menos 9 rounds válidos. Demos interrompidas sem encerramento oficial, incompletas ou corrompidas não podem ser analisadas.",
   "analyze.notSent": "Nesta etapa o arquivo não é enviado nem processado.",
   "analyze.ready": "pronto para envio (processamento indisponível nesta etapa)",
   "analyze.pipelineTitle": "Status do processamento",

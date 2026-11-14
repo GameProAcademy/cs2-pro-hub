@@ -37,6 +37,21 @@ export const guidancePtBR = {
     "A demo é válida, mas tem poucos rounds utilizáveis para uma análise honesta.",
   "guidance.insufficient_sample.todo":
     "Envie outra demo, de uma partida mais longa. Enviar esta mesma demo de novo terá o mesmo resultado.",
+  "guidance.match_not_finished.title": "Partida sem encerramento oficial confirmado",
+  "guidance.match_not_finished.body":
+    "A demo não mostra o fim oficial da partida: ela pode ter sido interrompida antes do término, gravada pela metade ou terminar no meio de um round.",
+  "guidance.match_not_finished.todo":
+    "Envie a demo de uma partida concluída oficialmente (vitória ou surrender). Enviar esta mesma demo de novo terá o mesmo resultado.",
+  "guidance.match_insufficient_rounds.title": "Menos de 9 rounds válidos",
+  "guidance.match_insufficient_rounds.body":
+    "A partida terminou oficialmente, mas tem menos de 9 rounds válidos jogados, o mínimo para uma análise confiável. Rounds que não foram jogados nunca são inventados.",
+  "guidance.match_insufficient_rounds.todo":
+    "Envie a demo de uma partida com pelo menos 9 rounds jogados. Enviar esta mesma demo de novo terá o mesmo resultado.",
+  "guidance.match_player_coverage.title": "Dados de jogadores insuficientes",
+  "guidance.match_player_coverage.body":
+    "A demo não identifica os participantes com segurança suficiente para atribuir as estatísticas a cada jogador.",
+  "guidance.match_player_coverage.todo":
+    "Envie outra demo da partida, se houver. Enviar esta mesma demo de novo terá o mesmo resultado.",
   "guidance.temporary_failure.title": "Ocorreu uma falha temporária",
   "guidance.temporary_failure.body":
     "Nosso sistema encontrou uma falha temporária durante a análise. Sua demo continua registrada no histórico.",
