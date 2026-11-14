@@ -25,7 +25,9 @@ export type IdentityMethod =
   | "faceit_player_id_confirmed"
   | "gamersclub_player_id_confirmed"
   | "multi_source_confirmed"
-  | "manual_user_selection";
+  | "manual_user_selection"
+  /** PM6 D: exact nickname the user confirmed by manual selection in an earlier demo. */
+  | "confirmed_nickname_history";
 
 /** Who established the attachment. */
 export type IdentitySource = "system" | "steam" | "faceit" | "gamersclub" | "user" | "multi_source";
@@ -183,6 +185,53 @@ export interface ResolveAttachmentInput {
   declaration?: PlayerDeclaration | null;
   /** User explicitly rejected the otherwise strong automatic match. */
   automaticMatchRejected?: boolean;
+  /**
+   * PM6 D: nicknames THIS user confirmed by manual selection in earlier demos
+   * (player_nickname_history.source = 'manual_selection'), with the Steam ID observed then.
+   */
+  confirmedNicknames?: readonly ConfirmedNickname[];
+}
+
+export interface ConfirmedNickname {
+  nickname: string;
+  steamId: string | null;
+}
+
+/**
+ * PM6 D — conservative auto-attachment from the user's own confirmed nickname history.
+ *
+ * Attaches only when EXACTLY ONE demo participant carries, character for character, a nickname
+ * the user confirmed manually before; no other participant shares it (not even with different
+ * case or spacing); and no Steam ID recorded with that confirmation contradicts the
+ * participant's. No fuzzy or similarity matching; a nickname is never a global identifier.
+ * Anything else returns null and the existing manual selection is shown.
+ */
+export function matchConfirmedNicknameHistory(
+  participants: readonly DemoParticipant[],
+  history: readonly ConfirmedNickname[],
+): DemoParticipant | null {
+  const confirmed = new Map<string, Set<string>>();
+  for (const entry of history) {
+    if (!entry.nickname) continue;
+    const key = entry.nickname.normalize("NFC");
+    const steams = confirmed.get(key) ?? new Set<string>();
+    if (entry.steamId) steams.add(entry.steamId);
+    confirmed.set(key, steams);
+  }
+  if (confirmed.size === 0) return null;
+  const exact = participants.filter(
+    (p) => p.nickname !== null && confirmed.has(p.nickname.normalize("NFC")),
+  );
+  if (exact.length !== 1) return null;
+  const candidate = exact[0]!;
+  const loose = normalizeNickname(candidate.nickname ?? "");
+  const sameName = participants.filter(
+    (p) => p.nickname !== null && normalizeNickname(p.nickname) === loose,
+  );
+  if (sameName.length !== 1) return null;
+  const steams = confirmed.get((candidate.nickname ?? "").normalize("NFC")) ?? new Set<string>();
+  if (candidate.steamId && steams.size > 0 && !steams.has(candidate.steamId)) return null;
+  return candidate;
 }
 
 /**
@@ -201,6 +250,7 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
     profileSteamId,
     declaration = null,
     automaticMatchRejected = false,
+    confirmedNicknames = [],
   } = input;
   if (!hasProfile) return unattached("no_player_profile");
 
@@ -242,6 +292,13 @@ export function resolvePlayerAttachment(input: ResolveAttachmentInput): Attachme
 
   if (declaration) return resolveDeclaration(declaration, participants);
 
+  // PM6 D: no Steam ID on the profile and no declaration for this demo. A nickname the user
+  // confirmed before attaches only when unambiguous; a rejected automatic match never does.
+  if (!automaticMatchRejected) {
+    const known = matchConfirmedNicknameHistory(participants, confirmedNicknames);
+    if (known) return attached(known, "confirmed_nickname_history", "user", "medium");
+  }
+
   return unattached("no_steam_id_on_profile");
 }
 
@@ -278,6 +335,7 @@ export const STORED_ATTACHMENT_METHODS = [
   "steam_id_confirmed",
   "self_declared_player",
   "self_declared_nickname",
+  "confirmed_nickname_history",
 ] as const;
 export type StoredAttachmentMethod = (typeof STORED_ATTACHMENT_METHODS)[number];
 
@@ -293,6 +351,7 @@ export function storedAttachmentMethod(
 ): StoredAttachmentMethod | null {
   if (method === null) return null;
   if (method === "steam_id_confirmed") return "steam_id_confirmed";
+  if (method === "confirmed_nickname_history") return "confirmed_nickname_history";
   if (method === "manual_user_selection" && declarationKind === "participant")
     return "self_declared_player";
   if (method === "manual_user_selection" && declarationKind === "nickname")
