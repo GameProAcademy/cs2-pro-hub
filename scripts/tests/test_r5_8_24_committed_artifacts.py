@@ -127,7 +127,7 @@ def test_every_active_repository_pin_names_the_released_runtime():
     successor = json.loads((ROOT / "docs/reference/r5_8_25/spec.json").read_text(encoding="utf-8"))
     assert successor["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
     # R5.8.25 is itself historical since R5.8.26; every active pin names the head.
-    successor = json.loads((ROOT / "docs/reference/r5_8_26/spec.json").read_text(encoding="utf-8"))  # active head
+    successor = json.loads((ROOT / "docs/reference/r5_8_27/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")

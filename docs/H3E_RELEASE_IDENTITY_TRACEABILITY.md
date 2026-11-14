@@ -1042,3 +1042,34 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - Railway rollback to `d57b9089` (commit `c3593d48`);
   - `docs/reference/r5_8_26/rollback.sql` (release-owner authorization);
   - restore the secrets to the R5.8.25 values.
+
+## 2026-11-14 — R5.8.27: PM6 C match integrity (controlled)
+
+- Change (PR #287, merge `3837a810`):
+  - The worker reads `game_phase` at every `round_end` in its own call. The governed RAW rows do not change: the field catalog and the reconciled matrix PASS, and the mapping digests are unchanged.
+  - The worker emits identity-free `match_end_evidence`, carried by `/v1/parse` and the HOT payload.
+  - The app evaluates `cs2.match-integrity.v1` before any canonical write (`docs/pm6/PM6_MATCH_INTEGRITY.md`).
+- Release:
+  - Queue idle; merge under the standing watch-pattern freeze.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:3837a810…` with skipped deploys.
+  - Exactly one deployment, `7690b171`, via the Railway agent: SUCCESS, created 03:59:41Z, BUILD_INFO commit `3837a810`.
+  - Both `/version` hosts (04:03Z): demoparser2 0.42.2, revision = semantic = build = `git:3837a810…`, `embedded` true, `declared_revision_matches` true.
+  - Installed demoparser2: requirements pin `==0.42.2`, dependency layer reused from cache. The authenticated `/v1/runtime/preflight` was not read; its token is a secret.
+- Railway `source.commitSha` is still `4716f894…`:
+  - **Cause:** the source was pinned to that commit (R5.8.16 deploy via agent, 2026-10-22), and later deploys of an exact commit do not update the pin.
+  - Re-pointing it with `connect-service-source` was **refused by this session's safety classifier**, so it stays an owner action: Service → Settings → Source, pin commit `3837a810…`, or reconnect.
+  - The served build is proven by `/version`, the deployment record and the attestation.
+- Pins:
+  - deployment `2f0e6812…` → `7690b171…`;
+  - commit `7e84f6da…` → `3837a810…` (4 in the recorder, 3 in the assertion);
+  - parser.py `5d39478c…` → `99ff0ccc…`;
+  - adapter.py `4e6f43c7…` → `020f847a…`;
+  - the worker.py, raw_evidence.py, settings.py and workflow blobs and parser version 0.42.2 are unchanged.
+- R5.8.27 migration (`supabase/migrations/20261114050000_r5_8_27_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_27/`):
+  - recorder `f727480e…` → `640a6f72…` (= `r5_8_11.target_md5`); assertion `04798c61…` → `475c6849…`.
+  - Local PostgreSQL 16, chain 25 → 26 → 27: targets exact, rerun no-op, rollback restores 26, a stale parser blob is refused.
+- Owner action (app secrets, then publish after migrations `20261114030000` and `20261114050000`):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:3837a810c4569c0f1c2ef67064cb0f0869003c7a`;
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:3837a810c4569c0f1c2ef67064cb0f0869003c7a`;
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `3837a810c4569c0f1c2ef67064cb0f0869003c7a`.
+- Rollback: Railway `2f0e6812` (commit `7e84f6da`) plus `docs/reference/r5_8_27/rollback.sql` plus the R5.8.26 secret values.
