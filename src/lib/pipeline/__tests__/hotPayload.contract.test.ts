@@ -54,7 +54,7 @@ function validHot(): HotDemoPayloadV1 {
     parser: {
       name: "demoparser2",
       version: "0.42.2",
-      revision: "git:3837a810c4569c0f1c2ef67064cb0f0869003c7a",
+      revision: "git:b440a06fc06831be3cfe0b2080f6be901dad3019",
     },
     contract_version: 1,
     demo: { sha256: "a".repeat(64), upload_id: "upload" },
