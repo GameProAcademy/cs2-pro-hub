@@ -124,8 +124,10 @@ def test_rollback_restores_the_r5_8_25_bodies_and_fails_closed():
 
 def test_every_active_repository_pin_names_the_released_runtime():
     """R5.8.26 is historical since R5.8.27 (PM6 C match integrity): no active pin may still name it."""
-    successor = json.loads((ROOT / "docs/reference/r5_8_27/spec.json").read_text(encoding="utf-8"))  # active head
+    successor = json.loads((ROOT / "docs/reference/r5_8_27/spec.json").read_text(encoding="utf-8"))
     assert successor["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
+    # R5.8.27 is itself historical since R5.8.28; every active pin names the head.
+    successor = json.loads((ROOT / "docs/reference/r5_8_28/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")

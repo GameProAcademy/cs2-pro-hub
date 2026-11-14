@@ -41,7 +41,12 @@ const r5813DeploymentMigration = readFileSync(
 // R5.8.24 after spatial-v1 layer A (PR #267, parser.py and raw_evidence.py blobs);
 // R5.8.25 after demoparser2 0.42.2 (PR #275, parser version and parser/adapter/raw_evidence/settings blobs);
 // R5.8.26 after PM6 PR F (PR #279, raw_evidence.py blob);
-// R5.8.27 after PM6 C (PR #287, parser.py and adapter.py blobs).
+// R5.8.27 after PM6 C (PR #287, parser.py and adapter.py blobs);
+// R5.8.28 after PM2 round trajectories (PR #294, parser.py blob).
+const r5828ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261114190000_r5_8_28_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5827ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261114050000_r5_8_27_repin_runtime_release.sql"),
   "utf8",
@@ -138,14 +143,16 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    // R5.8.27 lists its pins as arrays: the head identity is in the new-pin list.
-    const r5827NewPins = r5827ReleaseMigration.slice(
-      r5827ReleaseMigration.indexOf("_new_pins constant"),
-      r5827ReleaseMigration.indexOf("_counts constant"),
+    // R5.8.28 lists its pins as arrays: the head identity is in the new-pin list.
+    const r5828NewPins = r5828ReleaseMigration.slice(
+      r5828ReleaseMigration.indexOf("_new_pins constant"),
+      r5828ReleaseMigration.indexOf("_counts constant"),
     );
-    expect(r5827NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
-    expect(r5827NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5828NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
+    expect(r5828NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5828ReleaseMigration).toContain("'7690b171-087f-46ca-9899-a5b96d8c32cb'");
     expect(r5827ReleaseMigration).toContain("'2f0e6812-6aa0-4137-b9ca-aa541dafe103'");
+    expect(r5827ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5826ReleaseMigration).toContain("'d57b9089-ea97-44b0-b236-6868f84459e2'");
     expect(r5826ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     // The parser runtime version was last re-pinned by R5.8.25 and is unchanged since.
