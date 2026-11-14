@@ -150,23 +150,33 @@ export const getDeathPatterns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<DeathPatternsResponse> => {
     const overview = await loadPlayerOverview(context.supabase, context.userId);
-    const recent = [...overview.matches]
-      .sort((a, b) => b.playedAt.localeCompare(a.playedAt))
-      .slice(0, DEATH_PATTERN_MAX_MATCHES);
-    const loaded = recent.length
-      ? await loadDeathInputs(context.supabase, context.userId, recent)
-      : [];
-    const contexts = loaded.flatMap((l) => buildDeathContexts(l.input, l.participantKey));
-    const used = recent.filter((m) => loaded.some((l) => l.input.matchId === m.matchId));
-    const dates = used.map((m) => m.playedAt).sort();
-    return {
-      rulesVersion: DEATH_RULES_VERSION,
-      matches: used.length,
-      deaths: contexts.length,
-      period: dates.length ? { from: dates[0]!, to: dates[dates.length - 1]! } : null,
-      patterns: aggregateDeathPatterns(contexts),
-    };
+    return loadDeathPatterns(context.supabase, context.userId, overview.matches);
   });
+
+/**
+ * Recurring death patterns over the caller's most recent matches (cs2.death-rules.v1), under the
+ * caller's own session. Shared by the death review page and the AI Coach (same numbers).
+ */
+export async function loadDeathPatterns(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  matches: OverviewMatch[],
+): Promise<DeathPatternsResponse> {
+  const recent = [...matches]
+    .sort((a, b) => b.playedAt.localeCompare(a.playedAt))
+    .slice(0, DEATH_PATTERN_MAX_MATCHES);
+  const loaded = recent.length ? await loadDeathInputs(supabase, userId, recent) : [];
+  const contexts = loaded.flatMap((l) => buildDeathContexts(l.input, l.participantKey));
+  const used = recent.filter((m) => loaded.some((l) => l.input.matchId === m.matchId));
+  const dates = used.map((m) => m.playedAt).sort();
+  return {
+    rulesVersion: DEATH_RULES_VERSION,
+    matches: used.length,
+    deaths: contexts.length,
+    period: dates.length ? { from: dates[0]!, to: dates[dates.length - 1]! } : null,
+    patterns: aggregateDeathPatterns(contexts),
+  };
+}
 
 export const deathFeedbackInput = z
   .object({

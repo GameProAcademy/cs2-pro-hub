@@ -50,6 +50,7 @@ import { buildXRay } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 import { loadCoachPreferences } from "@/lib/coachSession.functions";
 import { loadRoundContext, loadSideRounds } from "@/lib/xray.functions";
+import { loadDeathPatterns } from "@/lib/diagnosis.functions";
 
 export type CoachErrorCode =
   | "COACH_MESSAGE_EMPTY"
@@ -381,9 +382,11 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           );
           // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
           const coachMatchIds = overview.matches.map((m) => m.matchId);
-          const [sides, roundContext] = await Promise.all([
+          const [sides, roundContext, deathPatterns] = await Promise.all([
             loadSideRounds(db, [playerId], coachMatchIds),
             loadRoundContext(db, [playerId], coachMatchIds),
+            // PM2: same numbers as the death review page; a read failure only drops the block.
+            loadDeathPatterns(db, context.userId, overview.matches).catch(() => null),
           ]);
           const facts = buildCoachFacts(overview, dna, input.locale, {
             message: input.message,
@@ -391,6 +394,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             declared,
             // Same rows, same pure function as the Dashboard / Performance Score.
             proScore: buildProScore(dnaRows),
+            deathPatterns,
           });
           // Catalog: a few items relevant to THIS message (never the catalog itself). A
           // catalog read failure only means no suggestions; the Coach still answers.
