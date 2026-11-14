@@ -24,6 +24,8 @@ import uuid
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 MIGRATION = pathlib.Path(os.environ.get("DEATH_FEEDBACK_MIGRATION") or
                          ROOT / "supabase/migrations/20261114130000_pm2_death_feedback.sql")
+TRAJECTORY_MIGRATION = pathlib.Path(os.environ.get("TRAJECTORY_MIGRATION") or
+                                    ROOT / "supabase/migrations/20261114140000_pm2_round_trajectories.sql")
 
 SCHEMA = r"""
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -50,6 +52,21 @@ ALTER TABLE public.match_participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.round_events ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON public.player_profiles, public.matches, public.match_participants, public.round_events TO authenticated;
 GRANT ALL ON public.player_profiles, public.matches, public.match_participants, public.round_events TO service_role;
+-- owns_canonical_match exactly as in production (20260906024007).
+CREATE FUNCTION public.owns_canonical_match(_match_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.matches m
+      JOIN public.player_profiles p ON p.id = m.player_id
+     WHERE m.id = _match_id AND p.user_id = auth.uid()
+  ) OR EXISTS (
+    SELECT 1 FROM public.match_participants mp
+      JOIN public.player_profiles p ON p.id = mp.internal_player_id
+     WHERE mp.match_id = _match_id AND p.user_id = auth.uid()
+  );
+$$;
+REVOKE ALL ON FUNCTION public.owns_canonical_match(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.owns_canonical_match(uuid) TO authenticated, service_role;
 """
 
 
@@ -169,6 +186,34 @@ INSERT INTO public.round_events VALUES
         checks["a_deletes_own_row"] = as_role("authenticated", a,
             f"DELETE FROM public.death_feedback WHERE round_event_id = '{i['a_death']}' RETURNING 1;")[1].strip() == "1"
         checks["service_role_reads_all"] = count("service_role", None, "SELECT 1 FROM public.death_feedback") == 3
+        # PM2 4.2.4: trajectories (owner read, service-role write only).
+        rc, _, err = psql(TRAJECTORY_MIGRATION.read_text(), check=False)
+        checks["trajectory_migration_applies"] = rc == 0
+        if rc != 0:
+            raise RuntimeError(err)
+        checks["trajectory_migration_reapplies"] = psql(TRAJECTORY_MIGRATION.read_text(), check=False)[0] == 0
+        psql(f"""
+INSERT INTO public.match_trajectories (match_id, schema, status, step_ticks) VALUES
+  ('{i['shared']}','cs2.round-trajectory.v1','COMPLETE',16),('{i['priv_b']}','cs2.round-trajectory.v1','PARTIAL',16);
+INSERT INTO public.round_trajectories (match_id, round_number, first_tick, end_tick, step_ticks, sample_count, players) VALUES
+  ('{i['shared']}',1,0,32,16,3,'[]'),('{i['priv_b']}',1,0,32,16,3,'[]');
+""")
+        checks["traj_a_reads_shared_match"] = count("authenticated", a, "SELECT 1 FROM public.round_trajectories") == 1
+        checks["traj_b_reads_shared_and_own"] = count("authenticated", b, "SELECT 1 FROM public.round_trajectories") == 2
+        checks["traj_a_cannot_read_b_private"] = count("authenticated", a,
+            f"SELECT 1 FROM public.match_trajectories WHERE match_id = '{i['priv_b']}'") == 0
+        checks["traj_anon_reads_nothing"] = fails("anon", None, "SELECT 1 FROM public.round_trajectories;", "permission denied")
+        checks["traj_player_cannot_write"] = fails("authenticated", a,
+            f"INSERT INTO public.match_trajectories (match_id, schema, status) VALUES ('{i['priv_a']}','cs2.round-trajectory.v1','COMPLETE');",
+            "permission denied")
+        checks["traj_player_cannot_delete"] = fails("authenticated", b,
+            f"DELETE FROM public.round_trajectories WHERE match_id = '{i['priv_b']}';", "permission denied")
+        checks["traj_status_constrained"] = fails("service_role", None,
+            f"INSERT INTO public.match_trajectories (match_id, schema, status) VALUES ('{i['priv_a']}','cs2.round-trajectory.v1','MAYBE');",
+            "match_trajectories_status")
+        checks["traj_samples_bounded"] = fails("service_role", None,
+            f"INSERT INTO public.round_trajectories (match_id, round_number, first_tick, end_tick, step_ticks, sample_count, players) "
+            f"VALUES ('{i['shared']}',2,0,32,16,5000,'[]');", "round_trajectories_samples")
         checks["anon_cannot_execute_helper"] = fails("anon", None, f"SELECT public.owns_death_event('{i['a_death']}', '{i['shared']}', 1, 500);", "permission denied")
     finally:
         if started:

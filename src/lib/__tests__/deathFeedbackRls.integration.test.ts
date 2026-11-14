@@ -2,6 +2,7 @@
  * PM2 4.2.3 — death_feedback table and RLS against a disposable PostgreSQL
  * (scripts/pm2/death_feedback_rls_harness.py): users A and B, a shared canonical match and private
  * matches; own death only, no cross-user read/write/delete (IDOR), anon nothing, immutable keys.
+ * Also round/match trajectories: owner read only, service-role writes, bounded rows.
  * A mutation that drops the death-ownership check must be caught.
  */
 import { execFileSync } from "node:child_process";
@@ -47,6 +48,14 @@ describe("PM2 death feedback RLS", () => {
       "key_is_immutable",
       "cannot_transfer_row_to_b",
       "anon_cannot_execute_helper",
+      "trajectory_migration_applies",
+      "trajectory_migration_reapplies",
+      "traj_a_reads_shared_match",
+      "traj_a_cannot_read_b_private",
+      "traj_anon_reads_nothing",
+      "traj_player_cannot_write",
+      "traj_player_cannot_delete",
+      "traj_samples_bounded",
       "a_cannot_claim_another_tick",
       "canonical_rewrite_not_blocked",
       "feedback_survives_event_rewrite",

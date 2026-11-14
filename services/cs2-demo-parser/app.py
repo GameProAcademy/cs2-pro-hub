@@ -195,6 +195,8 @@ async def _parse_downloaded(body: ParseRequest, settings: Settings, parse: Parse
         "warnings": parsed.get("warnings") or [],
         # PM6 C: official-end evidence for cs2.match-integrity.v1 (absent => the app fails closed).
         "match_end_evidence": parsed.get("match_end_evidence"),
+        # PM2 4.2.4: sampled positions per round for the 2D replay (absent => replay UNAVAILABLE).
+        "round_trajectories": parsed.get("round_trajectories"),
         "_performance": {
             "download_ms": download_ms,
             "parser_ms": parse_ms,

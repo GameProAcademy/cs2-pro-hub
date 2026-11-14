@@ -200,6 +200,8 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
         "warnings": [item["value"] for item in warnings],
         # PM6 C: identity-free official-end evidence for cs2.match-integrity.v1 (bounded like rounds).
         "match_end_evidence": _match_end_evidence(parsed.get("match_end_evidence")),
+        # PM2 4.2.4: cs2.round-trajectory.v1, bounded like rounds (see trajectory.py).
+        "round_trajectories": _round_trajectories(parsed.get("round_trajectories")),
     }
 
 
@@ -217,3 +219,39 @@ def _match_end_evidence(value: Any) -> dict[str, Any] | None:
         "win_panel_ticks": None if panel is None else [t for t in (_integer(x) for x in panel) if t is not None][:64],
         "voided_rounds": _integer(value.get("voided_rounds")) or 0,
     }
+
+
+_TRAJECTORY_STATUSES = {"COMPLETE", "PARTIAL", "UNAVAILABLE"}
+_B64 = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=")
+
+
+def _round_trajectories(value: Any) -> dict[str, Any] | None:
+    """Only the documented cs2.round-trajectory.v1 shape crosses to the APP; anything else is None."""
+    if not isinstance(value, dict) or value.get("schema") != "cs2.round-trajectory.v1":
+        return None
+    status = value.get("status")
+    if status not in _TRAJECTORY_STATUSES:
+        return None
+    step = _integer(value.get("step_ticks"), positive=True)
+    rounds: list[dict[str, Any]] = []
+    for row in [r for r in value.get("rounds") or [] if isinstance(r, dict)][:HOT_LIMITS["rounds"]]:
+        count = _integer(row.get("sample_count"), positive=True)
+        first, end, number = _integer(row.get("first_tick")), _integer(row.get("end_tick")), _integer(row.get("round"))
+        if count is None or first is None or end is None or number is None:
+            continue
+        players = []
+        for p in [x for x in row.get("players") or [] if isinstance(x, dict)][:12]:
+            xyz, alive, sid = p.get("xyz"), p.get("alive"), _text(p.get("steam_id"))
+            if (not isinstance(xyz, str) or not isinstance(alive, str) or sid is None or not sid.isdigit()
+                    or p.get("side") not in ("T", "CT") or len(alive) != count
+                    or len(xyz) != 4 * ((6 * count + 2) // 3) or not set(xyz) <= _B64 or not set(alive) <= {"0", "1", "-"}):
+                continue
+            players.append({"steam_id": sid, "side": p["side"], "xyz": xyz, "alive": alive})
+        rounds.append({"round": number, "first_tick": first, "end_tick": end, "step_ticks": _integer(row.get("step_ticks"), positive=True),
+                       "sample_count": count, "players": players,
+                       "dropped_players": _integer(row.get("dropped_players")) or 0})
+    skipped = [{"round": _integer(r.get("round")), "reason": _text(r.get("reason"))}
+               for r in (value.get("skipped") or []) if isinstance(r, dict)][:HOT_LIMITS["rounds"]]
+    return {"schema": "cs2.round-trajectory.v1", "encoding": _text(value.get("encoding")), "status": status,
+            "reason": _text(value.get("reason")), "step_ticks": step, "skipped": skipped, "rounds": rounds}
+

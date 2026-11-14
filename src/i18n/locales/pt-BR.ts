@@ -15,11 +15,13 @@ import { scorePtBR } from "./score/pt-BR";
 import { profilePtBR } from "./profile/pt-BR";
 import { spatialPtBR } from "./spatial/pt-BR";
 import { diagnosisPtBR } from "./diagnosis/pt-BR";
+import { replayPtBR } from "./replay/pt-BR";
 
 export const ptBR = {
   ...profilePtBR,
   ...spatialPtBR,
   ...diagnosisPtBR,
+  ...replayPtBR,
   ...catalogPtBR,
   ...demoFlowPtBR,
   ...guidancePtBR,

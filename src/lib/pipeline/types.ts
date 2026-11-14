@@ -188,6 +188,8 @@ export interface RawParserOutput {
   raw_evidence?: import("@/lib/pipeline/rawEvidence").RawDemoEvidence | undefined;
   /** PM6 C: identity-free official-end evidence for cs2.match-integrity.v1. */
   match_end_evidence?: MatchEndEvidenceWireV1 | null | undefined;
+  /** PM2 4.2.4: sampled positions per round (cs2.round-trajectory.v1); absent on older workers. */
+  round_trajectories?: import("@/lib/replay/trajectory").RoundTrajectoriesWireV1 | null | undefined;
 }
 
 /** PM6 C: worker `match_end_evidence` (services/cs2-demo-parser/adapter.py). */
@@ -234,6 +236,8 @@ export interface HotDemoPayloadV1 {
   schema_version: 1;
   /** PM6 C: official-end evidence (absent on workers before R5.8.27). */
   match_end_evidence?: MatchEndEvidenceWireV1 | null | undefined;
+  /** PM2 4.2.4: cs2.round-trajectory.v1 (absent on workers before the PM2 release). */
+  round_trajectories?: unknown;
   parser: RawParserOutput["parser"];
   contract_version: number;
   demo: { sha256: string; upload_id: string };

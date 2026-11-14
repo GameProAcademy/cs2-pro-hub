@@ -221,15 +221,27 @@ export function DeathSheet({
       subtitle={t(`diagnosis.kind.${c.kind}` as TranslationKey)}
       showDemoTag={false}
       actions={
-        map ? (
-          <Link
-            to="/maps"
-            search={{ map, matchId, layer: "DEATHS" }}
-            className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-          >
-            {t("diagnosis.link.heatmap")}
-          </Link>
-        ) : null
+        <div className="flex flex-col items-end gap-1">
+          {map ? (
+            <Link
+              to="/maps"
+              search={{ map, matchId, layer: "DEATHS" }}
+              className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {t("diagnosis.link.heatmap")}
+            </Link>
+          ) : null}
+          {c.ref.roundNumber !== null && c.ref.tick !== null ? (
+            <Link
+              to="/replay"
+              search={{ matchId, round: c.ref.roundNumber, tick: c.ref.tick }}
+              className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+              data-replay-link
+            >
+              {t("replay.link")}
+            </Link>
+          ) : null}
+        </div>
       }
     >
       <div
