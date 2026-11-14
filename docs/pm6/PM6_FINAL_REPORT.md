@@ -94,10 +94,12 @@ Todas as migrations foram registradas em `supabase_migrations.schema_migrations`
 
 ## 8. Gates
 
-H.3-E em `36b8a37a`:
+No SHA final `36b8a37a`:
 
-- 1ª execução (43556719744): BLOCKED só porque os workflows de push da main ainda estavam rodando. `runtime`, `bridge_identity`, `parser_lock` e `managed_snapshot` deram PASS.
-- Resultado final registrado no checkpoint.
+- **H.3-E: PASS 18/18** (run 43558879886): target, quality_gates, f553_post_completion, r5_8_3, r5_8_4, queue_semantics, main_required_gates, artefatos e decisões, persistence, transport, runtime, bridge_identity, parser_lock, managed_snapshot e predem_matrix.
+- As execuções anteriores (43556719744 e 43558427432) deram BLOCKED só porque os workflows de push da main ainda não tinham terminado.
+- F553 pós-conclusão: success (43558865643).
+- Quality Gates, Queue Semantics, R5.8.3 e R5.8.4: success.
 
 ## 9. Testes
 
@@ -124,4 +126,16 @@ H.3-E em `36b8a37a`:
 
 ## 11. Prontidão para o PM2
 
-Ver o checkpoint central depois do resultado final do H.3-E e da validação com upload real.
+**Pronto para o PM2, com ressalvas classificadas.** Em produção:
+
+- a release R5.8.27 está ativa, atestada VERIFIED, com H.3-E PASS 18/18;
+- o gate de encerramento e a auto-anexação por nick estão publicados (app `36b8a37a`, publicação `9627d525`);
+- a correção de segurança foi validada por papel.
+
+Continuam abertos, sem bloquear o PM2:
+
+1. Upload real de controle em produção, com a demo pública de surrender da fixture, feito pela conta de teste com autorização do dono, para provar C e D no fluxo publicado.
+2. Confirmação do scanner do Lovable pelo dono.
+3. Etapa E (roster pelos controllers e leitura de `round_*` fora do inventário).
+4. Alinhar o `source.commitSha` da Railway na próxima release.
+5. Expandir o corpus.
