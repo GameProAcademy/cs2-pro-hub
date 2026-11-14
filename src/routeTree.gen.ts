@@ -19,6 +19,7 @@ import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedClientParserPocRouteImport } from './routes/_authenticated/client-parser-poc'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDeathsRouteImport } from './routes/_authenticated/deaths'
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedMapsRouteImport } from './routes/_authenticated/maps'
 import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
@@ -99,6 +100,11 @@ const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDeathsRoute = AuthenticatedDeathsRouteImport.update({
+  id: '/deaths',
+  path: '/deaths',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/deaths': typeof AuthenticatedDeathsRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/deaths': typeof AuthenticatedDeathsRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/_authenticated/client-parser-poc': typeof AuthenticatedClientParserPocRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/deaths': typeof AuthenticatedDeathsRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/maps': typeof AuthenticatedMapsRoute
   '/_authenticated/matches': typeof AuthenticatedMatchesRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/client-parser-poc'
     | '/coach'
     | '/dashboard'
+    | '/deaths'
     | '/goals'
     | '/maps'
     | '/matches'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/client-parser-poc'
     | '/coach'
     | '/dashboard'
+    | '/deaths'
     | '/goals'
     | '/maps'
     | '/matches'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/_authenticated/client-parser-poc'
     | '/_authenticated/coach'
     | '/_authenticated/dashboard'
+    | '/_authenticated/deaths'
     | '/_authenticated/goals'
     | '/_authenticated/maps'
     | '/_authenticated/matches'
@@ -624,6 +636,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/deaths': {
+      id: '/_authenticated/deaths'
+      path: '/deaths'
+      fullPath: '/deaths'
+      preLoaderRoute: typeof AuthenticatedDeathsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/goals': {
@@ -882,6 +901,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientParserPocRoute: typeof AuthenticatedClientParserPocRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDeathsRoute: typeof AuthenticatedDeathsRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedMapsRoute: typeof AuthenticatedMapsRoute
   AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
@@ -899,6 +919,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientParserPocRoute: AuthenticatedClientParserPocRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDeathsRoute: AuthenticatedDeathsRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedMapsRoute: AuthenticatedMapsRoute,
   AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,

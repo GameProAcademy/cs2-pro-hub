@@ -10,10 +10,12 @@ import { adminNotifyEs } from "./adminNotify/es";
 import { scoreEs } from "./score/es";
 import { profileEs } from "./profile/es";
 import { spatialEs } from "./spatial/es";
+import { diagnosisEs } from "./diagnosis/es";
 
 export const es: Dictionary = {
   ...profileEs,
   ...spatialEs,
+  ...diagnosisEs,
   ...catalogEs,
   ...demoFlowEs,
   ...guidanceEs,
