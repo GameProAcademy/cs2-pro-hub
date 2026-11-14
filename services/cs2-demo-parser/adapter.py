@@ -564,6 +564,54 @@ def build_match_end_evidence(raw: Record, rounds: Sequence[Record]) -> Record:
 # --------------------------------------------------------------------------- #
 # full output
 # --------------------------------------------------------------------------- #
+def _blank_id(value: Any) -> bool:
+    """True when an id field carries no identity (absent, NaN, empty or zero)."""
+    if value is None or value == "" or (isinstance(value, float) and value != value):
+        return True
+    return str(value).strip() in ("0", "nan", "None")
+
+
+def drop_bot_replacement_world_deaths(
+    deaths: Sequence[Record],
+    disconnects: Sequence[Record] | None,
+    warnings: list[str],
+) -> list[Record]:
+    """PM2 (FACEIT Nuke, 2026-11-14): when a disconnected player reconnects, the BOT that replaced
+    them is kicked and the game emits a ``player_death`` with no victim, no attacker and weapon
+    ``world`` at the exact tick of that BOT's ``player_disconnect`` (networkid ``BOT``, xuid 0).
+    It is the removal of a non-participant entity, not a death of any match participant (the
+    roster stays at 10 around that tick). Such a row is omitted from the normalized events
+    only when ALL of that evidence is present; it stays in the RAW evidence untouched, and the
+    count is reported. Any other victimless death is kept, so the admission gate still sees it.
+    """
+    bot_ticks: set[int] = set()
+    for row in disconnects or []:
+        if not isinstance(row, dict):
+            continue
+        tick = _int(_pick(row, "tick"))
+        network = str(_pick(row, "networkid") or "").strip().upper()
+        is_bot = network == "BOT" and _blank_id(_pick(row, "xuid")) and _blank_id(_pick(row, "user_steamid"))
+        if tick is not None and is_bot:
+            bot_ticks.add(tick)
+    kept: list[Record] = []
+    removed = 0
+    for row in deaths:
+        if (
+            isinstance(row, dict)
+            and bot_ticks
+            and _int(_pick(row, "tick")) in bot_ticks
+            and _blank_id(_pick(row, "user_steamid", "victim_steamid"))
+            and _blank_id(_pick(row, "attacker_steamid"))
+            and str(_pick(row, "weapon") or "") == "world"
+        ):
+            removed += 1
+            continue
+        kept.append(row)
+    if removed:
+        warnings.append(f"bot_replacement_world_deaths_omitted:{removed}")
+    return kept
+
+
 def build_raw_parser_output(raw: Record) -> Record:
     """Assemble the contract sections from raw demoparser2 material.
 
@@ -583,6 +631,12 @@ def build_raw_parser_output(raw: Record) -> Record:
     tables: dict[str, Sequence[Record] | None] = {
         name: raw.get(name) for name in SUPPORTED_EVENTS if name in raw
     }
+    if tables.get("player_death"):
+        tables["player_death"] = drop_bot_replacement_world_deaths(
+            tables["player_death"] or [],
+            (raw.get("event_tables") or {}).get("player_disconnect"),
+            warnings,
+        )
     rounds = normalize_rounds(
         round_starts,
         round_ends,
