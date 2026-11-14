@@ -58,10 +58,10 @@ def test_collector_has_no_execution_or_mutation_surface():
 
 def test_collector_uses_the_r5811_candidate_identity():
     # R5.8.20 (D33 parser release): the collector pins the active Railway deployment.
-    assert DEPLOYMENT == "2f0e6812-6aa0-4137-b9ca-aa541dafe103"
-    assert SOURCE_COMMIT == "7e84f6da0a60c1b48897ec24bb721cde9aa65a62"
+    assert DEPLOYMENT == "7690b171-087f-46ca-9899-a5b96d8c32cb"
+    assert SOURCE_COMMIT == "3837a810c4569c0f1c2ef67064cb0f0869003c7a"
     assert BRANCH == "main"
-    assert PARSER_REVISION == "git:7e84f6da0a60c1b48897ec24bb721cde9aa65a62"
+    assert PARSER_REVISION == "git:3837a810c4569c0f1c2ef67064cb0f0869003c7a"
 
 
 def test_collector_structure_rejects_automatic_and_execution_triggers():
