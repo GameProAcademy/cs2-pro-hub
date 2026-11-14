@@ -55,6 +55,18 @@ O scanner não informa quais políticas são. O painel do Lovable não foi abert
 
 Recriar as políticas com as definições anteriores, que estão em `20260903012041` (catálogo) e `20260923015032` (forense). Não há dados a restaurar.
 
-## Validação em produção
+## Resultado em produção (2026-11-14)
 
-Registrada na seção "Resultado em produção" depois da aplicação e da publicação.
+- PR #284, merge `00e767fa`, com 7/7 checks verdes.
+- Migration `20261114010000` aplicada no banco gerenciado, conferida em `pg_policies` e registrada em `schema_migrations` (md5 `068b0e90…`).
+- Acesso real medido com os papéis do Supabase, numa transação desfeita com ROLLBACK, sem gravar nada:
+
+| Perfil                    | Catálogo                          | Fixture forense | Demos                  |
+| ------------------------- | --------------------------------- | --------------- | ---------------------- |
+| anônimo                   | 10 skills / 50 traduções (ativas) | 0               | 0 objetos              |
+| admin master dono         | 10 skills                         | 1               | —                      |
+| usuário comum (não staff) | —                                 | 0               | só a própria pasta (1) |
+
+- App publicado pelo conector: deployment `804fd0a3`, `pending`, a partir de `00e767fa`. O conector não recusou o publish por achados críticos.
+- **Scanner do Lovable: NOT_VERIFIED.** A aceitação do publish não prova que o scanner está limpo, porque na publicação anterior o achado crítico só gerou aviso, sem bloquear. O painel de segurança não pôde ser aberto nesta sessão (acesso pelo navegador negado). O dono confirma o resultado em Security.
+- Se o aviso do catálogo continuar, ele é intencional: só conteúdo ativo é público, e isso está documentado acima.
