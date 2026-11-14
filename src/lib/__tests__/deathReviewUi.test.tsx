@@ -124,7 +124,7 @@ describe("death review UI", () => {
 
   it("draws positions only on a validated map", () => {
     expect(render(<DeathReviewBody r={ok()} onSearch={noop} />)).toContain("data-death-radar");
-    const mirage = ok(input({ map: "de_mirage", mapValidation: "NOT_VALIDATED" }));
+    const mirage = ok(input({ map: "de_inferno", mapValidation: "NOT_VALIDATED" }));
     const html = render(<DeathReviewBody r={mirage} onSearch={noop} />);
     expect(html).not.toContain("data-death-radar");
     expect(html).toContain(dictionaries["pt-BR"]["diagnosis.position.notValidated"]);
@@ -187,7 +187,7 @@ describe("death review server helpers", () => {
   it("returns no radar points off a validated map", () => {
     const [ctx] = buildDeathContexts(input(), ME);
     expect(radarFor(ctx!, "de_dust2")?.victim).toMatchObject({ x: 400, y: 400 });
-    expect(radarFor(ctx!, "de_mirage")).toBeNull();
+    expect(radarFor(ctx!, "de_inferno")).toBeNull();
   });
 });
 

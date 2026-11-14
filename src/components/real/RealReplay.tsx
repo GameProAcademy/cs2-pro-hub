@@ -86,9 +86,13 @@ export function RealReplayPage({
             <select
               name="match"
               className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-              value={matchId ?? ""}
+              // A match id outside the caller's own list (NOT_FOUND) never shows another match as selected.
+              value={matchId && matches.some((m) => m.matchId === matchId) ? matchId : ""}
               onChange={(e) => onSearch({ matchId: e.target.value })}
             >
+              {matchId && !matches.some((m) => m.matchId === matchId) ? (
+                <option value="">{NOT_AVAILABLE_MARK}</option>
+              ) : null}
               {matches.map((m) => (
                 <option key={m.matchId} value={m.matchId}>
                   {`${formatDate(m.playedAt, intlTag)} · ${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}`}

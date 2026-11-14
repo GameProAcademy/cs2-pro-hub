@@ -81,7 +81,8 @@ describe("radar transform (radar-transform-v1)", () => {
     expect(mapSupport("de_dust2").status).toBe("SUPPORTED");
     expect(mapSupport("DE_DUST2").status).toBe("SUPPORTED");
     expect(mapSupport("workshop/123/de_dust2").status).toBe("SUPPORTED");
-    expect(mapSupport("de_mirage").status).toBe("NOT_VALIDATED");
+    expect(mapSupport("de_mirage").status).toBe("SUPPORTED");
+    expect(mapSupport("de_inferno").status).toBe("NOT_VALIDATED");
     expect(mapSupport("de_unknown").status).toBe("UNKNOWN_MAP");
     expect(mapSupport(null).status).toBe("UNKNOWN_MAP");
     expect(normalizeMapName("de_dust2; drop table")).toBeNull();
@@ -328,7 +329,7 @@ describe("filters", () => {
   });
 
   it("a map without a validated transform draws nothing and says why", () => {
-    const r = buildHeatmap([match(ev, { map: "de_mirage" })], { ...F, map: "de_mirage" });
+    const r = buildHeatmap([match(ev, { map: "de_inferno" })], { ...F, map: "de_inferno" });
     expect(r.support).toBe("NOT_VALIDATED");
     expect(r.events.status).toBe("UNAVAILABLE");
     expect(r.cells).toEqual([]);

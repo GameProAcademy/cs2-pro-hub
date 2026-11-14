@@ -79,10 +79,10 @@ describe("states", () => {
   });
 
   it("unvalidated map: nothing drawn, says why", () => {
-    const html = body(response([death(1, { victim_position: w(10, 10) })], "de_mirage"));
+    const html = body(response([death(1, { victim_position: w(10, 10) })], "de_inferno"));
     expect(html).toContain('data-map-support="NOT_VALIDATED"');
     expect(html).not.toContain("data-heatmap-svg");
-    expect(html).toContain("Mirage");
+    expect(html).toContain("Inferno");
   });
 
   it("no eligible event: NOT_OBSERVED text, no zero", () => {

@@ -66,8 +66,9 @@ export const MAP_OVERVIEWS: Readonly<Record<string, MapOverview>> = {
     lowerLevelMaxZ: null,
     sourcePath: "resource/overviews/de_mirage.txt",
     sourceSha256: "0c3b215f175afdb5b4cf5e824c950101f17be5ad8e2afd2037bfc757a85c67e3",
-    validation: "NOT_VALIDATED",
-    validationEvidence: NOT_VALIDATED_YET,
+    validation: "VALIDATED",
+    validationEvidence:
+      "PM2 (2026-11-14), two independent authorized demos: furia-vs-gamerlegion-m2-mirage (sha256 prefix of first MiB 6805ac97) and a GamersClub match (cde19f78). Deaths 158/158 and 159/159 inside the radar (157 and 159 on drawn map pixels); T spawn at freeze start radar mean (886, 371) / (888, 370) inside the T spawn area and CT spawn (303, 721) / (303, 720) inside the CT spawn area (115 and 100 samples per side); bomb plants in two clusters on the A site (~(520–595, 739–784)) and the B site (~(225–267, 253–309)). Orientation and scale consistent, no mirroring. docs/pm2/PM2_FINAL_REPORT.md §22.",
   },
   de_inferno: {
     map: "de_inferno",
