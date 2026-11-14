@@ -25,6 +25,7 @@ import {
 } from "@/lib/diagnosis/deathContext";
 import {
   aggregateDeathPatterns,
+  DEATH_RULES,
   DEATH_RULES_VERSION,
   evaluateDeathRules,
   type PatternSummary,
@@ -45,7 +46,14 @@ export interface DeathReviewItem {
   rules: RuleResult[];
   /** Radar pixels on a VALIDATED map only; null otherwise (never a guessed point). */
   radar: { victim: RadarPoint | null; attacker: RadarPoint | null } | null;
+  /** The caller's own feedback on this death, by rule id (`REVIEW` = the death as a whole). */
+  feedback: Record<string, FeedbackVerdict>;
 }
+
+export const FEEDBACK_VERDICTS = ["USEFUL", "NOT_USEFUL", "INCORRECT"] as const;
+export type FeedbackVerdict = (typeof FEEDBACK_VERDICTS)[number];
+/** Key of the feedback on the death review as a whole (stored as rule_id NULL). */
+export const WHOLE_REVIEW = "REVIEW";
 
 export interface DeathMatchOption {
   matchId: string;
@@ -104,10 +112,18 @@ export const getMatchDeathReview = createServerFn({ method: "GET" })
     const one = loaded[0];
     if (!one) return { matches, status: "NO_PARTICIPANT", matchId: match.matchId };
     const support = mapSupport(match.map);
+    // Own feedback only (RLS death_feedback_select_own); stored apart, never changes a rule.
+    const { data: fb, error: fbError } = await context.supabase
+      .from("death_feedback")
+      .select("round_event_id, rule_id, verdict")
+      .eq("match_id", match.matchId);
+    if (fbError) throw new Error(`DIAGNOSIS_FEEDBACK_READ_FAILED:${fbError.code ?? "unknown"}`);
+    const feedback = feedbackByEvent(fb ?? []);
     const deaths = buildDeathContexts(one.input, one.participantKey).map((ctx) => ({
       context: ctx,
       rules: evaluateDeathRules(ctx),
       radar: radarFor(ctx, match.map),
+      feedback: feedback.get(ctx.ref.eventId) ?? {},
     }));
     console.info(
       JSON.stringify({
@@ -151,6 +167,83 @@ export const getDeathPatterns = createServerFn({ method: "GET" })
       patterns: aggregateDeathPatterns(contexts),
     };
   });
+
+export const deathFeedbackInput = z
+  .object({
+    matchId: z.string().uuid(),
+    roundEventId: z.string().uuid(),
+    ruleId: z.enum([WHOLE_REVIEW, ...DEATH_RULES.filter((r) => r.evaluate).map((r) => r.id)] as [
+      string,
+      ...string[],
+    ]),
+    verdict: z.enum(FEEDBACK_VERDICTS),
+    note: z.string().trim().max(500).optional(),
+  })
+  .strict();
+export type DeathFeedbackInput = z.input<typeof deathFeedbackInput>;
+export type DeathFeedbackResponse = { status: "SAVED" } | { status: "REFUSED" };
+
+/**
+ * Records (or replaces) the caller's opinion on one death or one rule signal. The row is written
+ * under the caller's session: RLS only accepts a kill event whose victim is the caller's own
+ * participant in that match, so a foreign event id is refused (REFUSED, no detail).
+ */
+export const submitDeathFeedback = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => deathFeedbackInput.parse(input))
+  .handler(async ({ context, data }): Promise<DeathFeedbackResponse> => {
+    const rule = data.ruleId === WHOLE_REVIEW ? null : data.ruleId;
+    const existing = context.supabase
+      .from("death_feedback")
+      .select("id")
+      .eq("round_event_id", data.roundEventId)
+      .eq("user_id", context.userId);
+    const { data: rows, error } = await (rule === null
+      ? existing.is("rule_id", null)
+      : existing.eq("rule_id", rule));
+    if (error) throw new Error(`DIAGNOSIS_FEEDBACK_READ_FAILED:${error.code ?? "unknown"}`);
+    const note = data.note ? data.note : null;
+    const write = rows?.[0]
+      ? await context.supabase
+          .from("death_feedback")
+          .update({ verdict: data.verdict, note, rules_version: DEATH_RULES_VERSION })
+          .eq("id", rows[0].id)
+          .select("id")
+      : await context.supabase
+          .from("death_feedback")
+          .insert({
+            match_id: data.matchId,
+            round_event_id: data.roundEventId,
+            rule_id: rule,
+            rules_version: DEATH_RULES_VERSION,
+            verdict: data.verdict,
+            note,
+          })
+          .select("id");
+    // 42501: RLS refused (not the caller's own death). Never echo the database message.
+    if (write.error?.code === "42501" || (!write.error && !write.data?.length))
+      return { status: "REFUSED" };
+    if (write.error)
+      throw new Error(`DIAGNOSIS_FEEDBACK_WRITE_FAILED:${write.error.code ?? "unknown"}`);
+    console.info(
+      JSON.stringify({ event: "death_feedback", rule: data.ruleId, verdict: data.verdict }),
+    );
+    return { status: "SAVED" };
+  });
+
+/** Pure: own feedback rows grouped by event, keyed by rule id (`REVIEW` for the whole death). */
+export function feedbackByEvent(
+  rows: Array<{ round_event_id: string; rule_id: string | null; verdict: string }>,
+): Map<string, Record<string, FeedbackVerdict>> {
+  const out = new Map<string, Record<string, FeedbackVerdict>>();
+  for (const r of rows) {
+    if (!(FEEDBACK_VERDICTS as readonly string[]).includes(r.verdict)) continue;
+    const entry = out.get(r.round_event_id) ?? {};
+    entry[r.rule_id ?? WHOLE_REVIEW] = r.verdict as FeedbackVerdict;
+    out.set(r.round_event_id, entry);
+  }
+  return out;
+}
 
 /** Pure: radar points for a death, only on a VALIDATED map and only for valid positions. */
 export function radarFor(ctx: DeathContext, map: string | null): DeathReviewItem["radar"] {

@@ -22,7 +22,8 @@ vi.mock("@tanstack/react-router", async (orig) => {
 });
 vi.mock("@/integrations/supabase/auth-middleware", () => ({ requireSupabaseAuth: {} }));
 const { DeathReviewBody } = await import("@/components/real/RealDeathReview");
-const { integrityRef, radarFor, toKillEventRow } = await import("@/lib/diagnosis.functions");
+const { deathFeedbackInput, feedbackByEvent, integrityRef, radarFor, toKillEventRow } =
+  await import("@/lib/diagnosis.functions");
 type Resp = import("@/lib/diagnosis.functions").DeathReviewResponse;
 
 const LOCALES: Locale[] = ["pt-BR", "pt-PT", "en", "es", "fr"];
@@ -93,6 +94,7 @@ const ok = (i: DeathContextInput = input()): Resp => ({
     context,
     rules: evaluateDeathRules(context),
     radar: radarFor(context, i.map),
+    feedback: {},
   })),
 });
 const noop = () => {};
@@ -186,5 +188,52 @@ describe("death review server helpers", () => {
     const [ctx] = buildDeathContexts(input(), ME);
     expect(radarFor(ctx!, "de_dust2")?.victim).toMatchObject({ x: 400, y: 400 });
     expect(radarFor(ctx!, "de_mirage")).toBeNull();
+  });
+});
+
+describe("death feedback", () => {
+  it("shows the player's own verdict, separately from the rule outcome", () => {
+    const r = ok();
+    if (r.status !== "OK") throw new Error("expected OK");
+    r.deaths[0]!.feedback = { TRADE_NOT_OBSERVED: "INCORRECT", REVIEW: "USEFUL" };
+    const html = render(<DeathReviewBody r={r} onSearch={noop} />);
+    expect(html).toContain('data-feedback="TRADE_NOT_OBSERVED" data-feedback-current="INCORRECT"');
+    expect(html).toContain('data-feedback="REVIEW" data-feedback-current="USEFUL"');
+    // The rule outcome is unchanged by the feedback.
+    expect(html).toContain('data-rule="TRADE_NOT_OBSERVED" data-outcome="MATCH"');
+  });
+
+  it("groups own rows by event and ignores unknown verdicts", () => {
+    const m = feedbackByEvent([
+      { round_event_id: "e1", rule_id: null, verdict: "USEFUL" },
+      { round_event_id: "e1", rule_id: "OPENING_DEATH", verdict: "NOT_USEFUL" },
+      { round_event_id: "e2", rule_id: "OPENING_DEATH", verdict: "LOVE_IT" },
+    ]);
+    expect(m.get("e1")).toEqual({ REVIEW: "USEFUL", OPENING_DEATH: "NOT_USEFUL" });
+    expect(m.has("e2")).toBe(false);
+  });
+
+  it("accepts only evaluable rule ids, known verdicts and short notes", () => {
+    const base = {
+      matchId: "11111111-1111-4111-8111-111111111111",
+      roundEventId: "22222222-2222-4222-8222-222222222222",
+      verdict: "USEFUL",
+    };
+    expect(deathFeedbackInput.safeParse({ ...base, ruleId: "REVIEW" }).success).toBe(true);
+    expect(deathFeedbackInput.safeParse({ ...base, ruleId: "TRADE_NOT_OBSERVED" }).success).toBe(
+      true,
+    );
+    expect(deathFeedbackInput.safeParse({ ...base, ruleId: "POSSIBLE_EXPOSURE" }).success).toBe(
+      false,
+    );
+    expect(
+      deathFeedbackInput.safeParse({ ...base, ruleId: "REVIEW", verdict: "MEH" }).success,
+    ).toBe(false);
+    expect(
+      deathFeedbackInput.safeParse({ ...base, ruleId: "REVIEW", note: "x".repeat(501) }).success,
+    ).toBe(false);
+    expect(deathFeedbackInput.safeParse({ ...base, ruleId: "REVIEW", userId: "x" }).success).toBe(
+      false,
+    );
   });
 });

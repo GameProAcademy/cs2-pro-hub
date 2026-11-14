@@ -114,4 +114,13 @@ export const diagnosisEn: Record<keyof typeof diagnosisPtBR, string> = {
   "diagnosis.patterns.status.NOT_SUPPORTED": "Not supported",
   "diagnosis.patterns.count": "{n} of {total} evaluated deaths · {matches} matches",
   "diagnosis.patterns.empty": "Not enough deaths to evaluate patterns.",
+  "diagnosis.feedback.review": "Was this sheet useful?",
+  "diagnosis.feedback.rule": "Does this signal make sense?",
+  "diagnosis.feedback.USEFUL": "Useful",
+  "diagnosis.feedback.NOT_USEFUL": "Not useful",
+  "diagnosis.feedback.INCORRECT": "Incorrect",
+  "diagnosis.feedback.saved":
+    "Feedback saved. It does not change the diagnosis; it is used to review the rules.",
+  "diagnosis.feedback.refused": "Feedback could not be saved for this death.",
+  "diagnosis.feedback.failed": "Saving feedback failed. Try again.",
 };

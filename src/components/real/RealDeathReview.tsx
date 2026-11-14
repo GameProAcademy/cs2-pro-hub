@@ -5,7 +5,7 @@
  * certainty percentage is ever shown; absence is a state, never a zero; positions are drawn only
  * on a VALIDATED map.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed, Crosshair, MapPinned, UserX } from "lucide-react";
 
@@ -18,8 +18,12 @@ import { mapDisplayName } from "@/lib/cs2/maps";
 import {
   getDeathPatterns,
   getMatchDeathReview,
+  submitDeathFeedback,
+  FEEDBACK_VERDICTS,
+  WHOLE_REVIEW,
   type DeathReviewItem,
   type DeathReviewResponse,
+  type FeedbackVerdict,
 } from "@/lib/diagnosis.functions";
 import type { DeathContext, Field } from "@/lib/diagnosis/deathContext";
 import { DEATH_RULES, PATTERN_POLICY } from "@/lib/diagnosis/deathRules";
@@ -359,6 +363,15 @@ export function DeathSheet({
                         })}
                       </p>
                     ) : null}
+                    {r.outcome === "MATCH" ? (
+                      <FeedbackControl
+                        matchId={matchId}
+                        eventId={c.ref.eventId}
+                        ruleId={r.ruleId}
+                        current={d.feedback[r.ruleId]}
+                        label={t("diagnosis.feedback.rule")}
+                      />
+                    ) : null}
                   </li>
                 ))}
             </ul>
@@ -413,8 +426,77 @@ export function DeathSheet({
             <DeathRadar d={d} map={map} />
           )}
         </section>
+        <div className="lg:col-span-2">
+          <FeedbackControl
+            matchId={matchId}
+            eventId={c.ref.eventId}
+            ruleId={WHOLE_REVIEW}
+            current={d.feedback[WHOLE_REVIEW]}
+            label={t("diagnosis.feedback.review")}
+          />
+        </div>
       </div>
     </ChartCard>
+  );
+}
+
+/**
+ * The player's own opinion on a death or a rule signal. Stored apart from the diagnosis
+ * (death_feedback, owner RLS); it never changes a rule outcome.
+ */
+export function FeedbackControl({
+  matchId,
+  eventId,
+  ruleId,
+  current,
+  label,
+}: {
+  matchId: string;
+  eventId: string;
+  ruleId: string;
+  current: FeedbackVerdict | undefined;
+  label: string;
+}) {
+  const t = useT();
+  const client = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (verdict: FeedbackVerdict) =>
+      submitDeathFeedback({ data: { matchId, roundEventId: eventId, ruleId, verdict } }),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["player", "deaths"] }),
+  });
+  const chosen = mutation.isPending ? mutation.variables : current;
+  const status = mutation.isError
+    ? t("diagnosis.feedback.failed")
+    : mutation.data?.status === "REFUSED"
+      ? t("diagnosis.feedback.refused")
+      : mutation.data?.status === "SAVED"
+        ? t("diagnosis.feedback.saved")
+        : "";
+  return (
+    <div className="mt-1.5" data-feedback={ruleId} data-feedback-current={current ?? ""}>
+      <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        {FEEDBACK_VERDICTS.map((v) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={chosen === v}
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate(v)}
+            className={
+              chosen === v
+                ? "rounded border border-primary bg-primary/15 px-2 py-0.5 text-xs text-foreground"
+                : "rounded border border-border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+            }
+          >
+            {t(`diagnosis.feedback.${v}` as TranslationKey)}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground" role="status" aria-live="polite">
+        {status}
+      </p>
+    </div>
   );
 }
 

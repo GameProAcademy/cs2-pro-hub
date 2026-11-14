@@ -115,4 +115,13 @@ export const diagnosisEs: Record<keyof typeof diagnosisPtBR, string> = {
   "diagnosis.patterns.status.NOT_SUPPORTED": "No soportado",
   "diagnosis.patterns.count": "{n} de {total} muertes evaluadas · {matches} partidas",
   "diagnosis.patterns.empty": "No hay muertes suficientes para evaluar patrones.",
+  "diagnosis.feedback.review": "¿Te sirvió esta ficha?",
+  "diagnosis.feedback.rule": "¿Tiene sentido esta señal?",
+  "diagnosis.feedback.USEFUL": "Útil",
+  "diagnosis.feedback.NOT_USEFUL": "No útil",
+  "diagnosis.feedback.INCORRECT": "Incorrecto",
+  "diagnosis.feedback.saved":
+    "Opinión registrada. No cambia el diagnóstico; sirve para revisar las reglas.",
+  "diagnosis.feedback.refused": "No se pudo registrar la opinión en esta muerte.",
+  "diagnosis.feedback.failed": "Error al registrar la opinión. Inténtalo de nuevo.",
 };

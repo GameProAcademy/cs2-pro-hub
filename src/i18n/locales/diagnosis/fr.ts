@@ -116,4 +116,13 @@ export const diagnosisFr: Record<keyof typeof diagnosisPtBR, string> = {
   "diagnosis.patterns.status.NOT_SUPPORTED": "Non pris en charge",
   "diagnosis.patterns.count": "{n} sur {total} morts évaluées · {matches} matchs",
   "diagnosis.patterns.empty": "Pas assez de morts pour évaluer des tendances.",
+  "diagnosis.feedback.review": "Cette fiche vous a-t-elle été utile ?",
+  "diagnosis.feedback.rule": "Ce signal a-t-il du sens ?",
+  "diagnosis.feedback.USEFUL": "Utile",
+  "diagnosis.feedback.NOT_USEFUL": "Pas utile",
+  "diagnosis.feedback.INCORRECT": "Incorrect",
+  "diagnosis.feedback.saved":
+    "Avis enregistré. Il ne modifie pas le diagnostic ; il sert à revoir les règles.",
+  "diagnosis.feedback.refused": "Impossible d'enregistrer l'avis pour cette mort.",
+  "diagnosis.feedback.failed": "Échec de l'enregistrement de l'avis. Réessayez.",
 };
