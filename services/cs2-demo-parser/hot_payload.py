@@ -198,4 +198,22 @@ def build_hot_payload(parsed: dict[str, Any], *, parser: dict[str, Any], contrac
                     "unclassified_event_rows": unclassified_events},
         "provenance": {"source": "demo", "raw_artifact_required": True},
         "warnings": [item["value"] for item in warnings],
+        # PM6 C: identity-free official-end evidence for cs2.match-integrity.v1 (bounded like rounds).
+        "match_end_evidence": _match_end_evidence(parsed.get("match_end_evidence")),
+    }
+
+
+def _match_end_evidence(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    rounds = [row for row in value.get("rounds") or [] if isinstance(row, dict)][:HOT_LIMITS["rounds"]]
+    panel = value.get("win_panel_ticks")
+    return {
+        "schema_version": value.get("schema_version"),
+        "game_phase_available": value.get("game_phase_available") is True,
+        "rounds": [{"number": _integer(row.get("number")), "end_tick": _integer(row.get("end_tick")),
+                    "reason": _text(row.get("reason")), "game_phase": _integer(row.get("game_phase"))}
+                   for row in rounds],
+        "win_panel_ticks": None if panel is None else [t for t in (_integer(x) for x in panel) if t is not None][:64],
+        "voided_rounds": _integer(value.get("voided_rounds")) or 0,
     }

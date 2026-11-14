@@ -25,6 +25,9 @@ export type GuidanceCategory =
   | "invalid_file" // the file cannot be read (corrupted, empty, too small)
   | "incompatible_format" // not a .dem / outside accepted size
   | "insufficient_sample" // valid demo, too few usable rounds
+  | "match_not_finished" // PM6 C: no verified official end (interrupted, truncated, inconsistent)
+  | "match_insufficient_rounds" // PM6 C: fewer valid played rounds than the contract minimum
+  | "match_player_coverage" // PM6 C: the demo does not identify the players well enough
   | "temporary_failure" // transient failure on our side; retry when allowed
   | "service_issue" // configuration/contract failure on our side: retrying cannot help
   | "raw_audit_review" // RAW evidence did not pass the audit gates
@@ -80,7 +83,16 @@ export interface GuidanceJob {
   partialParse?: boolean;
   attachmentState?: string;
   attachmentConfirmationStatus?: string | undefined;
+  /** PM6 C: `demo_jobs.match_integrity.status` (a controlled code, never a DB message). */
+  matchIntegrityStatus?: string | null | undefined;
 }
+
+const MATCH_NOT_FINISHED = new Set<string>([
+  "MATCH_END_UNVERIFIED",
+  "MATCH_FINAL_ROUND_INCOMPLETE",
+  "MATCH_DEMO_TRUNCATED",
+  "MATCH_LIFECYCLE_INCONSISTENT",
+]);
 
 const INVALID_FILE = new Set<string>([
   "CORRUPTED_DEMO",
@@ -160,6 +172,29 @@ function build(
   };
 }
 
+/** PM6 C: a RAW-audit block decided by cs2.match-integrity.v1 gets its own, actionable copy. */
+function integrityGuidance(job: GuidanceJob): DemoGuidance | null {
+  const integrity = job.matchIntegrityStatus ?? null;
+  if (!integrity) return null;
+  if (MATCH_NOT_FINISHED.has(integrity))
+    return build(job, "match_not_finished", "attention", "choose_another_demo", {
+      resendSameDemoUseless: true,
+    });
+  if (integrity === "MATCH_INSUFFICIENT_ROUNDS")
+    return build(job, "match_insufficient_rounds", "attention", "choose_another_demo", {
+      resendSameDemoUseless: true,
+    });
+  if (integrity === "MATCH_PLAYER_COVERAGE_INSUFFICIENT")
+    return build(job, "match_player_coverage", "attention", "choose_another_demo", {
+      resendSameDemoUseless: true,
+    });
+  if (integrity === "MATCH_DEMO_CORRUPTED")
+    return build(job, "invalid_file", "error", "choose_another_demo", {
+      resendSameDemoUseless: true,
+    });
+  return null;
+}
+
 export function classifyDemoJob(job: GuidanceJob): DemoGuidance {
   const action = identityActionFor({
     status: job.status,
@@ -182,10 +217,13 @@ export function classifyDemoJob(job: GuidanceJob): DemoGuidance {
     case "cancelled":
       return build(job, "cancelled", "info", "none");
     case "blocked_raw_audit":
-      return build(job, "raw_audit_review", "review", "report", {
-        requiresSupport: true,
-        resendSameDemoUseless: true,
-      });
+      return (
+        integrityGuidance(job) ??
+        build(job, "raw_audit_review", "review", "report", {
+          requiresSupport: true,
+          resendSameDemoUseless: true,
+        })
+      );
     case "processed": {
       if (action === "reprocess_current_parser")
         return build(job, "older_parser", "attention", "reprocess", {
@@ -247,6 +285,8 @@ export function classifyDemoJob(job: GuidanceJob): DemoGuidance {
     return build(job, "insufficient_sample", "attention", "choose_another_demo", {
       resendSameDemoUseless: true,
     });
+  const integrityGuide = code === "RAW_AUDIT_BLOCKED" ? integrityGuidance(job) : null;
+  if (integrityGuide) return integrityGuide;
   if (code === "RAW_AUDIT_BLOCKED")
     return build(job, "raw_audit_review", "review", "report", {
       requiresSupport: true,
@@ -307,6 +347,9 @@ export const STOPPED_GUIDANCE: ReadonlySet<GuidanceCategory> = new Set<GuidanceC
   "invalid_file",
   "incompatible_format",
   "insufficient_sample",
+  "match_not_finished",
+  "match_insufficient_rounds",
+  "match_player_coverage",
   "temporary_failure",
   "service_issue",
   "raw_audit_review",

@@ -35,7 +35,7 @@ import {
 import type { DnaSnapshotFeatureRow } from "@/lib/playerDnaSnapshot";
 
 const JOB_COLUMNS =
-  "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status, match_id, admission_verdict, admission_limitations";
+  "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status, match_id, admission_verdict, admission_limitations, match_integrity";
 const METRIC_COLUMNS =
   "match_id, kills, deaths, assists, adr, kast, hs_percent, rating, rounds_played, first_kills, first_deaths, trade_kills, flash_assists, utility_damage, clutch_attempts, clutch_wins, ct_rating, t_rating";
 const MATCH_COLUMNS =

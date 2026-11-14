@@ -166,6 +166,34 @@ def _parse_event_with_context(
             return None, exc
 
 
+def _parse_round_end_game_phase(demo: Any) -> list[dict[str, int]] | None:
+    """PM6 C: CCSGameRules m_gamePhase at the tick of every round_end.
+
+    Read in its own call so the governed RAW round_end rows keep their reviewed shape.
+    ``game_phase`` = 5 (GAMEPHASE_MATCH_ENDED) on the final round_end is the HIGH-reliability
+    official end signal of ``cs2.match-integrity.v1`` (docs/pm6/PM6_MATCH_INTEGRITY.md). None
+    means the property could not be read (never guessed); rows without a finite phase are
+    skipped, not zeroed.
+    """
+    try:
+        frame = demo.parse_event("round_end", other=["game_phase"])
+    except Exception as exc:  # noqa: BLE001 - absence is evidence, the gate fails closed
+        _reraise_non_demo_failure(exc)
+        return None
+    out: list[dict[str, int]] = []
+    for row in _records(frame):
+        tick, phase = row.get("tick"), row.get("game_phase")
+        if isinstance(tick, bool) or isinstance(phase, bool):
+            continue
+        try:
+            tick_i, phase_i = int(tick), int(phase)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if phase == phase and tick == tick:  # NaN-safe
+            out.append({"tick": tick_i, "game_phase": phase_i})
+    return out
+
+
 def _available_events(demo: Any) -> tuple[set[str], BaseException | None]:
     method = getattr(demo, "list_game_events", None)
     if not callable(method):
@@ -1105,6 +1133,10 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
 
     raw["round_starts"] = raw["event_tables"].get("round_start") or []
     raw["round_ends"] = raw["event_tables"].get("round_end") or []
+    # PM6 C: game phase at each round_end (official end evidence), kept apart from RAW rows.
+    # Attempted even when the inventory does not advertise round_end: some demos (FACEIT, 2026)
+    # do not list it, the round streams are then observed from game state, yet the event reads.
+    raw["round_end_game_phase"] = _parse_round_end_game_phase(demo)
     # D36: already captured as RAW (every advertised event is parsed); exposed to the
     # adapter only to mark when each round becomes live.
     raw["round_freeze_ends"] = raw["event_tables"].get("round_freeze_end") or []

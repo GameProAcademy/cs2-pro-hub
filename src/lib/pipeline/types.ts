@@ -186,6 +186,23 @@ export interface RawParserOutput {
   hot_semantic_data?: HotSemanticDataV1 | undefined;
   /** Parser-native evidence, validated and persisted before normalization. */
   raw_evidence?: import("@/lib/pipeline/rawEvidence").RawDemoEvidence | undefined;
+  /** PM6 C: identity-free official-end evidence for cs2.match-integrity.v1. */
+  match_end_evidence?: MatchEndEvidenceWireV1 | null | undefined;
+}
+
+/** PM6 C: worker `match_end_evidence` (services/cs2-demo-parser/adapter.py). */
+export interface MatchEndEvidenceWireV1 {
+  schema_version: number;
+  game_phase_available: boolean;
+  rounds: {
+    number: number | null;
+    end_tick: number | null;
+    reason: string | null;
+    game_phase: number | null;
+  }[];
+  /** null = advertised but unreadable; [] = not advertised by the demo. */
+  win_panel_ticks: number[] | null;
+  voided_rounds: number;
 }
 
 export const HOT_DEMO_PAYLOAD_VERSION = 1;
@@ -215,6 +232,8 @@ export interface HotSectionQuality {
 
 export interface HotDemoPayloadV1 {
   schema_version: 1;
+  /** PM6 C: official-end evidence (absent on workers before R5.8.27). */
+  match_end_evidence?: MatchEndEvidenceWireV1 | null | undefined;
   parser: RawParserOutput["parser"];
   contract_version: number;
   demo: { sha256: string; upload_id: string };

@@ -38,6 +38,21 @@ export const guidanceFr: Record<keyof typeof guidancePtBR, string> = {
     "La démo est valide, mais elle contient trop peu de rounds exploitables pour une analyse honnête.",
   "guidance.insufficient_sample.todo":
     "Envoyez une autre démo d’un match plus long. Renvoyer cette même démo donnera le même résultat.",
+  "guidance.match_not_finished.title": "Fin officielle non confirmée",
+  "guidance.match_not_finished.body":
+    "La démo ne montre pas la fin officielle de la partie : elle a pu être interrompue avant la fin, enregistrée en partie seulement ou se terminer au milieu d'une manche.",
+  "guidance.match_not_finished.todo":
+    "Envoyez la démo d'une partie terminée officiellement (victoire ou abandon). Renvoyer cette même démo donnera le même résultat.",
+  "guidance.match_insufficient_rounds.title": "Moins de 9 manches valides",
+  "guidance.match_insufficient_rounds.body":
+    "La partie s'est terminée officiellement mais compte moins de 9 manches valides jouées, le minimum pour une analyse fiable. Les manches qui n'ont pas été jouées ne sont jamais inventées.",
+  "guidance.match_insufficient_rounds.todo":
+    "Envoyez la démo d'une partie d'au moins 9 manches jouées. Renvoyer cette même démo donnera le même résultat.",
+  "guidance.match_player_coverage.title": "Données des joueurs insuffisantes",
+  "guidance.match_player_coverage.body":
+    "La démo n'identifie pas les participants de façon assez fiable pour attribuer les statistiques à chaque joueur.",
+  "guidance.match_player_coverage.todo":
+    "Envoyez une autre démo de la partie, s'il y en a une. Renvoyer cette même démo donnera le même résultat.",
   "guidance.temporary_failure.title": "Une défaillance temporaire est survenue",
   "guidance.temporary_failure.body":
     "Notre système a rencontré une défaillance temporaire pendant l’analyse. Votre démo reste enregistrée dans l’historique.",

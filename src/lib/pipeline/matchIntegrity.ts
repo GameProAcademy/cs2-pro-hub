@@ -62,6 +62,8 @@ export interface MatchEndEvidenceV1 {
   corrupted?: boolean | undefined;
   /** Participant inventory coverage from the player gate. */
   playerCoverage: "COMPLETE" | "PARTIAL" | "INSUFFICIENT";
+  /** Rounds the producer already removed as voided by a match reset (count only). */
+  voidedRounds?: number | undefined;
 }
 
 export interface MatchEndSignal {
@@ -101,7 +103,11 @@ export function evaluateMatchIntegrity(evidence: MatchEndEvidenceV1): MatchInteg
   const contract = MATCH_INTEGRITY_CONTRACT;
   const reasons: string[] = [];
   const signals: MatchEndSignal[] = [];
-  const excluded = { voided: 0, duplicate: 0, incomplete: 0 };
+  const excluded = {
+    voided: Math.max(0, Math.trunc(evidence.voidedRounds ?? 0)),
+    duplicate: 0,
+    incomplete: 0,
+  };
 
   // Count each played round once: duplicates (same end tick, or same number) are dropped.
   const seenEnds = new Set<number>();
@@ -212,4 +218,84 @@ export function evaluateMatchIntegrity(evidence: MatchEndEvidenceV1): MatchInteg
     surrender ? "MATCH_SURRENDER_COMPLETED" : "MATCH_COMPLETED",
     surrender ? "SURRENDER" : "NORMAL",
   );
+}
+
+/**
+ * Builds the gate input from the parser output that reached the app (HOT path or direct).
+ * Rounds come from the normalized round stream (voided rounds are already removed by the
+ * worker); reason and game phase are joined by end tick from `match_end_evidence`. Missing
+ * evidence stays null: an older worker without it yields MATCH_END_UNVERIFIED, never a pass.
+ */
+export function matchEndEvidenceFromOutput(output: {
+  rounds: readonly {
+    number: number;
+    start_tick?: number | undefined;
+    end_tick?: number | undefined;
+    winner_side?: string | undefined;
+  }[];
+  players: readonly unknown[];
+  match_end_evidence?: import("@/lib/pipeline/types").MatchEndEvidenceWireV1 | null | undefined;
+}): MatchEndEvidenceV1 {
+  const wire = output.match_end_evidence ?? null;
+  const byEnd = new Map<number, { reason: string | null; game_phase: number | null }>();
+  for (const row of wire?.rounds ?? []) {
+    if (finite(row.end_tick) && !byEnd.has(row.end_tick)) byEnd.set(row.end_tick, row);
+  }
+  const phaseAvailable = wire?.game_phase_available === true;
+  return {
+    rounds: output.rounds.map((round) => {
+      const end = finite(round.end_tick) ? round.end_tick : null;
+      const joined = end !== null ? byEnd.get(end) : undefined;
+      const side = typeof round.winner_side === "string" ? round.winner_side.toUpperCase() : null;
+      return {
+        number: round.number,
+        startTick: finite(round.start_tick) ? round.start_tick : null,
+        endTick: end,
+        winner: side === "T" || side === "CT" ? side : null,
+        reason: joined?.reason ?? null,
+        gamePhaseAtEnd:
+          phaseAvailable && finite(joined?.game_phase) ? (joined?.game_phase ?? null) : null,
+      };
+    }),
+    winPanelTicks: wire ? wire.win_panel_ticks : null,
+    playerCoverage: output.players.length === 0 ? "INSUFFICIENT" : "COMPLETE",
+    voidedRounds: wire && Number.isInteger(wire.voided_rounds) ? wire.voided_rounds : 0,
+  };
+}
+
+/** Stable reason pushed into the RAW-audit block when the gate refuses a demo. */
+export function matchIntegrityBlockReason(decision: MatchIntegrityDecision): string {
+  return `MATCH_INTEGRITY:${decision.status}`;
+}
+
+/** Accepts only the documented wire shape; anything else becomes null (the gate then fails closed). */
+export function sanitizeMatchEndEvidence(
+  value: unknown,
+): import("@/lib/pipeline/types").MatchEndEvidenceWireV1 | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  if (v["schema_version"] !== 1 || !Array.isArray(v["rounds"])) return null;
+  const int = (x: unknown): number | null =>
+    typeof x === "number" && Number.isInteger(x) ? x : null;
+  const panel = v["win_panel_ticks"];
+  return {
+    schema_version: 1,
+    game_phase_available: v["game_phase_available"] === true,
+    rounds: (v["rounds"] as unknown[]).slice(0, 256).flatMap((row) => {
+      if (!row || typeof row !== "object") return [];
+      const r = row as Record<string, unknown>;
+      return [
+        {
+          number: int(r["number"]),
+          end_tick: int(r["end_tick"]),
+          reason: typeof r["reason"] === "string" ? r["reason"].slice(0, 64) : null,
+          game_phase: int(r["game_phase"]),
+        },
+      ];
+    }),
+    win_panel_ticks: Array.isArray(panel)
+      ? panel.flatMap((x) => (int(x) === null ? [] : [x as number])).slice(0, 64)
+      : null,
+    voided_rounds: Math.max(0, int(v["voided_rounds"]) ?? 0),
+  };
 }

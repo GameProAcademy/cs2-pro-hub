@@ -35,6 +35,12 @@ import { extractFeatures } from "@/lib/pipeline/features";
 import { computeMetrics } from "@/lib/pipeline/metrics";
 import { normalizeParserOutput } from "@/lib/pipeline/normalizer";
 import {
+  evaluateMatchIntegrity,
+  matchEndEvidenceFromOutput,
+  matchIntegrityBlockReason,
+  type MatchIntegrityDecision,
+} from "@/lib/pipeline/matchIntegrity";
+import {
   assertRawAdmissionApproved,
   assertRawDemoEvidence,
   runRawForensicAudit,
@@ -332,6 +338,20 @@ async function recordAdmissionDecisionV3(
     _decision: decision as unknown as Json,
   });
   if (error) throw new PipelineError("PERSISTENCE_ERROR", `admission v3: ${error.message}`);
+}
+
+async function recordMatchIntegrity(
+  jobId: string,
+  decision: MatchIntegrityDecision,
+): Promise<void> {
+  const db = await admin();
+  const { error } = await db
+    .from("demo_jobs")
+    .update({ match_integrity: decision as unknown as Json })
+    .eq("id", jobId)
+    .is("match_integrity", null);
+  if (error)
+    throw new PipelineError("PROCESSING_ERROR", `match integrity not recorded: ${error.message}`);
 }
 
 async function blockForRawAudit(
@@ -814,6 +834,22 @@ export async function processJob(
         return { jobId, status: "blocked_raw_audit", errorCode: "RAW_AUDIT_BLOCKED" };
       }
       rawApproval = rawArtifactApprovalV3(rawAudit, admissionV3, job.upload_id);
+    }
+
+    // PM6 C — cs2.match-integrity.v1: only a match that ended officially (normally or by
+    // surrender) with enough valid played rounds is analysed. Evaluated on the parser output
+    // that reached the app, recorded on the job (write-once) and, when refused, blocked through
+    // the RAW-audit block BEFORE any canonical write. EOF alone is never an official end.
+    const integrity = evaluateMatchIntegrity(matchEndEvidenceFromOutput(raw));
+    await recordMatchIntegrity(jobId, integrity);
+    if (!integrity.eligible) {
+      await blockForRawAudit(
+        jobId,
+        job.upload_id,
+        { ...rawAudit, reasons: [...rawAudit.reasons, matchIntegrityBlockReason(integrity)] },
+        durableClaim,
+      );
+      return { jobId, status: "blocked_raw_audit", errorCode: "RAW_AUDIT_BLOCKED" };
     }
 
     // FASE 2.7 — the DEMO path now uses the SAME Match Identity Resolver as

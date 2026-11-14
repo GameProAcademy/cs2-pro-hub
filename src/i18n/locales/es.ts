@@ -105,6 +105,8 @@ export const es: Dictionary = {
   "analyze.recommendation":
     "Recomendación: las demos permiten un análisis más profundo de tu juego.",
   "analyze.selectFile": "Seleccionar archivo",
+  "analyze.demo.eligibility":
+    "Para un análisis fiable, sube demos de partidas terminadas oficialmente, incluidas las terminadas por rendición (surrender), siempre que tengan al menos 9 rondas válidas. No se pueden analizar demos interrumpidas sin final oficial, incompletas o dañadas.",
   "analyze.notSent": "En esta etapa el archivo no se envía ni se procesa.",
   "analyze.ready": "listo para enviar (procesamiento no disponible en esta etapa)",
   "analyze.pipelineTitle": "Estado del procesamiento",

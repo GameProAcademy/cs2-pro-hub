@@ -669,6 +669,7 @@ export type Database = {
           identity_status: string
           last_cleanup_attempt_at: string | null
           lease_expires_at: string | null
+          match_integrity: Json | null
           match_id: string | null
           max_retries: number
           observed_nickname: string | null
@@ -750,6 +751,7 @@ export type Database = {
           identity_status?: string
           last_cleanup_attempt_at?: string | null
           lease_expires_at?: string | null
+          match_integrity?: Json | null
           match_id?: string | null
           max_retries?: number
           observed_nickname?: string | null
@@ -831,6 +833,7 @@ export type Database = {
           identity_status?: string
           last_cleanup_attempt_at?: string | null
           lease_expires_at?: string | null
+          match_integrity?: Json | null
           match_id?: string | null
           max_retries?: number
           observed_nickname?: string | null

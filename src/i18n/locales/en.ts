@@ -104,6 +104,8 @@ export const en: Dictionary = {
   "analyze.report.invalid": "Invalid format. Send images, CSV, JSON or PDF.",
   "analyze.recommendation": "Recommendation: demos allow a deeper analysis of your game.",
   "analyze.selectFile": "Select file",
+  "analyze.demo.eligibility":
+    "For a reliable analysis, upload demos of officially finished matches, including matches ended by surrender, as long as they have at least 9 valid rounds. Demos interrupted without an official end, incomplete or corrupted cannot be analysed.",
   "analyze.notSent": "At this stage the file is neither uploaded nor processed.",
   "analyze.ready": "ready to send (processing unavailable at this stage)",
   "analyze.pipelineTitle": "Processing status",

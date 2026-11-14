@@ -38,6 +38,21 @@ export const guidanceEs: Record<keyof typeof guidancePtBR, string> = {
     "La demo es válida, pero tiene pocas rondas utilizables para un análisis honesto.",
   "guidance.insufficient_sample.todo":
     "Envía otra demo de una partida más larga. Enviar esta misma demo de nuevo dará el mismo resultado.",
+  "guidance.match_not_finished.title": "Partida sin final oficial confirmado",
+  "guidance.match_not_finished.body":
+    "La demo no muestra el final oficial de la partida: puede haberse interrumpido antes de terminar, haberse grabado solo en parte o terminar en mitad de una ronda.",
+  "guidance.match_not_finished.todo":
+    "Sube la demo de una partida terminada oficialmente (victoria o rendición). Subir esta misma demo de nuevo dará el mismo resultado.",
+  "guidance.match_insufficient_rounds.title": "Menos de 9 rondas válidas",
+  "guidance.match_insufficient_rounds.body":
+    "La partida terminó oficialmente, pero tiene menos de 9 rondas válidas jugadas, el mínimo para un análisis fiable. Las rondas que no se jugaron nunca se inventan.",
+  "guidance.match_insufficient_rounds.todo":
+    "Sube la demo de una partida con al menos 9 rondas jugadas. Subir esta misma demo de nuevo dará el mismo resultado.",
+  "guidance.match_player_coverage.title": "Datos de jugadores insuficientes",
+  "guidance.match_player_coverage.body":
+    "La demo no identifica a los participantes con la seguridad suficiente para atribuir las estadísticas a cada jugador.",
+  "guidance.match_player_coverage.todo":
+    "Sube otra demo de la partida, si la hay. Subir esta misma demo de nuevo dará el mismo resultado.",
   "guidance.temporary_failure.title": "Ocurrió una falla temporal",
   "guidance.temporary_failure.body":
     "Nuestro sistema encontró una falla temporal durante el análisis. Tu demo sigue registrada en el historial.",

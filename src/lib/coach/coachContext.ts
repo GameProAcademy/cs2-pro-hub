@@ -249,6 +249,11 @@ export interface CoachFacts {
     dateBasis: "played" | "processed";
     admission: string | null;
     limitations: string[];
+    /**
+     * PM6 C: SURRENDER = the match ended early by an official surrender; validRounds is the
+     * number of rounds actually played and analysed. null = not recorded for this match.
+     */
+    matchEnd: { endedBy: "NORMAL" | "SURRENDER"; validRounds: number } | null;
     kills: number | null;
     deaths: number | null;
     assists: number | null;
@@ -491,6 +496,7 @@ export function buildCoachFacts(
     dateBasis: m.dateSource,
     admission: m.admission,
     limitations: m.limitations,
+    matchEnd: m.matchEnd ?? null,
     kills: m.kills,
     deaths: m.deaths,
     assists: m.assists,
@@ -781,6 +787,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "18. GamePro lessons and courses: you may recommend ONLY items from catalogSuggestions, and only when one helps with what the player asked. Copy its title and its url exactly as given (a Markdown link [title](url) is fine), say in one sentence why it fits this player, recommend at most two, never the same one twice. They open on the external GamePro course site: never say the player started, watched or finished a lesson. If catalogSuggestions is empty, do not recommend lessons or courses and never write any URL. Never invent a title, a course or a link.",
     "22. CS2 PRO Score: proScore.shown is the player's CS2 PRO Score exactly as the app shows it (version in proScore.version). It is an ABSOLUTE index of measured performance over the player's own complete matches: never call it a percentile, a rank, a tier or a comparison with other players or professionals, and never say what score is 'average' or 'good' for players in general. When proScore.status is not READY there is NO score: say it is not available yet and why (sample or coverage), and never estimate one. When asked how it is formed, use only proScore.components (their weights and whether each is in the score); proScore.confidence describes sample size only, not skill. Sentences that mention a percentile, a rank or other players are removed before the player sees the answer: state the Score in its own sentence, and if the player asks for a percentile, rank or comparison, answer in a SEPARATE short sentence that the app has no such comparison, without repeating those words next to the Score.",
     "23. Sides and rounds: sides.ct / sides.t .roundContext hold the player's OWN rounds on each side (version in sides.roundContextVersion): rounds won and lost are the side that won the round as recorded by the demo, compared with the player's side in that round. Never call it the match result or the score, never name teams, and never derive who won from kills or deaths. When rateStatus is INSUFFICIENT_SAMPLE there are no rates for that side: give the counts and say the sample is small. When roundContext is null, CT/T rounds won are not available. Never swap CT and T.",
+    "24. Match end: matches[].matchEnd.endedBy SURRENDER means the match ended early by an official surrender after matchEnd.validRounds played rounds. Treat it as a shorter sample: never count, estimate or project the rounds that were not played, never penalise the player for them, and never present a surrendered match as a full-length one. matchEnd null means the end was not recorded for that match; say nothing about how it ended.",
     ...coachPersonaRules(),
   ].join("\n");
 }

@@ -493,6 +493,75 @@ def normalize_events(
 
 
 # --------------------------------------------------------------------------- #
+# match end evidence (PM6 C, cs2.match-integrity.v1)
+# --------------------------------------------------------------------------- #
+MATCH_END_EVIDENCE_SCHEMA = 1
+# CS round-end reasons (demoparser2 ROUND_WIN_REASON). Rounds observed from game state carry
+# the numeric round_win_reason; event rows carry the token. Both are reported as the token.
+ROUND_END_REASON_TOKENS = {
+    0: "still_in_progress", 1: "bomb_exploded", 4: "t_saved", 7: "bomb_defused", 8: "t_killed",
+    9: "ct_killed", 10: "draw", 12: "time_ran_out", 16: "game_start", 17: "t_surrender",
+    18: "ct_surrender",
+}
+
+
+def _reason_token(value: Any) -> str | None:
+    number = _int(value)
+    if number is not None and not isinstance(value, str):
+        return ROUND_END_REASON_TOKENS.get(number, f"code_{number}")
+    text = _text(value)
+    if text is not None and text.isdigit():
+        return ROUND_END_REASON_TOKENS.get(int(text), f"code_{text}")
+    return text
+
+
+def build_match_end_evidence(raw: Record, rounds: Sequence[Record]) -> Record:
+    """Identity-free evidence for the app's match-integrity gate.
+
+    Per played round: its end tick, the round_end reason token and the game phase at that
+    tick. Plus the cs_win_panel_match ticks and the number of rounds voided by a reset.
+    Unavailable stays None (never an empty list that would read as "observed absent"):
+    * ``game_phase_available`` is False when the phase could not be read;
+    * ``win_panel_ticks`` is None when the event was advertised but could not be parsed,
+      [] when the demo does not advertise it at all.
+    """
+    phases_raw = raw.get("round_end_game_phase")
+    phases: dict[int, int] = {}
+    if isinstance(phases_raw, list):
+        for row in phases_raw:
+            tick, phase = _int(_pick(row, "tick")), _int(_pick(row, "game_phase"))
+            if tick is not None and phase is not None and tick not in phases:
+                phases[tick] = phase
+    reasons: dict[int, str] = {}
+    for row in raw.get("round_ends") or []:
+        tick, reason = _int(_pick(row, "tick")), _reason_token(_pick(row, "reason"))
+        if tick is not None and reason is not None and tick not in reasons:
+            reasons[tick] = reason
+    inventory = set(raw.get("event_inventory") or [])
+    panel_rows = (raw.get("event_tables") or {}).get("cs_win_panel_match")
+    if "cs_win_panel_match" not in inventory:
+        win_panel: list[int] | None = []
+    elif panel_rows is None:
+        win_panel = None
+    else:
+        win_panel = _sorted_ticks(panel_rows)
+    out_rounds: list[Record] = []
+    for entry in rounds:
+        end = entry.get("end_tick")
+        item: Record = {"number": entry.get("number"), "end_tick": end}
+        item["reason"] = reasons.get(end) if isinstance(end, int) else None
+        item["game_phase"] = phases.get(end) if isinstance(end, int) else None
+        out_rounds.append(item)
+    return {
+        "schema_version": MATCH_END_EVIDENCE_SCHEMA,
+        "game_phase_available": isinstance(phases_raw, list),
+        "rounds": out_rounds,
+        "win_panel_ticks": win_panel,
+        "voided_rounds": len(raw.get("voided_rounds") or []),
+    }
+
+
+# --------------------------------------------------------------------------- #
 # full output
 # --------------------------------------------------------------------------- #
 def build_raw_parser_output(raw: Record) -> Record:
@@ -546,4 +615,5 @@ def build_raw_parser_output(raw: Record) -> Record:
         "rounds": rounds,
         "events": events,
         "warnings": warnings,
+        "match_end_evidence": build_match_end_evidence(raw, rounds),
     }
