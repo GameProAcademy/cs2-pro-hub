@@ -175,3 +175,16 @@ describe("radar assets are decoupled and traceable", () => {
       expect(readFileSync(f, "utf8")).not.toContain("radarAssets");
   });
 });
+
+describe("search params", () => {
+  it("only documented filters reach the strict server input", async () => {
+    const { clean } = await import("@/components/real/RealHeatmap");
+    const { spatialHeatmapInput } = await import("@/lib/spatial.functions");
+    const withExtra = { map: "de_mirage", v: 3, utm_source: "x" } as unknown as Parameters<
+      typeof clean
+    >[0];
+    expect(clean(withExtra)).toEqual({ map: "de_mirage" });
+    expect(spatialHeatmapInput.safeParse(clean(withExtra)).success).toBe(true);
+    expect(spatialHeatmapInput.safeParse(withExtra).success).toBe(false);
+  });
+});

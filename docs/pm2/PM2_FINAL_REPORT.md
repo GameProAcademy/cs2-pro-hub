@@ -168,6 +168,7 @@ Demo local autorizada (Dust2 profissional pública):
 5. **`planted_c4`** (as 2 kills sem atacante em produção) passou a WORLD_KILL.
 6. **Defeito visual do replay.** Partida desconhecida mostrava a primeira partida no seletor; corrigido neste PR.
 7. **Gate de mapa.** `de_mirage` passou de NOT_VALIDATED para VALIDATED, com evidência (§22). Os testes que usavam Mirage como exemplo de mapa não validado passaram a usar Inferno.
+8. **`/maps` com parâmetro extra na URL** (achado na validação em produção, defeito do PM1): `?v=3`, `utm_*` e similares eram repassados ao input estrito do servidor e a página caía em erro. Agora só os filtros documentados são enviados.
 
 ## 16. Limitações e dados não medidos
 

@@ -44,8 +44,16 @@ export interface HeatmapSearch {
 
 export const spatialQueryKey = (s: HeatmapSearch) => ["player", "spatial", s] as const;
 
-const clean = (s: HeatmapSearch) =>
-  Object.fromEntries(Object.entries(s).filter(([, v]) => v !== undefined)) as HeatmapSearch;
+const HEATMAP_SEARCH_KEYS = ["map", "layer", "side", "level", "matchId", "weapon"] as const;
+
+/**
+ * Only the documented filters reach the server function (its input is strict): an unrelated URL
+ * parameter (e.g. `?utm_source=` or a cache-buster) must never turn the page into an error.
+ */
+export const clean = (s: HeatmapSearch) =>
+  Object.fromEntries(
+    HEATMAP_SEARCH_KEYS.flatMap((k) => (s[k] === undefined ? [] : [[k, s[k]]])),
+  ) as HeatmapSearch;
 
 export function RealHeatmapPage({
   search,
