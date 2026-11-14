@@ -746,6 +746,15 @@ export async function processJob(
       : job.declared_nickname
         ? { kind: "nickname", nickname: job.declared_nickname }
         : null;
+    // PM6 D: only nicknames THIS user confirmed by manual selection (never observations).
+    const { data: confirmedRows } = player
+      ? await db
+          .from("player_nickname_history")
+          .select("nickname, steam_id")
+          .eq("player_id", player.id)
+          .eq("source", "manual_selection")
+          .limit(100)
+      : { data: [] };
     const attachment = resolvePlayerAttachment({
       participants: match.players.flatMap((demoPlayer) => {
         const participantKey = demoPlayer.participantKey ?? demoPlayer.steamId;
@@ -764,6 +773,11 @@ export async function processJob(
       profileSteamId: player?.steam_id ?? null,
       declaration,
       automaticMatchRejected: job.attachment_confirmation_status === "user_rejected",
+      confirmedNicknames: (confirmedRows ?? []).flatMap((row) =>
+        typeof row.nickname === "string"
+          ? [{ nickname: row.nickname, steamId: row.steam_id ?? null }]
+          : [],
+      ),
     });
     // Metrics target: the DEMO participant's own source-local key. Steam remains
     // optional evidence and is never substituted for the internal player id.
@@ -912,6 +926,27 @@ export async function processJob(
         throw new PipelineError("IDENTITY_RESOLUTION_ERROR", identityEventError.message);
       }
     }
+    if (attachment.state === "attached" && attachment.method === "confirmed_nickname_history") {
+      const { error: historyEventError } = await db.rpc("record_demo_identity_event", {
+        _job_id: jobId,
+        _user_id: job.user_id,
+        _event_key: `auto:nickname_history:${attachment.participantKey}`,
+        _decision: {
+          status: "auto_resolved",
+          confirmation_status: "user_confirmed",
+          participant_key: attachment.participantKey,
+          nickname: attachment.observedNickname,
+          method: attachment.method,
+          source: "user",
+          confidence_label: attachment.confidence,
+          confidence_score: confidenceScore(attachment.confidence),
+          evidence: { basis: "confirmed_nickname_history", match: "exact" },
+        },
+      });
+      if (historyEventError) {
+        throw new PipelineError("IDENTITY_RESOLUTION_ERROR", historyEventError.message);
+      }
+    }
 
     // PLAYER ATTACHMENT — metrics, features and the per-player projection only
     // exist when the user's Steam ID was PROVEN inside this demo. Without it the
@@ -936,9 +971,11 @@ export async function processJob(
       attachment_confirmation_status:
         attachment.method === "steam_id_confirmed"
           ? "pending_confirmation"
-          : attachment.state === "attached"
-            ? "manual_selected"
-            : "not_required",
+          : attachment.method === "confirmed_nickname_history"
+            ? "user_confirmed"
+            : attachment.state === "attached"
+              ? "manual_selected"
+              : "not_required",
       attachment_participant_key: attachment.participantKey,
       observed_nickname: attachment.observedNickname,
       attachment_reason: attachment.reason,
