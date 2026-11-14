@@ -100,3 +100,15 @@ Fixture `src/lib/pipeline/__tests__/fixtures/match_end_corpus.json`: worker dest
 **Correção sobre a GC Cache.** A demo não anuncia `round_start` nem `round_end`. O worker deriva os inícios dos rounds pelo estado do jogo, mas não os fins. A decisão real é, portanto, `MATCH_FINAL_ROUND_INCOMPLETE`, e não `MATCH_END_UNVERIFIED` como previsto acima pelo probe direto. Ela continua bloqueada, inclusive por não ter jogadores.
 
 Ler `round_end` mesmo quando não está no inventário (o evento é legível: 12 linhas) é uma melhoria de fidelidade da etapa E.
+
+### Surrender validado em demo real
+
+- A fixture pública do CI (`test_demo.dem`, LaihoE/demoparser, MIT) é uma partida **encerrada por surrender oficial**: 10 rounds jogados, último `round_end` com motivo `ct_surrender` e `cs_win_panel_match` presente.
+- No tick do último `round_end`, `game_phase` ainda vale **2** (em jogo), não 5. No surrender, o sinal oficial é o motivo, não a fase. O avaliador já trata os dois sinais como HIGH e independentes.
+- Decisão no fluxo real: `MATCH_SURRENDER_COMPLETED`, com 10 rounds válidos. O caminho de surrender passa a **VALIDADO EM TESTE com demo real**, no fluxo do worker e na E2E da fila.
+
+### Defeito encontrado pela E2E real
+
+O `app.py` monta o payload de `/v1/parse` com uma lista explícita de chaves e descartava `match_end_evidence`. O app recebia `null` e, por desenho, bloqueava tudo como `MATCH_END_UNVERIFIED`.
+
+O cenário `admission_v3_limited_demo_persists_real_metrics_readable_only_by_its_owner` pegou a falha. A chave agora é repassada e há um teste de contrato do endpoint.
