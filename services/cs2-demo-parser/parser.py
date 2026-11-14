@@ -28,6 +28,7 @@ import asyncio
 from typing import Any
 
 from adapter import build_raw_parser_output
+from trajectory import parse_round_trajectories
 from capability_catalog import catalog_payload
 from demo_integrity import validate_demo_structure
 from errors import CorruptedDemoError, InvalidDemoError, UnsupportedDemoError
@@ -1326,4 +1327,12 @@ def parse_demo_file(path: str) -> dict[str, Any]:
             if not str(warning).startswith("economy_unavailable:")
         ]
     output["raw_evidence"] = build_raw_evidence(raw, output)
+    # PM2 4.2.4: sampled positions per round for the 2D replay, after (and apart from) the governed
+    # RAW evidence, so the field catalog, matrix and mapping digest are unchanged.
+    output["round_trajectories"] = parse_round_trajectories(
+        getattr(demo, "parse_ticks", None),
+        list(output.get("rounds") or []),
+        _records,
+        _reraise_non_demo_failure,
+    )
     return output

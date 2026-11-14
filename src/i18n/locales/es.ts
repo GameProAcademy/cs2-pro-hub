@@ -11,11 +11,13 @@ import { scoreEs } from "./score/es";
 import { profileEs } from "./profile/es";
 import { spatialEs } from "./spatial/es";
 import { diagnosisEs } from "./diagnosis/es";
+import { replayEs } from "./replay/es";
 
 export const es: Dictionary = {
   ...profileEs,
   ...spatialEs,
   ...diagnosisEs,
+  ...replayEs,
   ...catalogEs,
   ...demoFlowEs,
   ...guidanceEs,

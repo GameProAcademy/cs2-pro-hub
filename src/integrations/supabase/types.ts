@@ -2033,6 +2033,50 @@ export type Database = {
           },
         ]
       }
+      match_trajectories: {
+        Row: {
+          created_at: string
+          encoding: string | null
+          match_id: string
+          parser_revision: string | null
+          reason: string | null
+          schema: string
+          skipped: Json
+          status: string
+          step_ticks: number | null
+        }
+        Insert: {
+          created_at?: string
+          encoding?: string | null
+          match_id: string
+          parser_revision?: string | null
+          reason?: string | null
+          schema: string
+          skipped?: Json
+          status: string
+          step_ticks?: number | null
+        }
+        Update: {
+          created_at?: string
+          encoding?: string | null
+          match_id?: string
+          parser_revision?: string | null
+          reason?: string | null
+          schema?: string
+          skipped?: Json
+          status?: string
+          step_ticks?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_trajectories_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           canonical_schema_version: number
@@ -3586,6 +3630,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "match_rounds"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      round_trajectories: {
+        Row: {
+          created_at: string
+          dropped_players: number
+          end_tick: number
+          first_tick: number
+          match_id: string
+          players: Json
+          round_number: number
+          sample_count: number
+          step_ticks: number
+        }
+        Insert: {
+          created_at?: string
+          dropped_players?: number
+          end_tick: number
+          first_tick: number
+          match_id: string
+          players: Json
+          round_number: number
+          sample_count: number
+          step_ticks: number
+        }
+        Update: {
+          created_at?: string
+          dropped_players?: number
+          end_tick?: number
+          first_tick?: number
+          match_id?: string
+          players?: Json
+          round_number?: number
+          sample_count?: number
+          step_ticks?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_trajectories_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "match_trajectories"
+            referencedColumns: ["match_id"]
           },
         ]
       }

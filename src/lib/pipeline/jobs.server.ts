@@ -21,6 +21,7 @@ import {
 import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
 import { loadCanonicalCandidates } from "@/lib/canonical/candidates.server";
 import { persistCanonicalObservation } from "@/lib/canonical/canonical.persistence.server";
+import { persistRoundTrajectories } from "@/lib/replay/trajectory.persistence.server";
 import { applyServerPolicyV3 } from "@/lib/canonical/canonicalContractV3";
 import { refreshPlayerDnaSnapshot } from "@/lib/playerDnaSnapshot.server";
 import {
@@ -988,6 +989,13 @@ export async function processJob(
     // exist when the user's Steam ID was PROVEN inside this demo. Without it the
     // job still ends successfully: the match is canonicalised and simply carries
     // no projection yet, with the real reason recorded.
+    // PM2 4.2.4: replay samples, after the canonical commit; best effort, never fails the job.
+    await persistRoundTrajectories(db, {
+      matchId: canonical.matchId,
+      trajectories: raw.round_trajectories,
+      parserRevision: raw.parser.revision ?? null,
+    });
+
     let projectedMatchId = canonical.matchId;
     const finishedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAt;

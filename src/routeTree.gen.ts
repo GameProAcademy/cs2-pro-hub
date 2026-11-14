@@ -27,6 +27,7 @@ import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authen
 import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
 import { Route as AuthenticatedPlayerDnaRouteImport } from './routes/_authenticated/player-dna'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
@@ -142,6 +143,11 @@ const AuthenticatedPlayerDnaRoute = AuthenticatedPlayerDnaRouteImport.update({
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReplayRoute = AuthenticatedReplayRouteImport.update({
+  id: '/replay',
+  path: '/replay',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/performance': typeof AuthenticatedPerformanceRoute
   '/player-dna': typeof AuthenticatedPlayerDnaRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/replay': typeof AuthenticatedReplayRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -343,6 +350,7 @@ export interface FileRoutesByTo {
   '/performance': typeof AuthenticatedPerformanceRoute
   '/player-dna': typeof AuthenticatedPlayerDnaRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/replay': typeof AuthenticatedReplayRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -388,6 +396,7 @@ export interface FileRoutesById {
   '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
   '/_authenticated/player-dna': typeof AuthenticatedPlayerDnaRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/replay': typeof AuthenticatedReplayRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -433,6 +442,7 @@ export interface FileRouteTypes {
     | '/performance'
     | '/player-dna'
     | '/profile'
+    | '/replay'
     | '/training'
     | '/upload'
     | '/admin/audit'
@@ -475,6 +485,7 @@ export interface FileRouteTypes {
     | '/performance'
     | '/player-dna'
     | '/profile'
+    | '/replay'
     | '/training'
     | '/upload'
     | '/admin/audit'
@@ -519,6 +530,7 @@ export interface FileRouteTypes {
     | '/_authenticated/performance'
     | '/_authenticated/player-dna'
     | '/_authenticated/profile'
+    | '/_authenticated/replay'
     | '/_authenticated/training'
     | '/_authenticated/upload'
     | '/_authenticated/admin/audit'
@@ -692,6 +704,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/replay': {
+      id: '/_authenticated/replay'
+      path: '/replay'
+      fullPath: '/replay'
+      preLoaderRoute: typeof AuthenticatedReplayRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/training': {
@@ -909,6 +928,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
   AuthenticatedPlayerDnaRoute: typeof AuthenticatedPlayerDnaRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedReplayRoute: typeof AuthenticatedReplayRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
 }
@@ -927,6 +947,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
   AuthenticatedPlayerDnaRoute: AuthenticatedPlayerDnaRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedReplayRoute: AuthenticatedReplayRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
 }
