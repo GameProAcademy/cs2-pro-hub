@@ -508,3 +508,62 @@ describe("AI Coach server wiring", () => {
     );
   });
 });
+
+describe("PM2: death patterns in the Coach facts", () => {
+  const patterns = {
+    rulesVersion: "cs2.death-rules.v1" as const,
+    matches: 3,
+    deaths: 14,
+    period: { from: "2026-11-01T00:00:00Z", to: "2026-11-10T00:00:00Z" },
+    patterns: [
+      {
+        ruleId: "TRADE_NOT_OBSERVED",
+        version: "cs2.death-rules.v1" as const,
+        occurrences: 9,
+        evaluatedDeaths: 12,
+        matches: 3,
+        status: "RECURRENT" as const,
+        examples: [{ matchId: "m1", roundNumber: 1, tick: 10, eventId: "e" }],
+      },
+      {
+        ruleId: "POSSIBLE_EXPOSURE",
+        version: "cs2.death-rules.v1" as const,
+        occurrences: 0,
+        evaluatedDeaths: 0,
+        matches: 0,
+        status: "NOT_SUPPORTED" as const,
+        examples: [],
+      },
+    ],
+  };
+
+  it("carries counts and status only, never event refs or identities", () => {
+    const facts = buildCoachFacts(overview([match("m1")]), buildPlayerDna([]), "en", {
+      deathPatterns: patterns,
+    });
+    expect(facts.deathPatterns).toMatchObject({
+      matches: 3,
+      deaths: 14,
+      minimum: { deaths: 10, matches: 3, occurrences: 4 },
+      patterns: [
+        {
+          rule: "TRADE_NOT_OBSERVED",
+          status: "RECURRENT",
+          occurrences: 9,
+          evaluatedDeaths: 12,
+          matches: 3,
+        },
+        { rule: "POSSIBLE_EXPOSURE", status: "NOT_SUPPORTED" },
+      ],
+    });
+    expect(JSON.stringify(facts.deathPatterns)).not.toContain("eventId");
+  });
+
+  it("is null when not provided, and the prompt rules forbid blame and confidence numbers", () => {
+    expect(buildCoachFacts(overview([match("m1")]), buildPlayerDna([])).deathPatterns).toBeNull();
+    const prompt = coachSystemPrompt("en");
+    expect(prompt).toContain("25. Deaths:");
+    expect(prompt).toContain("never blame teammates");
+    expect(prompt).toContain("Never give a probability or a confidence percentage");
+  });
+});

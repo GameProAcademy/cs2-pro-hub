@@ -27,6 +27,8 @@ import { canonicalMetric } from "@/lib/metrics/canonicalMetrics";
 import { roundHalfUp } from "@/lib/metrics/rounding";
 import type { RealPlayerDna } from "@/lib/playerDna";
 import type { PlayerOverview } from "@/lib/playerOverview";
+import type { DeathPatternsResponse } from "@/lib/diagnosis.functions";
+import { PATTERN_POLICY } from "@/lib/diagnosis/deathRules";
 
 export const COACH_VERSION = "ai-coach-v3";
 export const COACH_MAX_MESSAGE_CHARS = 1000;
@@ -240,6 +242,25 @@ export interface CoachFacts {
     /** round-context-v1 when the own round context is known, else null. */
     roundContextVersion: string | null;
   };
+  /**
+   * PM2: recurring death patterns from the death review (cs2.death-rules.v1). Only RECURRENT
+   * rules may be presented as a tendency; the others carry their counts and status. null = not
+   * available (read failed or not provided).
+   */
+  deathPatterns: {
+    rulesVersion: string;
+    matches: number;
+    deaths: number;
+    period: { from: string; to: string } | null;
+    minimum: { deaths: number; matches: number; occurrences: number };
+    patterns: Array<{
+      rule: string;
+      status: "RECURRENT" | "INSUFFICIENT_SAMPLE" | "NOT_SUPPORTED";
+      occurrences: number;
+      evaluatedDeaths: number;
+      matches: number;
+    }>;
+  } | null;
   /** Per-match rows relevant to THIS message (maps it names, else the most recent ones). */
   matchesIncluded: number;
   matches: Array<{
@@ -476,6 +497,8 @@ export function buildCoachFacts(
     declared?: CoachDeclaredProfile;
     /** The Score exactly as the pages show it; absent → reported as not available. */
     proScore?: ProScore;
+    /** PM2: recurring death patterns (cs2.death-rules.v1) as the death review shows them. */
+    deathPatterns?: DeathPatternsResponse | null;
   } = {},
 ): CoachFacts {
   const dict = dictionaries[locale];
@@ -625,6 +648,26 @@ export function buildCoachFacts(
       roundContextVersion:
         xray?.roundContext?.status === "OBSERVED" ? xray.roundContext.version : null,
     },
+    deathPatterns: options.deathPatterns
+      ? {
+          rulesVersion: options.deathPatterns.rulesVersion,
+          matches: options.deathPatterns.matches,
+          deaths: options.deathPatterns.deaths,
+          period: options.deathPatterns.period,
+          minimum: {
+            deaths: PATTERN_POLICY.minDeaths,
+            matches: PATTERN_POLICY.minMatches,
+            occurrences: PATTERN_POLICY.minOccurrences,
+          },
+          patterns: options.deathPatterns.patterns.map((p) => ({
+            rule: p.ruleId,
+            status: p.status,
+            occurrences: p.occurrences,
+            evaluatedDeaths: p.evaluatedDeaths,
+            matches: p.matches,
+          })),
+        }
+      : null,
     matchesIncluded: matches.length,
     matches,
     totals: coachTotals(allRows),
@@ -788,6 +831,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "22. CS2 PRO Score: proScore.shown is the player's CS2 PRO Score exactly as the app shows it (version in proScore.version). It is an ABSOLUTE index of measured performance over the player's own complete matches: never call it a percentile, a rank, a tier or a comparison with other players or professionals, and never say what score is 'average' or 'good' for players in general. When proScore.status is not READY there is NO score: say it is not available yet and why (sample or coverage), and never estimate one. When asked how it is formed, use only proScore.components (their weights and whether each is in the score); proScore.confidence describes sample size only, not skill. Sentences that mention a percentile, a rank or other players are removed before the player sees the answer: state the Score in its own sentence, and if the player asks for a percentile, rank or comparison, answer in a SEPARATE short sentence that the app has no such comparison, without repeating those words next to the Score.",
     "23. Sides and rounds: sides.ct / sides.t .roundContext hold the player's OWN rounds on each side (version in sides.roundContextVersion): rounds won and lost are the side that won the round as recorded by the demo, compared with the player's side in that round. Never call it the match result or the score, never name teams, and never derive who won from kills or deaths. When rateStatus is INSUFFICIENT_SAMPLE there are no rates for that side: give the counts and say the sample is small. When roundContext is null, CT/T rounds won are not available. Never swap CT and T.",
     "24. Match end: matches[].matchEnd.endedBy SURRENDER means the match ended early by an official surrender after matchEnd.validRounds played rounds. Treat it as a shorter sample: never count, estimate or project the rounds that were not played, never penalise the player for them, and never present a surrendered match as a full-length one. matchEnd null means the end was not recorded for that match; say nothing about how it ended.",
+    "25. Deaths: deathPatterns holds the death review's rule counts (version in deathPatterns.rulesVersion). Present a rule as a recurring pattern ONLY when its status is RECURRENT, always with its numbers (occurrences of evaluatedDeaths, over matches) and the period; with INSUFFICIENT_SAMPLE say the sample is too small and draw no tendency; NOT_SUPPORTED rules (exposure, isolation, re-peek, rotation timing) are not measured: never claim them. TRADE_NOT_OBSERVED means no teammate killed the killer within the trade window: never blame teammates and never say a trade was possible. Never give a probability or a confidence percentage for a death. deathPatterns null means the death review is not available: say nothing about death patterns.",
     ...coachPersonaRules(),
   ].join("\n");
 }
