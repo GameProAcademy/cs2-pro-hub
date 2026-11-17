@@ -12,6 +12,7 @@ import {
   User,
   Skull,
   Film,
+  Crosshair,
 } from "lucide-react";
 
 import type { TranslationKey } from "@/i18n/config";
@@ -33,6 +34,7 @@ export const navItems: NavItem[] = [
   { labelKey: "nav.maps", to: "/maps", icon: MapPinned },
   { labelKey: "nav.deaths", to: "/deaths", icon: Skull },
   { labelKey: "nav.replay", to: "/replay", icon: Film },
+  { labelKey: "nav.combat", to: "/duels", icon: Crosshair },
   { labelKey: "nav.analysis", to: "/analysis", icon: Stethoscope, primary: true },
   { labelKey: "nav.training", to: "/training", icon: Target, primary: true },
   { labelKey: "nav.goals", to: "/goals", icon: Flag },

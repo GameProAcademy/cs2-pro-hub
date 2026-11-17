@@ -11,12 +11,14 @@ import { scoreEn } from "./score/en";
 import { profileEn } from "./profile/en";
 import { spatialEn } from "./spatial/en";
 import { diagnosisEn } from "./diagnosis/en";
+import { combatEn } from "./combat/en";
 import { replayEn } from "./replay/en";
 
 export const en: Dictionary = {
   ...profileEn,
   ...spatialEn,
   ...diagnosisEn,
+  ...combatEn,
   ...replayEn,
   ...catalogEn,
   ...demoFlowEn,

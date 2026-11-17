@@ -11,12 +11,14 @@ import { scorePtPT } from "./score/pt-PT";
 import { profilePtPT } from "./profile/pt-PT";
 import { spatialPtPT } from "./spatial/pt-PT";
 import { diagnosisPtPT } from "./diagnosis/pt-PT";
+import { combatPtPT } from "./combat/pt-PT";
 import { replayPtPT } from "./replay/pt-PT";
 
 export const ptPT: Dictionary = {
   ...profilePtPT,
   ...spatialPtPT,
   ...diagnosisPtPT,
+  ...combatPtPT,
   ...replayPtPT,
   ...catalogPtPT,
   ...demoFlowPtPT,
