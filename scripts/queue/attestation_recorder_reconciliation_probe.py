@@ -48,6 +48,9 @@ RESULTS: list[dict] = []
 # then R5.8.11/11b and R5.8.10/10b inside their disposable transaction.
 sys.path.insert(0, str(ROOT / "scripts/repin"))
 import r5_8_11  # noqa: E402
+R5830_SPEC = json.loads((ROOT / "docs/reference/r5_8_30/spec.json").read_text(encoding="utf-8"))
+R5830_TARGET_MD5 = r5_8_11.target_md5(R5830_SPEC)
+R5830_ROLLBACK = ROOT / "docs/reference/r5_8_30/rollback.sql"
 R5829_SPEC = json.loads((ROOT / "docs/reference/r5_8_29/spec.json").read_text(encoding="utf-8"))
 R5829_TARGET_MD5 = r5_8_11.target_md5(R5829_SPEC)
 R5829_ROLLBACK = ROOT / "docs/reference/r5_8_29/rollback.sql"
@@ -125,6 +128,12 @@ DECLARE _md5 text;
 BEGIN
   SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
   WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+  IF __R5830_UNDO__ AND _md5 = '__R5830_TARGET__' THEN
+    EXECUTE __R5830_ROLLBACK__;
+    SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
+    WHERE p.oid = 'public.record_parser_runtime_attestation(text,jsonb,text,text,jsonb,timestamptz,text)'::regprocedure;
+    IF _md5 <> '__R5829_TARGET__' THEN RAISE EXCEPTION 'PROBE_BASELINE_R5_8_30_ROLLBACK_MISMATCH: %', _md5; END IF;
+  END IF;
   IF __R5829_UNDO__ AND _md5 = '__R5829_TARGET__' THEN
     EXECUTE __R5829_ROLLBACK__;
     SELECT md5(p.prosrc) INTO STRICT _md5 FROM pg_proc p
@@ -438,6 +447,10 @@ def _r5815_literal(path: Path = R5815_ROLLBACK) -> str:
     return _sql_literal(path, "$r5815_rollback$")
 
 
+def _r5830_literal(path: Path = R5830_ROLLBACK) -> str:
+    return _sql_literal(path, "$r5830_rollback$")
+
+
 def _r5829_literal(path: Path = R5829_ROLLBACK) -> str:
     return _sql_literal(path, "$r5829_rollback$")
 
@@ -510,7 +523,10 @@ def render_prelude(template: str, *, keep_r589: bool = False, keep_current: bool
             raise SystemExit("PRELUDE_PARSER_VERSION_FRAGMENT_MISSING")
         template = template.replace(
             version_fragment, f"'parser_name', 'demoparser2', 'parser_version', '{R5825_PARSER_VERSION}',")
-    return (template.replace("__R5829_UNDO__", "false" if keep_current else "true")
+    return (template.replace("__R5830_UNDO__", "false" if keep_current else "true")
+            .replace("__R5830_TARGET__", R5830_TARGET_MD5)
+            .replace("__R5830_ROLLBACK__", _r5830_literal())
+            .replace("__R5829_UNDO__", "false" if keep_current else "true")
             .replace("__R5829_TARGET__", R5829_TARGET_MD5)
             .replace("__R5829_ROLLBACK__", _r5829_literal())
             .replace("__R5828_UNDO__", "false" if keep_current else "true")
@@ -640,11 +656,11 @@ def failed(o: dict, key: str, prefix: str, sqlstate: str = "55000") -> list[str]
 def main() -> int:
     refuse_non_local()
 
-    # ----- R5.8.29 is the repository migration-chain head; the legacy prelude
+    # ----- R5.8.30 is the repository migration-chain head; the legacy prelude
     # then rewinds it transaction-locally before testing R5.8.7/R5.8.8 behavior.
-    scenario("r5829_reset_build_has_current_recorder", """
+    scenario("r5830_reset_build_has_current_recorder", """
 INSERT INTO probe_result SELECT 'reset_md5', to_jsonb((SELECT reset_md5 FROM probe_baseline));
-""", lambda o: [] if o.get("reset_md5") == R5829_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
+""", lambda o: [] if o.get("reset_md5") == R5830_TARGET_MD5 else [f"reset_md5={o.get('reset_md5')!r}"])
 
     # ----- R5.8.7 (D1): recorder definition
     scenario("d1_reset_build_has_managed_recorder_and_properties", """

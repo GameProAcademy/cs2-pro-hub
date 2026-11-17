@@ -33,9 +33,9 @@ describe("parser runtime attestation SHA binding", () => {
     // Two separately pinned identities. In R5.8.18 (D29 parser release, controlled deploy of
     // the exact merge commit) they coincide: the released commit is the one that changed the
     // worker tree. R5.8.13 had distinct values (diagnostics-only build on top of the semantic).
-    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("47ba6ffef76feae95dc98075cf3fb8089e02ce8f");
+    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("768646ea76646219b1749f9fd2e757703292a24c");
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(
-      "47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+      "768646ea76646219b1749f9fd2e757703292a24c",
     );
     expect(Object.keys(PARSER_ATTESTATION_EXPECTED)).toEqual(
       expect.arrayContaining(["commit", "buildCommit", "deploymentSourceCommit"]),
@@ -49,9 +49,9 @@ describe("parser runtime attestation SHA binding", () => {
   it("documents the exact critical-file allowlist and verified worker blob hash", () => {
     const hashes = {
       "services/cs2-demo-parser/parser.py": "bc30a72f6e8429387f0945d781a9ecc1c65dcb3a",
-      "services/cs2-demo-parser/adapter.py": "3e4f4a049e952064f68f0a39614f5e6539d5a88a",
+      "services/cs2-demo-parser/adapter.py": "1eaf38401a09baceebbf9d959adf2f30ded5e962",
       "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
-      "services/cs2-demo-parser/raw_evidence.py": "6e6721b0245c99f7966b8083bbedef9b9cd0282b",
+      "services/cs2-demo-parser/raw_evidence.py": "81c0f7e5d690fcf9796838eaad6901446901a586",
       "services/cs2-demo-parser/settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d",
     };
     expect(Object.keys(hashes).sort()).toEqual([
@@ -128,7 +128,7 @@ describe("parser runtime attestation SHA binding", () => {
         match: true,
       },
       "services/cs2-demo-parser/adapter.py": {
-        observed: "3e4f4a049e952064f68f0a39614f5e6539d5a88a",
+        observed: "1eaf38401a09baceebbf9d959adf2f30ded5e962",
         match: true,
       },
       "services/cs2-demo-parser/worker.py": {
@@ -136,7 +136,7 @@ describe("parser runtime attestation SHA binding", () => {
         match: true,
       },
       "services/cs2-demo-parser/raw_evidence.py": {
-        observed: "6e6721b0245c99f7966b8083bbedef9b9cd0282b",
+        observed: "81c0f7e5d690fcf9796838eaad6901446901a586",
         match: true,
       },
       "services/cs2-demo-parser/settings.py": {

@@ -43,7 +43,12 @@ const r5813DeploymentMigration = readFileSync(
 // R5.8.26 after PM6 PR F (PR #279, raw_evidence.py blob);
 // R5.8.27 after PM6 C (PR #287, parser.py and adapter.py blobs);
 // R5.8.28 after PM2 round trajectories (PR #294, parser.py blob);
-// R5.8.29 after the FACEIT BOT-replacement fix (PR #300, adapter.py blob).
+// R5.8.29 after the FACEIT BOT-replacement fix (PR #300, adapter.py blob);
+// R5.8.30 after the PM3 telemetry release (PR #310, adapter.py and raw_evidence.py blobs).
+const r5830ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261117120000_r5_8_30_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5829ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261114230000_r5_8_29_repin_runtime_release.sql"),
   "utf8",
@@ -148,13 +153,15 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    // R5.8.29 lists its pins as arrays: the head identity is in the new-pin list.
-    const r5829NewPins = r5829ReleaseMigration.slice(
-      r5829ReleaseMigration.indexOf("_new_pins constant"),
-      r5829ReleaseMigration.indexOf("_counts constant"),
+    // R5.8.30 lists its pins as arrays: the head identity is in the new-pin list.
+    const r5830NewPins = r5830ReleaseMigration.slice(
+      r5830ReleaseMigration.indexOf("_new_pins constant"),
+      r5830ReleaseMigration.indexOf("_counts constant"),
     );
-    expect(r5829NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
-    expect(r5829NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5830NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
+    expect(r5830NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5830ReleaseMigration).toContain("'3375b68b-c996-445f-b979-ed6318c89970'");
+    expect(r5829ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5829ReleaseMigration).toContain("'bb92ed95-7dd6-4d1c-af27-057140f038dd'");
     expect(r5828ReleaseMigration).toContain("'7690b171-087f-46ca-9899-a5b96d8c32cb'");
     expect(r5828ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
