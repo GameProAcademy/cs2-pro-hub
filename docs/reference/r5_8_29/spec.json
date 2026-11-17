@@ -1,0 +1,81 @@
+{
+  "deployment_id": "3375b68b-c996-445f-b979-ed6318c89970",
+  "branch": "main",
+  "semantic_commit": "47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+  "build_commit": "47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+  "deployment_commit": "47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "parser_version": "0.42.2",
+  "critical_hashes": {
+    "parser.py": "bc30a72f6e8429387f0945d781a9ecc1c65dcb3a",
+    "adapter.py": "3e4f4a049e952064f68f0a39614f5e6539d5a88a",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "6e6721b0245c99f7966b8083bbedef9b9cd0282b",
+    "settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "bfd8a96d016da0494f8cf3eeb65da847",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "3e2125a20131fab9653df150448acce3",
+  "observed": {
+    "observed_at": "2026-11-17T01:50:00Z",
+    "railway_deployment": {
+      "id": "3375b68b-c996-445f-b979-ed6318c89970",
+      "status": "SUCCESS",
+      "commitHash": "47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-11-14T23:24:52.054Z",
+      "release_control": "queue idle (0 pending/processing/cancel_requested jobs) before the release; PR #300 (merge 47ba6ffe) merged with the service source pinned (b440a06f) and the watch-pattern freeze in place, so the merge deployed nothing; PARSER_REVISION/PARSER_BUILD_REVISION set to git:47ba6ffe... with skipped deploys; the persistent service source was aligned to 47ba6ffe (repo GameProAcademy/cs2-pro-hub, branch main, rootDirectory services/cs2-demo-parser) in the same controlled operation. The deployment created by that source change (4ef83d14-9b4e-4dd6-bfda-3ab3a8888197) was SKIPPED by the watch-pattern freeze and built nothing; exactly one deployment of the pinned commit was then triggered through the Railway agent (3375b68b), the only build of this release",
+      "failed_builds_never_served": [],
+      "previous_deployment_status_after_release": "bb92ed95 REMOVED",
+      "service_source_after_release": {
+        "repo": "GameProAcademy/cs2-pro-hub",
+        "branch": "main",
+        "commitSha": "47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+        "rootDirectory": "services/cs2-demo-parser"
+      }
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+      "PARSER_BUILD_REVISION": "git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: parser.gamepro.network/version and cs2-demo-parser-production.up.railway.app/version observed 2026-11-17T01:49Z: parser demoparser2 0.42.2, revision = semantic = build = git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f, build.commit 47ba6ffef76feae95dc98075cf3fb8089e02ce8f, embedded true, source railway, declared_revision_matches true",
+    "dependency_drift_check": "requirements unchanged (demoparser2==0.42.2); adapter.py adds drop_bot_replacement_world_deaths (normalized events only, RAW rows unchanged); field catalog check PASS (mapping digests unchanged)",
+    "before": {
+      "deployment_id": "bb92ed95-7dd6-4d1c-af27-057140f038dd",
+      "semantic_revision": "git:b440a06fc06831be3cfe0b2080f6be901dad3019",
+      "build_revision": "git:b440a06fc06831be3cfe0b2080f6be901dad3019",
+      "parser_version": "0.42.2"
+    },
+    "managed_start_state": {
+      "read_at": "2026-11-17T01:50:00Z",
+      "record_parser_runtime_attestation": "99776ca5ef4fdbbb125e76433c927547",
+      "assert_verified_parser_provenance": "1918875c864bce269f03777464b2ae38",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "adapter_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "adapter_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "recorder target = scripts/repin/r5_8_11.target_md5(spec) = md5 of the managed recorder with the three pins replaced (both 3e2125a2..., re-read 2026-11-17 by a read-only SELECT of md5(replace(prosrc))); assertion target from the managed definition with the pins replaced (read-only SELECT)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_28/spec.json",
+  "pin_role": "R5.8.29: re-pin semantic/build commit, Railway deployment and the adapter.py critical blob (PR #300, FACEIT BOT-replacement world death omitted with full evidence); parser version 0.42.2 and the parser.py, worker.py, raw_evidence.py, settings.py and workflow blobs unchanged",
+  "r5_8_28_database_target_md5": {
+    "assert_verified_parser_provenance": "1918875c864bce269f03777464b2ae38",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_28_recorder_target_md5": "99776ca5ef4fdbbb125e76433c927547"
+}
