@@ -116,7 +116,8 @@ export const profilePtBR = {
   "security.confirmCode": "Código de confirmação",
   "security.confirmSubmit": "Concluir alteração",
   "security.resend": "Reenviar código",
-  "security.resendSuccess": "Um novo código foi enviado. Use o código mais recente recebido por e-mail.",
+  "security.resendSuccess":
+    "Um novo código foi enviado. Use o código mais recente recebido por e-mail.",
   "security.resendWait": "Aguarde para reenviar",
   "security.strengthLabel": "Força da senha",
   "security.strength.weak": "Fraca",
