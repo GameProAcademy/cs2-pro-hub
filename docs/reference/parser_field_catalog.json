@@ -6,11 +6,11 @@
   "UNMAPPED"
  ],
  "counts": {
-  "CANONICAL": 137,
+  "CANONICAL": 166,
   "IGNORED_APPROVED": 60,
-  "RAW_ONLY": 218
+  "RAW_ONLY": 217
  },
- "digest": "4aca78e56ada1a7120f3437d8b0516179ded3a76997265ec2a2d8de2db51c21e",
+ "digest": "5b3762ab97e98ccc2dd34cbc9ebfd2fd26b7b97a42895303d91f6717b6b0aee8",
  "entries": [
   {
    "class": "RAW_ONLY",
@@ -1026,6 +1026,72 @@
    "status": "MAPPED"
   },
   {
+   "app_field": "events[].detonation_position.x",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "decoy_detonate.x",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.y",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "decoy_detonate.y",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.z",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "decoy_detonate.z",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
    "class": "RAW_ONLY",
    "field": "decoy_started.__event__",
    "review": {
@@ -1731,6 +1797,72 @@
     "tests": [
      "services/cs2-demo-parser/tests/test_raw_evidence.py",
      "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.x",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "flashbang_detonate.x",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.y",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "flashbang_detonate.y",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.z",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "flashbang_detonate.z",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
     ]
    },
    "status": "MAPPED"
@@ -2879,6 +3011,72 @@
    "status": "MAPPED"
   },
   {
+   "app_field": "events[].detonation_position.x",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "hegrenade_detonate.x",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.y",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "hegrenade_detonate.y",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.z",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "hegrenade_detonate.z",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
    "class": "IGNORED_APPROVED",
    "field": "hltv_chase.__event__",
    "review": {
@@ -3285,6 +3483,128 @@
    "status": "RAW_ONLY_INTENTIONAL"
   },
   {
+   "app_field": "events[].round",
+   "canonical_field": "CanonicalEvent.roundNumber",
+   "class": "CANONICAL",
+   "field": "inferno_startburn.round",
+   "review": {
+    "consumers": [],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "DERIVED"
+  },
+  {
+   "app_field": "events[].tick",
+   "canonical_field": "CanonicalEvent.tick",
+   "class": "CANONICAL",
+   "field": "inferno_startburn.tick",
+   "review": {
+    "consumers": [],
+    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
+    "reason": "RAW_ONLY: Fine-grained behaviour retained for future aim/movement analysis; not consumed today.",
+    "reviewed": "2026-10-14",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_raw_evidence.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "DERIVED"
+  },
+  {
+   "app_field": "events[].attacker",
+   "canonical_field": "CanonicalEvent.sourceActorExternalId",
+   "class": "CANONICAL",
+   "field": "inferno_startburn.user_steamid",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Thrower of a molotov/incendiary: CS2 demos carry no molotov_detonate, the fire start is the only fire-grenade evidence; reverses D35's RAW_ONLY decision.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.x",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "inferno_startburn.x",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.y",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "inferno_startburn.y",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.z",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "inferno_startburn.z",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
    "class": "RAW_ONLY",
    "field": "item_equip.canzoom",
    "review": {
@@ -3644,6 +3964,72 @@
     "tests": [
      "services/cs2-demo-parser/tests/test_raw_evidence.py",
      "services/cs2-demo-parser/tests/test_field_governance.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.x",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "molotov_detonate.x",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.y",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "molotov_detonate.y",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.z",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "molotov_detonate.z",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
     ]
    },
    "status": "MAPPED"
@@ -4587,23 +4973,26 @@
    "status": "MAPPED"
   },
   {
-   "class": "RAW_ONLY",
+   "app_field": "events[].attacker_in_air",
+   "canonical_field": "CanonicalEvent.data.attacker_in_air",
+   "class": "CANONICAL",
    "field": "player_death.attackerinair",
    "review": {
     "consumers": [
-     "adapter.normalize_events",
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
      "CanonicalEvent"
     ],
-    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
-    "reason": "Adapter-emitted CanonicalEvent type (player_death). Fields read by adapter._event_fields and the event tick/round are CANONICAL (MAPPED/DERIVED); every other reviewed field is RAW_ONLY evidence, proven unconsumed by perturbation tests.",
-    "reviewed": "2026-10-14",
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Killer airborne at the kill, game flag (module C movement context).",
+    "reviewed": "2026-11-17",
     "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
      "services/cs2-demo-parser/tests/test_field_governance.py",
-     "services/cs2-demo-parser/tests/test_adapter.py",
-     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
     ]
    },
-   "status": "RAW_ONLY_INTENTIONAL"
+   "status": "MAPPED"
   },
   {
    "app_field": "events[].distance",
@@ -4662,6 +5051,28 @@
      "services/cs2-demo-parser/tests/test_field_governance.py",
      "services/cs2-demo-parser/tests/test_adapter.py",
      "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].hitgroup",
+   "canonical_field": "CanonicalEvent.data.hitgroup",
+   "class": "CANONICAL",
+   "field": "player_death.hitgroup",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Hit group of the killing hit.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
     ]
    },
    "status": "MAPPED"
@@ -4766,6 +5177,28 @@
     ]
    },
    "status": "DERIVED"
+  },
+  {
+   "app_field": "events[].thru_smoke",
+   "canonical_field": "CanonicalEvent.data.thru_smoke",
+   "class": "CANONICAL",
+   "field": "player_death.thrusmoke",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Kill through smoke, game flag (module C/D context).",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
   },
   {
    "app_field": "events[].tick",
@@ -5238,6 +5671,50 @@
      "services/cs2-demo-parser/tests/test_field_governance.py",
      "services/cs2-demo-parser/tests/test_adapter.py",
      "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].health_after",
+   "canonical_field": "CanonicalEvent.data.health_after",
+   "class": "CANONICAL",
+   "field": "player_hurt.health",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Victim health right after the hit (health_after); 0 is a legitimate value.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].hitgroup",
+   "canonical_field": "CanonicalEvent.data.hitgroup",
+   "class": "CANONICAL",
+   "field": "player_hurt.hitgroup",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Hit group of each damage event (module C hitgroup distribution); only demoparser2's known group names are kept.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
     ]
    },
    "status": "MAPPED"
@@ -6998,6 +7475,72 @@
    "status": "MAPPED"
   },
   {
+   "app_field": "events[].detonation_position.x",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "smokegrenade_detonate.x",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.y",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "smokegrenade_detonate.y",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].detonation_position.z",
+   "canonical_field": "CanonicalEvent.data.detonation_position",
+   "class": "CANONICAL",
+   "field": "smokegrenade_detonate.z",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
    "class": "RAW_ONLY",
    "field": "smokegrenade_expired.entityid",
    "review": {
@@ -7170,6 +7713,28 @@
    "status": "DERIVED"
   },
   {
+   "app_field": "events[].silenced",
+   "canonical_field": "CanonicalEvent.data.silenced",
+   "class": "CANONICAL",
+   "field": "weapon_fire.silenced",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Silenced-shot flag as the game reports it; kept only when boolean.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
    "app_field": "events[].tick",
    "canonical_field": "CanonicalEvent.tick",
    "class": "CANONICAL",
@@ -7186,6 +7751,50 @@
      "services/cs2-demo-parser/tests/test_field_governance.py",
      "services/cs2-demo-parser/tests/test_adapter.py",
      "services/cs2-demo-parser/tests/test_raw_evidence.py"
+    ]
+   },
+   "status": "DERIVED"
+  },
+  {
+   "app_field": "events[].attacker",
+   "canonical_field": "CanonicalEvent.sourceActorExternalId",
+   "class": "CANONICAL",
+   "field": "weapon_fire.user_steamid",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Shooter of each shot (module C accuracy). demoparser2 returns it for 100% of weapon_fire rows in the FACEIT/GC/pro corpus; absent shooter => no actor.",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+    ]
+   },
+   "status": "MAPPED"
+  },
+  {
+   "app_field": "events[].weapon",
+   "canonical_field": "CanonicalEvent.weapon",
+   "class": "CANONICAL",
+   "field": "weapon_fire.weapon",
+   "review": {
+    "consumers": [
+     "adapter._event_fields",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+    "reason": "Weapon fired, prefix weapon_ stripped so it joins damage/death weapon names (DERIVED).",
+    "reviewed": "2026-11-17",
+    "tests": [
+     "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+     "services/cs2-demo-parser/tests/test_field_governance.py",
+     "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
     ]
    },
    "status": "DERIVED"
@@ -7360,7 +7969,7 @@
   }
  ],
  "schema": 1,
- "source_blob": "6e6721b0245c99f7966b8083bbedef9b9cd0282b",
+ "source_blob": "81c0f7e5d690fcf9796838eaad6901446901a586",
  "source_of_truth": "services/cs2-demo-parser/raw_evidence.py",
  "unmapped_rule": "any observed field not listed here is UNMAPPED_BUT_AVAILABLE and blocks admission"
 }

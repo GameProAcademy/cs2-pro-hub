@@ -110,9 +110,11 @@ def test_event_tick_and_round_of_emitted_events_are_derived():
 
 
 def test_events_the_adapter_does_not_emit_never_feed_canonical_events():
-    # inferno_startburn is in adapter._GRENADE_EVENTS but not in SUPPORTED_EVENTS: never emitted.
-    assert "inferno_startburn" not in adapter.SUPPORTED_EVENTS
-    assert _classify("inferno_startburn.user_steamid")["status"] == "RAW_ONLY_INTENTIONAL"
+    # PM3 (R5.8.30) reversed D35's exclusion of inferno_startburn: CS2 demos carry no
+    # molotov_detonate, so the fire start is the only molotov/incendiary evidence. It is now
+    # emitted and its thrower is MAPPED (see test_pm3_inferno_startburn_is_emitted_with_thrower).
+    assert "inferno_startburn" in adapter.SUPPORTED_EVENTS
+    assert _classify("inferno_startburn.user_steamid")["status"] == "MAPPED"
     raw = {"player_disconnect": [{"tick": 10, "user_steamid": "76561198000000001", "ever_fully_connected": True}]}
     output = adapter.build_raw_parser_output(raw)
     assert not [e for e in output.get("events") or [] if e.get("type") == "player_disconnect"]

@@ -972,6 +972,51 @@
     "services/cs2-demo-parser/tests/test_field_governance.py"
    ]
   },
+  "decoy_detonate.x": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "decoy_detonate.y": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "decoy_detonate.z": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
   "flashbang_detonate.user_steamid": {
    "consumers": [
     "adapter._event_fields"
@@ -982,6 +1027,51 @@
    "tests": [
     "services/cs2-demo-parser/tests/test_raw_evidence.py",
     "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "flashbang_detonate.x": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "flashbang_detonate.y": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "flashbang_detonate.z": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
    ]
   },
   "hegrenade_detonate.user_steamid": {
@@ -996,6 +1086,111 @@
     "services/cs2-demo-parser/tests/test_field_governance.py"
    ]
   },
+  "hegrenade_detonate.x": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "hegrenade_detonate.y": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "hegrenade_detonate.z": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "inferno_startburn.user_steamid": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Thrower of a molotov/incendiary: CS2 demos carry no molotov_detonate, the fire start is the only fire-grenade evidence; reverses D35's RAW_ONLY decision.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "inferno_startburn.x": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "inferno_startburn.y": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "inferno_startburn.z": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
   "molotov_detonate.user_steamid": {
    "consumers": [
     "adapter._event_fields"
@@ -1006,6 +1201,51 @@
    "tests": [
     "services/cs2-demo-parser/tests/test_raw_evidence.py",
     "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "molotov_detonate.x": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "molotov_detonate.y": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "molotov_detonate.z": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
    ]
   },
   "player_blind.attacker_steamid": {
@@ -1057,6 +1297,51 @@
     "services/cs2-demo-parser/tests/test_field_governance.py"
    ]
   },
+  "player_death.attackerinair": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Killer airborne at the kill, game flag (module C movement context).",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "player_death.hitgroup": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Hit group of the killing hit.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "player_death.thrusmoke": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Kill through smoke, game flag (module C/D context).",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
   "player_disconnect.ever_fully_connected": {
    "consumers": [],
    "introduced_in": "R5.8.22 (PR #232/#233)",
@@ -1065,6 +1350,36 @@
    "tests": [
     "services/cs2-demo-parser/tests/test_field_governance.py",
     "services/cs2-demo-parser/tests/test_raw_evidence.py"
+   ]
+  },
+  "player_hurt.health": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Victim health right after the hit (health_after); 0 is a legitimate value.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "player_hurt.hitgroup": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Hit group of each damage event (module C hitgroup distribution); only demoparser2's known group names are kept.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
    ]
   },
   "smokegrenade_detonate.user_steamid": {
@@ -1077,6 +1392,96 @@
    "tests": [
     "services/cs2-demo-parser/tests/test_raw_evidence.py",
     "services/cs2-demo-parser/tests/test_field_governance.py"
+   ]
+  },
+  "smokegrenade_detonate.x": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (x) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "smokegrenade_detonate.y": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (y) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "smokegrenade_detonate.z": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Detonation/fire-start point (z) of the projectile (module D utility location); all three axes or none.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "weapon_fire.silenced": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Silenced-shot flag as the game reports it; kept only when boolean.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "weapon_fire.user_steamid": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Shooter of each shot (module C accuracy). demoparser2 returns it for 100% of weapon_fire rows in the FACEIT/GC/pro corpus; absent shooter => no actor.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
+   ]
+  },
+  "weapon_fire.weapon": {
+   "consumers": [
+    "adapter._event_fields",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM3 R5.8.30 (module C/D telemetry, 2026-11-17)",
+   "reason": "Weapon fired, prefix weapon_ stripped so it joins damage/death weapon names (DERIVED).",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm3_telemetry.py",
+    "services/cs2-demo-parser/tests/test_field_governance.py",
+    "src/lib/pipeline/__tests__/pm3Telemetry.test.ts"
    ]
   }
  },

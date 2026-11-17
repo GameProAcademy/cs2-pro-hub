@@ -148,12 +148,13 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     "player_activate": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
     "player_connect": frozenset({"__event__"}),
     "player_connect_full": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
-    # assistedflash and attackerblind are NOT here: adapter.py reads them -> MAPPED below.
+    # assistedflash, attackerblind, attackerinair, hitgroup and thrusmoke are NOT here: adapter.py
+    # reads them -> MAPPED below (attackerinair/hitgroup/thrusmoke since PM3, R5.8.30).
     # assister_X/Y/Z: returned by demoparser2 for every player role once player=["X","Y","Z"] is
     # requested (spatial-v1 layer A, 2026-11-12). adapter.py reads only attacker_* and user_*.
     "player_death": frozenset({
         "assister_X", "assister_Y", "assister_Z",
-        "attackerinair", "dominated", "noreplay",
+        "dominated", "noreplay",
         "revenge", "weapon_fauxitemid", "weapon_itemid", "weapon_originalowner_xuid", "wipe",
     }),
     "player_sound": frozenset({"__event__", "duration", "radius", "step", "tick", "user_name", "user_steamid"}),
@@ -209,7 +210,7 @@ CANONICAL_EVENT_TYPES: tuple[str, ...] = (
     "player_death", "player_hurt", "player_blind", "bomb_planted", "bomb_defused", "bomb_exploded",
     "round_start", "round_end", "weapon_fire", "weapon_fire_on_empty", "weapon_reload", "weapon_zoom",
     "weapon_zoom_rifle", "grenade_thrown", "hegrenade_detonate", "flashbang_detonate",
-    "smokegrenade_detonate", "molotov_detonate", "inferno_expire", "smokegrenade_expired",
+    "smokegrenade_detonate", "molotov_detonate", "inferno_startburn", "inferno_expire", "smokegrenade_expired",
     "decoy_detonate", "item_purchase", "item_pickup", "item_remove", "bomb_beginplant",
     "bomb_begindefuse", "bomb_beep", "player_spawned", "player_team",
 )
@@ -282,11 +283,31 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
         f"{event}.user_steamid": ("events[].attacker", "CanonicalEvent.sourceActorExternalId", "MAPPED")
         for event in (
             "bomb_planted", "bomb_defused", "bomb_exploded",
-            # D35: the thrower is the detonation event's own userid (inferno_startburn is not an
-            # adapter-emitted event, so it stays RAW_ONLY).
+            # D35: the thrower is the detonation event's own userid. PM3 (R5.8.30): inferno_startburn
+            # is now adapter-emitted (CS2 demos carry no molotov_detonate; the fire start is the only
+            # molotov/incendiary evidence) and its userid is the thrower, like the others.
             "hegrenade_detonate", "flashbang_detonate", "smokegrenade_detonate",
-            "molotov_detonate", "decoy_detonate",
+            "molotov_detonate", "decoy_detonate", "inferno_startburn",
         )
+    },
+    # PM3 (R5.8.30) — telemetry for duels/aim (module C) and utility (module D).
+    "weapon_fire.user_steamid": ("events[].attacker", "CanonicalEvent.sourceActorExternalId", "MAPPED"),
+    # weapon_fire names the item class (weapon_ak47); the adapter strips the prefix so it joins
+    # the damage/death weapon names: DERIVED.
+    "weapon_fire.weapon": ("events[].weapon", "CanonicalEvent.weapon", "DERIVED"),
+    "weapon_fire.silenced": ("events[].silenced", "CanonicalEvent.data.silenced", "MAPPED"),
+    "player_hurt.hitgroup": ("events[].hitgroup", "CanonicalEvent.data.hitgroup", "MAPPED"),
+    "player_hurt.health": ("events[].health_after", "CanonicalEvent.data.health_after", "MAPPED"),
+    "player_death.hitgroup": ("events[].hitgroup", "CanonicalEvent.data.hitgroup", "MAPPED"),
+    "player_death.thrusmoke": ("events[].thru_smoke", "CanonicalEvent.data.thru_smoke", "MAPPED"),
+    "player_death.attackerinair": ("events[].attacker_in_air", "CanonicalEvent.data.attacker_in_air", "MAPPED"),
+    **{
+        f"{event}.{axis}": (f"events[].detonation_position.{axis}", "CanonicalEvent.data.detonation_position", "MAPPED")
+        for event in (
+            "hegrenade_detonate", "flashbang_detonate", "smokegrenade_detonate",
+            "molotov_detonate", "decoy_detonate", "inferno_startburn",
+        )
+        for axis in ("x", "y", "z")
     },
     # Every event type adapter.py emits (adapter.SUPPORTED_EVENTS) carries its tick and, when
     # present, its parser round into CanonicalEvent: DERIVED, never RAW_ONLY.

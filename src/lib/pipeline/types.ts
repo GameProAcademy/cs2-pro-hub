@@ -95,6 +95,17 @@ export interface RawParserEvent {
   cost?: number | undefined;
   position?: RawParserPosition | undefined;
   victim_position?: RawParserPosition | undefined;
+  /** PM3 (R5.8.30): hit group of a player_hurt / killing hit (demoparser2 names: head, chest, …). */
+  hitgroup?: string | undefined;
+  /** PM3 (R5.8.30): victim health right after a player_hurt. */
+  health_after?: number | undefined;
+  /** PM3 (R5.8.30): player_death through smoke / killer airborne. */
+  thru_smoke?: boolean | undefined;
+  attacker_in_air?: boolean | undefined;
+  /** PM3 (R5.8.30): weapon_fire with a silenced weapon. */
+  silenced?: boolean | undefined;
+  /** PM3 (R5.8.30): where a grenade detonated / a fire started (all three axes or absent). */
+  detonation_position?: RawParserPosition | undefined;
 }
 
 export interface HotSemanticObservationBase {
