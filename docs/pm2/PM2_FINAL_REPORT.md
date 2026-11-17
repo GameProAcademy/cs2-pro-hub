@@ -4,7 +4,7 @@ Sessão `session_012aG79D5h8yCsYxNjWpDaHG` · 2026-11-14 (America/Sao_Paulo).
 
 Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃO VALIDADO · PENDENTE · NÃO SUPORTADO.
 
-**Veredito: PARCIAL.** As duas fases estão implementadas, integradas, testadas, publicadas e funcionando em produção. Desde 2026-11-17, o replay também está validado em produção com uma demo nova enviada pelo dono (§26). Ficam pendentes: o teste IDOR com um segundo usuário real, um E2E automatizado de browser, 3 mapas sem validação, o alerta de segurança NOT_VERIFIED e a etapa E DEFERRED (§16–§17). Nada aqui está declarado 100% concluído.
+**Veredito: PM2 COMPLETE (2026-11-17).** Os critérios de aceite da Etapa A do Prompt Mestre 3 têm evidência verificável (§30): replay validado em produção (§26), E2E automatizado de browser e teste IDOR em dois sentidos com duas contas reais, 12/12 em produção (run 44062163308, §28), PR #302 merged, relatório e checkpoint coerentes. Limitações declaradas e não bloqueantes: Overpass, Train e Vertigo NOT_VALIDATED; alerta de segurança do Lovable NOT_VERIFIED; etapa E DEFERRED; latência do replay como item do PM3 (§27). O PM3 não foi iniciado.
 
 ## 1. Resumo executivo
 
@@ -41,7 +41,7 @@ Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃ
 - Δtick/Δtempo = 64,000 em 641 pares;
 - apenas `de_dust2` VALIDATED.
 
-## 3. Fase 4.2.3 — PARCIAL
+## 3. Fase 4.2.3 — VALIDADA EM PRODUÇÃO (limitações declaradas)
 
 | Critério (§21.1)                           | Estado                                                                                                                                                                                               |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -55,10 +55,10 @@ Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃ
 | UI e i18n completos                        | VALIDADO EM TESTE (5 idiomas); produção vista em pt-BR                                                                                                                                               |
 | Integridade da partida preservada          | VALIDADO EM PRODUÇÃO (pré-contrato declarado como "fim não verificado")                                                                                                                              |
 | Provenance e coverage explícitos           | VALIDADO EM PRODUÇÃO                                                                                                                                                                                 |
-| E2E e regressão                            | Regressão VALIDADA (CI verde). Não há E2E automatizado de browser: PENDENTE                                                                                                                          |
+| E2E e regressão                            | Regressão VALIDADA (CI verde). E2E de browser VALIDADO EM PRODUÇÃO: run 44062163308, contas A e B (§28)                                                                                              |
 | Feedback do jogador                        | VALIDADO EM PRODUÇÃO (autorizado pelo dono, 2026-11-14 17:05): "Útil" numa regra e numa ficha gravaram 2 linhas; a troca para "Não útil" atualizou a mesma linha (`updated_at` mudou, sem duplicata) |
 
-## 4. Fase 4.2.4 — PARCIAL
+## 4. Fase 4.2.4 — VALIDADA EM PRODUÇÃO (limitações declaradas)
 
 | Critério (§21.2)                                                                             | Estado                                                                                                                                                                                                                                                                      |
 | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -69,7 +69,7 @@ Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃ
 | Performance e memória medidas                                                                | Worker medido com o corpus local de demos (§12, §24; pico 4,0 GB contra limite de 8 GB; HOT máximo 6,1 MB contra 8 MB). Em produção, o segmento de um round levou de 2,7 a 3,0 s (5 rounds; 16–32 KB comprimidos, 292–616 KB decodificados; §26)                            |
 | Ownership/RLS                                                                                | VALIDADO EM TESTE (dono lê; não-dono, anon e escrita de jogador recusados); NOT_FOUND em produção                                                                                                                                                                           |
 | Transformação espacial por mapa suportado                                                    | 7 mapas VALIDATED (Dust2, Mirage, Inferno, Nuke, Ancient, Anubis e Cache; §22). Overpass, Train e Vertigo não desenham (MAP_NOT_VALIDATED). Nuke desenhado em produção (§26)                                                                                                |
-| E2E e regressão                                                                              | Regressão VALIDADA; E2E de browser PENDENTE                                                                                                                                                                                                                                 |
+| E2E e regressão                                                                              | Regressão VALIDADA; E2E de browser VALIDADO EM PRODUÇÃO (run 44062163308, §28)                                                                                                                                                                                              |
 
 ## 5. Módulos B e I
 
@@ -201,14 +201,15 @@ Demo local autorizada (Dust2 profissional pública):
 - Segmento do replay em produção: 2,7–3,0 s de espera no servidor por round, mais 0,4–0,9 s no cliente antes da requisição. Investigação e hipóteses em §27; nenhuma otimização no PM2.
 - Exposição, isolamento, re-peek e rotação: NOT_SUPPORTED.
 - Event refs não vão ao Coach.
-- Sem E2E automatizado de browser.
+- O E2E de browser roda só por disparo manual (`workflow_dispatch`), porque entra na produção com contas reais. Não roda em cada PR.
 - Linha do tempo em segundos só quando a relação tick/tempo do round é comprovada; caso contrário, em ticks com velocidade nominal declarada.
 
 ## 17. Ações manuais
 
 1. ~~Upload de uma demo nova pelo dono~~: feito em 2026-11-17 (`demo-faceit-nuke.dem`; §26).
-2. **Validar o teste IDOR com um segundo usuário real.**
-3. **Alerta de segurança do Lovable:** revisar manualmente no painel (§21).
+2. ~~Teste IDOR com um segundo usuário real~~: feito em 2026-11-17, em dois sentidos (§28).
+3. **Trocar a senha da conta de teste A** e atualizar o secret `PM2_E2E_A_PASSWORD`. Na run 44035115612, antes da correção de §29, a senha foi para a URL de `/login` e pode estar nos logs do servidor ou da CDN. A conta B não chegou a logar nessa run.
+4. **Alerta de segurança do Lovable:** revisar manualmente no painel (§21).
 
 ## 18. Riscos residuais e rollback
 
@@ -223,7 +224,7 @@ Nenhum prompt foi enviado ao agente Lovable. A publicação foi feita só pelo c
 ## 20. Recomendação para o Prompt 3 de 5
 
 - A validação real do replay em produção **já ocorreu** (§5, §26). Não é preciso outra demo para esse critério.
-- O PM2 ainda tem critérios formais pendentes: o teste IDOR em dois sentidos com duas contas reais e o E2E automatizado de browser (§17, §28). Eles devem ser fechados **antes** de iniciar o PM3.
+- Os critérios formais do PM2 estão fechados: IDOR em dois sentidos com duas contas reais e E2E automatizado de browser, 12/12 em produção (§28, §30).
 - O início do PM3 (4.2.5–4.2.6, módulos C e D) depende de autorização explícita do dono.
 
 Prioridades para o PM3, depois dessa autorização:
@@ -390,7 +391,136 @@ Coerência dos números: 12 idas × ~200 ms ≈ 2,4 s, mais a autenticação, e 
 2. Verificar a ownership da partida com uma consulta direta protegida por RLS, sem reconstruir o overview inteiro, e paralelizar as leituras independentes. Exige teste IDOR antes e depois.
 3. Avaliar se o `beforeLoad` precisa de `getUser()` em rede a cada mudança de busca na mesma rota, sem enfraquecer o fail-closed da autenticação.
 
-## 28. Teste IDOR em dois sentidos e E2E de browser: estado formal
+## 28. Teste IDOR em dois sentidos e E2E de browser (VALIDADOS EM PRODUÇÃO)
 
-- **IDOR em dois sentidos com duas contas reais:** MANUAL_REQUIRED. Hoje existe só uma direção, já validada antes: a conta do dono abrindo o id de uma partida real de outro usuário recebe NOT_FOUND. O harness no PostgreSQL descartável passou 39/39 com dois usuários sintéticos. Faltam uma segunda conta real com uma partida processada e as credenciais das duas contas em secrets do GitHub. Esta sessão não cria contas nem digita senhas.
-- **E2E automatizado de browser:** PENDENTE. Não havia infraestrutura de E2E no repositório. O fluxo com Playwright roda no GitHub Actions contra a produção, porque o sandbox não alcança o domínio, e depende das mesmas credenciais em secrets.
+**Run:** [44062163308](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/44062163308), workflow `PM2 browser E2E` (`workflow_dispatch`), `main` @ `b0452747888f001762cb62aa31f4eda63c3f3bdd`, alvo `https://gamepro.network`, 2026-11-17 10:10–10:12Z. Resultado: **success, 12/12**.
+
+- **Ferramenta:** Playwright `1.63.0`, fixado em `e2e/package-lock.json`, Chromium, 1 worker, execução serial.
+- **Ambiente:** produção. App publicado de `d68a82db` (publicação `0719c851`); worker Railway `3375b68b` (`47ba6ffe`).
+- **Contas:** duas contas reais de teste (A e B), separadas da conta do dono. Cada uma tem uma partida processada pelo pipeline real, com trajetória `COMPLETE` (jobs `878335b6` e `64a33e25`).
+- **Credenciais:** só nos secrets `PM2_E2E_*`. O guard confirmou os 4 secrets antes dos testes. O log mostra `***`. Os e-mails das contas não aparecem em nenhum documento.
+- **Privacidade:** o repositório é público, então não há trace, vídeo nem screenshot. A evidência é o resumo JSON da run (artefato `pm2-e2e-summary`, 705 B, `sha256:0370f0a3…`), só com status e contagens.
+
+**Histórico de execuções:**
+
+| Run         | SHA        | Resultado            | Causa                                                                                               |
+| ----------- | ---------- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| 44031506261 | `226e37ce` | parou no guard       | secrets vazios (criados fora de Repository secrets)                                                 |
+| 44035115612 | `226e37ce` | falhou no login de A | submit antes da hidratação virou GET com credenciais na URL: defeito de segurança, corrigido em §29 |
+| 44062163308 | `b0452747` | **12/12 success**    | —                                                                                                   |
+
+**Fluxo próprio (A e B):**
+
+| #   | Cenário                                                      | A                                        | B                |
+| --- | ------------------------------------------------------------ | ---------------------------------------- | ---------------- |
+| 1   | Login (espera `form[data-hydrated="true"]`)                  | PASS                                     | PASS             |
+| 2   | Partidas próprias                                            | PASS (1 linha)                           | PASS (3 linhas)  |
+| 3   | `/deaths` abre                                               | PASS (11 mortes)                         | PASS (16 mortes) |
+| 4   | Ficha de morte com proveniência                              | PASS                                     | PASS             |
+| 10  | Feedback gravado e persistido após reload                    | PASS (sem valor anterior para restaurar) | PASS (idem)      |
+| 8   | Deep link `/deaths` → `/replay` no tick                      | PASS (round 1)                           | PASS (round 1)   |
+| 5   | Replay abre                                                  | PASS                                     | PASS             |
+| 6   | Navegação entre rounds                                       | PASS                                     | PASS             |
+| 7   | Navegação temporal (timeline)                                | PASS                                     | PASS             |
+| 9   | Play e pause                                                 | PASS                                     | PASS             |
+| 11  | Estados indisponíveis (`NOT_FOUND` em `/replay` e `/deaths`) | PASS                                     | PASS             |
+| —   | Nenhum SteamID64 no DOM                                      | PASS                                     | PASS             |
+| —   | Guard de credenciais (0 requisições com credencial na URL)   | PASS                                     | PASS             |
+
+**Isolamento em dois sentidos:**
+
+| #       | Tentativa                                                                                                           | A → B                                        | B → A                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------- |
+| 1       | Partida da vítima na listagem do atacante                                                                           | PASS (ausente)                               | PASS (ausente)            |
+| 2, 4    | `/replay?matchId=<vítima>`                                                                                          | PASS `NOT_FOUND`                             | PASS `NOT_FOUND`          |
+| 5       | Deep link `/replay?matchId&round&tick` da vítima                                                                    | PASS `NOT_FOUND`                             | PASS `NOT_FOUND`          |
+| 3       | `/deaths?matchId=<vítima>`                                                                                          | PASS `NOT_FOUND`, sem SVG                    | PASS `NOT_FOUND`, sem SVG |
+| 6, 8, 9 | Requisição de feedback da vítima (ids e event ref dela) reenviada com a sessão do atacante                          | PASS `REFUSED` (http 200, status de negócio) | PASS `REFUSED`            |
+| 7       | Leitura REST sob RLS: `round_trajectories`, `match_trajectories`, `round_events`, `death_feedback`, `match_metrics` | PASS: 0 linhas nas 5                         | PASS: 0 linhas nas 5      |
+| 8       | INSERT REST de feedback na partida da vítima                                                                        | PASS (http 403)                              | PASS (http 403)           |
+| 8       | PATCH REST do feedback da vítima                                                                                    | PASS: 0 linhas                               | PASS: 0 linhas            |
+| 10      | Cache do cliente: logout pelo botão do app e login do atacante **sem reload**                                       | PASS (partida da vítima ausente)             | PASS                      |
+| —       | Guard de credenciais                                                                                                | PASS                                         | PASS                      |
+
+**Verificação independente no banco** (somente leitura, depois da run):
+
+- `death_feedback` com o usuário B na partida de A: **0**; com o usuário A na partida de B: **0**;
+- linhas das contas A e B em qualquer outra partida: **0**;
+- cada conta tem só a própria linha (1 e 1), gravada pelo passo de feedback.
+
+**Critérios atendidos:**
+
+- O owner vem da sessão no servidor: o feedback com os ids da vítima é `REFUSED`, e o RLS barra INSERT e PATCH.
+- Nenhum `owner_id` vem do cliente: a injeção de campo é rejeitada pelo schema estrito (`deathReviewUi.test.tsx`). Não foi reenviada pelo E2E, porque o corpo da server function é uma serialização do framework.
+- Policies e RLS não foram alterados.
+
+**Limitações:**
+
+- O feedback das contas de teste ficou gravado: não havia valor anterior para restaurar.
+- O resumo registra o round do deep link, mas não os ids das partidas (repositório público).
+
+## 29. Defeito de segurança: credenciais na URL antes da hidratação (corrigido)
+
+**Achado (run 44035115612):** o E2E clicou "Entrar" antes de o React hidratar. O formulário do `/login`, renderizado no servidor e sem `method`, fez um GET nativo para `/login?email=…&password=…`.
+
+- Qualquer usuário real que enviasse antes da hidratação (rede lenta, JS falhando ou desligado) mandaria e-mail e senha para a URL, o histórico, o Referer e os logs do servidor e da CDN.
+- Só o `/login` vazava: era o único formulário de autenticação renderizado no servidor com `name` nos campos.
+  - `/register` não tinha `name` nos campos.
+  - O formulário do `/reset-password` não sai no SSR.
+  - O modo "esqueci a senha" só existe depois de um clique no cliente.
+  - Os formulários de `/_authenticated` são client-only (`ssr: false`) e chamam `preventDefault()` na primeira linha.
+
+**Correção (PR #306, `d68a82db`):** o componente `SafeForm` é usado em login, registro e reset de senha.
+
+1. Um `<fieldset disabled>` desabilita campos e submit até a hidratação, então nem clique nem Enter enviam de forma nativa.
+2. `method="post"` é defesa em profundidade.
+3. Depois da hidratação, `preventDefault()` roda antes do handler.
+4. O atributo `data-hydrated` serve de sinal para os testes.
+
+As chamadas ao Supabase, as mensagens genéricas, os rate limits, o RLS e os fluxos não mudaram.
+
+**Evidências:**
+
+| Etapa                                                                         | Evidência                                                                                                                                                                                             |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reprodução local (código antigo, `vite dev`)                                  | `e2e/auth-forms.e2e.ts`, com valores falsos: login sem JS e login antes da hidratação navegaram para `…/login?email=probe…&password=Probe…`; os 2 cenários falharam                                   |
+| Local com a correção                                                          | os mesmos cenários passaram; registro já passava no código antigo                                                                                                                                     |
+| Testes unitários                                                              | `SafeForm.test.tsx` (markup do servidor: `method="post"`, nenhum `method="get"`, nenhum `action`, tudo dentro de `fieldset disabled`, `data-hydrated="false"`); `vitest` 685/685; tsc e eslint limpos |
+| Gates do PR #306                                                              | 5/5 verdes no head `122ee56a`                                                                                                                                                                         |
+| Gates em `main` (`d68a82db`)                                                  | Quality Gates 44056954897, F553 44061668885 e H.3-E 44061713392: todos verdes                                                                                                                         |
+| Produção, markup (depois da publicação `0719c851`)                            | `<form noValidate data-hydrated="false" method="post">` + `<fieldset disabled>` em `/login`                                                                                                           |
+| Produção sem JS (iframe sandbox sem scripts, página real)                     | `/login` e `/register`: fieldset, e-mail, senha e submit desabilitados; clique e Enter não navegam; query vazia                                                                                       |
+| Produção depois da hidratação (conta falsa `probe.e2e.noaccount@example.com`) | um `fetch` para `/auth/v1/token?grant_type=password`, sem valor de prova na URL; a página fica em `/login` com query vazia; mensagem genérica "E-mail ou senha inválidos." preservada                 |
+| Produção, regressão automatizada (run 44062163308)                            | `auth-forms.e2e.ts`, 8/8: login e registro sem JS e antes da hidratação; login, esqueci a senha, registro e reset depois da hidratação; todo Supabase Auth abortado (nenhuma conta, nenhum e-mail)    |
+
+**E2E (PR #307, `b0452747`):**
+
+- O login espera `form[data-hydrated="true"]` e um submit habilitado, sem sleep fixo.
+- Um guard intercepta toda requisição: se a URL tiver `email=`/`password=` ou um valor de credencial configurado, a requisição é abortada no navegador e o teste falha com `CREDENTIALS_IN_URL`. O registro guarda só método e caminho.
+- Autoteste local contra o formulário antigo: o guard bloqueou exatamente `GET /login`.
+
+**Ação manual pendente (higiene, não bloqueia o PM2):** trocar a senha da conta de teste A e atualizar o secret (§17, item 4).
+
+## 30. Decisão: PM2 COMPLETE
+
+| Critério (PM3 §1.7) | Estado                                                                | Evidência                                                                    |
+| ------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| PR #302             | merged                                                                | `e20a7459`, CI 5/5 no head `62542708`                                        |
+| Relatório final     | coerente com a produção                                               | este documento                                                               |
+| Checkpoint          | coerente com o relatório e os SHAs                                    | `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`                                      |
+| IDOR                | dois sentidos, duas contas reais                                      | §28 (run 44062163308) + verificação no banco                                 |
+| `/deaths`           | isolamento comprovado                                                 | §28: `NOT_FOUND` em A→B e B→A                                                |
+| `/replay`           | isolamento comprovado                                                 | §28: `NOT_FOUND`, sem SVG, cache SPA isolado                                 |
+| Feedback            | isolamento comprovado                                                 | §28: `REFUSED`, INSERT 403, PATCH 0 linhas, banco 0/0                        |
+| E2E de browser      | executado, 12/12                                                      | run 44062163308                                                              |
+| Replay em produção  | validação da demo FACEIT Nuke preservada                              | §5, §26                                                                      |
+| Railway             | `3375b68b` SUCCESS, commit `47ba6ffe`                                 | `list-deployments` 2026-11-17                                                |
+| Runtime             | `/version`: `git:47ba6ffe…`, 0.42.2, `declared_revision_matches` true | reconferido 2026-11-17 ~10:15Z                                               |
+| H.3-E               | PASS                                                                  | 44005644742 (`76fa4887`), 44031203616 (`6d3b91d7`), 44061713392 (`d68a82db`) |
+| Segurança Lovable   | NOT_VERIFIED (sem prova independente)                                 | §21                                                                          |
+| Etapa E             | DEFERRED                                                              | §25                                                                          |
+| Mapas               | Overpass, Train e Vertigo NOT_VALIDATED                               | §22                                                                          |
+| Latência            | investigada; hipótese documentada                                     | §27                                                                          |
+| Próxima etapa       | PM3 preparado, não iniciado                                           | §20                                                                          |
+
+PRs do fechamento: #302 (docs), #303 (E2E + hook de estado), #304 (correção do workflow), #306 (segurança dos formulários) e #307 (sincronização do E2E). Nenhum prompt foi enviado ao agente Lovable. O PM3 (Etapa B) depende de autorização explícita.
