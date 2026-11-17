@@ -63,10 +63,11 @@ export function PasswordCard() {
     setResendSuccess(false);
   }
 
-  async function applyPassword(withNonce?: string) {
-    const { error: updateError } = await supabase.auth.updateUser(
-      withNonce ? { password: next, nonce: withNonce } : { password: next },
-    );
+  async function applyPassword(withNonce: string) {
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: next,
+      nonce: withNonce,
+    });
     if (updateError) return false;
     return true;
   }
