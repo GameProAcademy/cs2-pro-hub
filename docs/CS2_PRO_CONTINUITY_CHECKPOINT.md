@@ -14,20 +14,20 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
 
 | Item                               | Valor                                                                                                                                                                                                                                                                                                                                                 |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM2 v2: fechamento (Etapa A do Prompt Mestre 3).** O PM3 (4.2.5–4.2.6, módulos C e D) NÃO foi iniciado e depende de autorização explícita                                                                                                                                                                                                           |
-| Etapa atual                        | Fechamento do PM2: PR #302 (docs), IDOR em dois sentidos (MANUAL_REQUIRED: falta a segunda conta real e as credenciais em secrets), E2E de browser (Playwright, em preparação). Replay VALIDADO EM PRODUÇÃO (relatório §5, §26). Veredito **PARCIAL**                                                                                                 |
+| Fase atual                         | **PM2 v2: COMPLETE (2026-11-17), Etapa A do Prompt Mestre 3.** O PM3 (4.2.5–4.2.6, módulos C e D) NÃO foi iniciado e depende de autorização explícita                                                                                                                                                                                                 |
+| Etapa atual                        | PM2 fechado: replay VALIDADO EM PRODUÇÃO (relatório §26); E2E de browser e IDOR em dois sentidos 12/12 em produção (run 44062163308, §28); credenciais na URL corrigidas (#306, §29). Decisão: **PM2 COMPLETE** (§30)                                                                                                                                 |
 | Última etapa concluída             | Release R5.8.29: #300 `47ba6ffe` (morte de BOT substituído em FACEIT) → Source alinhado a `47ba6ffe` (`4ef83d14` SKIPPED) → único build `3375b68b` → `/version` nos 2 hosts → re-pin #301 `76fa4887` (dry-run, aplicação e registro da migration) → secrets trocados pelo dono → publicação `99590af9` → atestação run 44013092142 → H.3-E PASS 18/18 |
 | Última operação concluída          | Validação do replay em produção com `demo-faceit-nuke.dem` enviada pelo dono: job `93450453` processado, trajetória COMPLETE 24/24, `/replay` round 3 desenhado (2500/2500 amostras, play/pause), deep link de `/deaths` para o tick 14552, `NOT_RECORDED` na partida antiga, nenhum SteamID no DOM                                                   |
-| Operações em andamento             | PR #302 em revisão; E2E de browser em preparação                                                                                                                                                                                                                                                                                                      |
+| Operações em andamento             | Nenhuma                                                                                                                                                                                                                                                                                                                                               |
 | Processos em execução              | Nenhum                                                                                                                                                                                                                                                                                                                                                |
 | Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                                                                                                                               |
 | Branch ativa                       | `main`                                                                                                                                                                                                                                                                                                                                                |
-| Último commit confirmado em `main` | `76fa4887` (merge do #301). #300 → `47ba6ffe`; #299 → `e04893ab`; #298 → `3eee0480`; #297 → `883f68e2`. O #302 (docs) só entra depois de CI verde no SHA exato                                                                                                                                                                                        |
-| Build validado em produção         | App: `76fa4887` (publicação `99590af9`). Worker: Railway `3375b68b` SUCCESS, commit `47ba6ffe`, Source persistente `47ba6ffe`. `/version` nos 2 hosts (reconferido em 2026-11-17 ~05:20Z): `git:47ba6ffe…`, demoparser2 0.42.2, `declared_revision_matches` true. Atestação run 44013092142 success; H.3-E PASS 18/18 (run 44005644742)               |
-| Problemas abertos                  | PM2 relatório §28: IDOR em dois sentidos MANUAL_REQUIRED; E2E de browser PENDENTE. Também: latência do segmento do replay (§27, item do PM3); Overpass/Train/Vertigo NOT_VALIDATED; alerta de segurança do Lovable NOT_VERIFIED; etapa E DEFERRED                                                                                                     |
-| **Próxima ação exata**             | Dono: criar a conta de teste B (com uma partida processada), decidir a conta A e cadastrar os secrets `PM2_E2E_A_EMAIL`, `PM2_E2E_A_PASSWORD`, `PM2_E2E_B_EMAIL` e `PM2_E2E_B_PASSWORD`. Depois: rodar o E2E e o IDOR, atualizar o relatório §28 e decidir PM2 COMPLETE/PARTIAL. NÃO iniciar o PM3 sem autorização                                    |
+| Último commit confirmado em `main` | `b0452747` (merge do #307). Fechamento: #302 → `e20a7459`; #303 → `6d3b91d7`; #304 → `226e37ce`; #306 → `d68a82db`; #307 → `b0452747`. Antes: #301 → `76fa4887`, #300 → `47ba6ffe`, #299 → `e04893ab`. Este PR de docs entra depois de CI verde no SHA exato                                                                                          |
+| Build validado em produção         | App: `d68a82db` (publicação `0719c851`; `/login` com `method="post"` e `fieldset disabled` antes da hidratação). Worker: Railway `3375b68b` SUCCESS, commit `47ba6ffe`. `/version` (2026-11-17 ~10:15Z): `git:47ba6ffe…`, demoparser2 0.42.2, `declared_revision_matches` true. H.3-E PASS em `d68a82db` (44061713392)                                |
+| Problemas abertos                  | Não bloqueiam o PM2: trocar a senha da conta de teste A (relatório §17 item 4); latência do segmento do replay (§27, item do PM3); Overpass/Train/Vertigo NOT_VALIDATED; alerta de segurança do Lovable NOT_VERIFIED; etapa E DEFERRED                                                                                                                |
+| **Próxima ação exata**             | Aguardar autorização explícita do dono para a Etapa B (PM3). Antes disso, nenhuma implementação de 4.2.5/4.2.6                                                                                                                                                                                                                                        |
 | Ações que NÃO devem ser repetidas  | Tudo do PM6; PM2 #291–#301; releases R5.8.28 e R5.8.29; migrations até `20261114230000`; validação dos 7 mapas; testes de corpus do PM2; validação do replay em produção                                                                                                                                                                              |
-| Ações manuais necessárias          | Seção 22 e relatório PM2 §17                                                                                                                                                                                                                                                                                                                          |
+| Ações manuais necessárias          | Relatório PM2 §17: trocar a senha da conta A e atualizar `PM2_E2E_A_PASSWORD`; revisar o alerta de segurança do Lovable                                                                                                                                                                                                                               |
 
 ## 1. Identificação
 
@@ -65,14 +65,14 @@ eventos → performance → release. Nada de Lovable, backfill ou reprocessament
 - Os arquivos `checkpoints/PHASE_*` ficam como histórico. O estado por PM vive nos relatórios
   `docs/pm1/` e `docs/pm6/`.
 
-| Fase    | Nome / escopo                    | Situação                                        | Checkpoint                           |
-| ------- | -------------------------------- | ----------------------------------------------- | ------------------------------------ |
-| 1 (PM1) | 4.2.1–4.2.2, módulos A e B       | CONCLUÍDA, validada em produção                 | `pm1/PM1_EXECUTION_REPORT.md`        |
-| PM6     | Compatibilidade de demos         | EM EXECUÇÃO                                     | `pm6/PM6_POST_PM1_RECONCILIATION.md` |
-| 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | PARCIAL (publicado; falta replay com demo nova) | `pm2/PM2_FINAL_REPORT.md`            |
-| 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | PENDENTE                                        | `checkpoints/PHASE_3_CHECKPOINT.md`  |
-| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | PENDENTE                                        | `checkpoints/PHASE_4_CHECKPOINT.md`  |
-| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | PENDENTE                                        | `checkpoints/PHASE_5_CHECKPOINT.md`  |
+| Fase    | Nome / escopo                    | Situação                             | Checkpoint                           |
+| ------- | -------------------------------- | ------------------------------------ | ------------------------------------ |
+| 1 (PM1) | 4.2.1–4.2.2, módulos A e B       | CONCLUÍDA, validada em produção      | `pm1/PM1_EXECUTION_REPORT.md`        |
+| PM6     | Compatibilidade de demos         | EM EXECUÇÃO                          | `pm6/PM6_POST_PM1_RECONCILIATION.md` |
+| 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | COMPLETE (2026-11-17; relatório §30) | `pm2/PM2_FINAL_REPORT.md`            |
+| 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | PENDENTE                             | `checkpoints/PHASE_3_CHECKPOINT.md`  |
+| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | PENDENTE                             | `checkpoints/PHASE_4_CHECKPOINT.md`  |
+| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | PENDENTE                             | `checkpoints/PHASE_5_CHECKPOINT.md`  |
 
 ## 6–8. Fase em execução, última etapa, próxima ação
 
@@ -234,8 +234,8 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 3. Autorização específica continua exigida para: reprocessar/backfill de demos reais, mudanças
    destrutivas, segurança, billing e custos relevantes.
 
-4. **PM2 (MANUAL_REQUIRED):** duas contas reais para o teste IDOR em dois sentidos e o E2E. A conta B precisa de uma
-   partida processada. Os 4 secrets `PM2_E2E_*` são cadastrados pelo dono no GitHub; nenhuma senha passa pelo chat.
+4. **PM2 (feito em 2026-11-17):** duas contas reais de teste, A e B, e os 4 secrets `PM2_E2E_*`. Pendente só a higiene: trocar a senha da
+   conta A, que foi parar na URL de `/login` na run 44035115612, antes da correção #306.
 
 ## 22-A. Estado do PM2 no fechamento (2026-11-17)
 
@@ -248,9 +248,9 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 | Demo FACEIT Nuke   | job `93450453` processado, 181 kills, 0 kills sem vítima                                                           | relatório §24, §26                                        |
 | Replay em produção | VALIDADO: 24/24 rounds, 7274 amostras, play/pause, deep link de `/deaths`                                          | relatório §5, §26                                         |
 | Mapas              | VALIDATED: Dust2, Mirage, Inferno, Nuke, Ancient, Anubis e Cache. NOT_VALIDATED: Overpass, Train e Vertigo         | relatório §22                                             |
-| Pendências formais | IDOR em dois sentidos (MANUAL_REQUIRED) e E2E de browser (PENDENTE)                                                | relatório §28                                             |
+| Pendências formais | nenhuma. IDOR em dois sentidos e E2E de browser 12/12 em produção (run 44062163308)                                | relatório §28, §30                                        |
 | Riscos residuais   | latência do segmento de 2,7–3,0 s (hipótese em §27); alerta de segurança do Lovable NOT_VERIFIED; etapa E DEFERRED | relatório §16, §21, §25, §27                              |
-| Recomendação       | fechar IDOR e E2E; depois, com autorização, PM3 com a latência como item de observabilidade                        | relatório §20                                             |
+| Recomendação       | PM3 só com autorização explícita; a latência entra como item de observabilidade                                    | relatório §20                                             |
 
 ## 23. Checkpoints individuais
 
@@ -272,16 +272,16 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: fechamento do PM2 (Etapa A do Prompt Mestre 3). PM3 não iniciado; exige autorização explícita
-- Estado: replay e diagnóstico de mortes VALIDADOS EM PRODUÇÃO; veredito PM2 PARCIAL
-- Última etapa concluída: release R5.8.29 (atestação success, H.3-E PASS 18/18) e validação do replay com a demo FACEIT Nuke
-- Próxima ação: dono cria a conta B e cadastra os secrets `PM2_E2E_*`; depois, rodar o E2E e o IDOR em dois sentidos
+- Fase atual: PM2 COMPLETE (2026-11-17). PM3 (Etapa B) não iniciado; exige autorização explícita
+- Estado: diagnóstico de mortes, replay, E2E de browser e IDOR em dois sentidos VALIDADOS EM PRODUÇÃO; credenciais na URL corrigidas (#306)
+- Última etapa concluída: fechamento do PM2 (PRs #302, #303, #304, #306 e #307; E2E run 44062163308, 12/12)
+- Próxima ação: aguardar autorização para o PM3. Higiene: trocar a senha da conta de teste A
 - Branch: `main`
-- Commit: `76fa4887` (merge do #301)
-- PR: #302 (docs do fechamento)
-- CI: #301 verde no SHA exato; Quality Gates, F553, atestação e H.3-E verdes em `76fa4887`
-- Testes pendentes: IDOR em dois sentidos com duas contas reais; E2E de browser
-- Bloqueios: MANUAL_REQUIRED (duas contas reais e os secrets)
+- Commit: `b0452747` (merge do #307), mais o PR de docs do fechamento
+- PR: docs do fechamento do PM2
+- CI: #306 e #307 verdes no SHA exato; H.3-E PASS em `d68a82db`
+- Testes pendentes: nenhum para o PM2
+- Bloqueios: nenhum
 - Arquivo central: `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`
-- Relatórios por PM: `docs/pm1/`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm6/`
-- Não repetir: validação do replay com nova demo; releases R5.8.28 e R5.8.29; validação dos 7 mapas; corpus do PM2
+- Relatórios por PM: `docs/pm1/`, `docs/pm2/PM2_FINAL_REPORT.md` (§26–§30), `docs/pm6/`
+- Não repetir: validação do replay com nova demo; releases R5.8.28 e R5.8.29; E2E/IDOR do PM2 (só reexecutar o workflow `PM2 browser E2E` como regressão)
