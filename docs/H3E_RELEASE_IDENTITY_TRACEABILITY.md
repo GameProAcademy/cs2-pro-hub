@@ -1132,3 +1132,36 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f`;
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `47ba6ffef76feae95dc98075cf3fb8089e02ce8f`.
 - Rollback: Railway `bb92ed95` (and the service source back to `b440a06f`), plus `docs/reference/r5_8_29/rollback.sql`, plus the R5.8.28 secret values.
+
+## 2026-11-17 — R5.8.30: PM3 telemetry (controlled)
+
+- Change (PR #310, merge `768646ea`), for PM3 modules C (duels/aim) and D (utility):
+  - `adapter.py` emits for each `weapon_fire` the shooter, the weapon and whether it was silenced.
+  - It emits `hitgroup` and `health_after` on each damage, and `hitgroup`, `thru_smoke` and `attacker_in_air` on each kill.
+  - It emits the x/y/z detonation position of each grenade, plus `inferno_startburn`.
+  - `raw_evidence.py` maps those fields. The field catalog was regenerated, and the RAW audit passes on real demos.
+  - Absent values stay null, never zero.
+- Release:
+  - Queue idle (no queued/processing jobs).
+  - Merge with the service source pinned (`47ba6ffe`) and the watch-pattern freeze in place: nothing deployed.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:768646ea…` with skipped deploys.
+  - **Persistent source aligned in the same operation:** `connect-service-source` repo `GameProAcademy/cs2-pro-hub`, branch `main`, `commitSha 768646ea…`, `rootDirectory services/cs2-demo-parser`.
+    - The deployment created by that source change, `12cb2d07`, was **SKIPPED** by the watch-pattern freeze and built nothing.
+    - Exactly one deployment of the pinned commit was then triggered through the Railway agent: `3335c88d`, SUCCESS, created 12:02:51Z. This is the only build of the release.
+    - `3375b68b` is REMOVED.
+  - Both `/version` hosts (2026-11-17 12:20Z): demoparser2 0.42.2, revision = semantic = build = `git:768646ea…`, `build.commit` `768646ea…`, `embedded` true, `source` railway, `declared_revision_matches` true.
+- Pins:
+  - deployment `3375b68b…` → `3335c88d…`;
+  - commit `47ba6ffe…` → `768646ea…` (4 in the recorder, 3 in the assertion);
+  - adapter.py `3e4f4a04…` → `1eaf3840…`;
+  - raw_evidence.py `6e6721b0…` → `81c0f7e5…`;
+  - the parser.py, worker.py, settings.py and workflow blobs and parser version 0.42.2 are unchanged.
+- R5.8.30 migration (`supabase/migrations/20261117120000_r5_8_30_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_30/`):
+  - recorder `3e2125a2…` → `b46f6701…`. This equals `r5_8_11.target_md5`, and equals the md5 of the managed recorder with the four pins replaced (read-only SELECT).
+  - assertion `bfd8a96d…` → `95dc9e5f…`.
+  - Production dry run: the full migration body ran in a block that ends in an exception, and reached `R5_8_30_DRY_RUN_OK_ROLLED_BACK` (every check passed, nothing persisted).
+- Owner action (app secrets, then publish):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:768646ea76646219b1749f9fd2e757703292a24c`;
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:768646ea76646219b1749f9fd2e757703292a24c`;
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `768646ea76646219b1749f9fd2e757703292a24c`.
+- Rollback: Railway `3375b68b` (and the service source back to `47ba6ffe`), plus `docs/reference/r5_8_30/rollback.sql`, plus the R5.8.29 secret values.

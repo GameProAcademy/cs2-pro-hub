@@ -127,7 +127,7 @@ def test_every_active_repository_pin_names_the_released_runtime():
     successor = json.loads((ROOT / "docs/reference/r5_8_27/spec.json").read_text(encoding="utf-8"))
     assert successor["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
     # R5.8.27 is itself historical since R5.8.28; every active pin names the head.
-    successor = json.loads((ROOT / "docs/reference/r5_8_29/spec.json").read_text(encoding="utf-8"))  # active head
+    successor = json.loads((ROOT / "docs/reference/r5_8_30/spec.json").read_text(encoding="utf-8"))  # active head
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
@@ -136,10 +136,10 @@ def test_every_active_repository_pin_names_the_released_runtime():
         assert NEW_COMMIT not in text and OLD_COMMIT not in text, path
     adapter = (ROOT / "src/lib/pipeline/parser/adapter.ts").read_text(encoding="utf-8")
     assert f'DEPLOYED_WORKER_REVISION = "git:{successor["semantic_commit"]}"' in adapter
-    # raw_evidence.py did not change in R5.8.27: the R5.8.26 blob stays active.
+    # raw_evidence.py stayed through R5.8.29 and moved on in R5.8.30: neither R5.8.26 blob is active.
     for path in ("scripts/parser_runtime_attestation.py", "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert NEW_RAW in text and OLD_RAW not in text, path
+        assert NEW_RAW not in text and OLD_RAW not in text, path
         for name, blob in successor["critical_hashes"].items():
             assert blob in text, (path, name)
 
