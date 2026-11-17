@@ -140,27 +140,33 @@ export function ReplayBody({
   const t = useT();
   if (r.status === "NOT_FOUND" || r.status === "NO_PARTICIPANT")
     return (
-      <EmptyState
-        icon={<UserX className="size-5" aria-hidden />}
-        title={t(`replay.state.${r.status}.title` as TranslationKey)}
-        description={t(`replay.state.${r.status}.body` as TranslationKey)}
-      />
+      <div data-replay-status={r.status}>
+        <EmptyState
+          icon={<UserX className="size-5" aria-hidden />}
+          title={t(`replay.state.${r.status}.title` as TranslationKey)}
+          description={t(`replay.state.${r.status}.body` as TranslationKey)}
+        />
+      </div>
     );
   if (r.status === "NOT_RECORDED" || r.status === "UNAVAILABLE")
     return (
-      <EmptyState
-        icon={<Film className="size-5" aria-hidden />}
-        title={t(`replay.state.${r.status}.title` as TranslationKey)}
-        description={t(`replay.state.${r.status}.body` as TranslationKey)}
-      />
+      <div data-replay-status={r.status}>
+        <EmptyState
+          icon={<Film className="size-5" aria-hidden />}
+          title={t(`replay.state.${r.status}.title` as TranslationKey)}
+          description={t(`replay.state.${r.status}.body` as TranslationKey)}
+        />
+      </div>
     );
   if (r.status === "MAP_NOT_VALIDATED" || r.status === "UNKNOWN_MAP")
     return (
-      <EmptyState
-        icon={<MapPinned className="size-5" aria-hidden />}
-        title={t(`replay.state.${r.status}.title` as TranslationKey)}
-        description={t(`replay.state.${r.status}.body` as TranslationKey)}
-      />
+      <div data-replay-status={r.status}>
+        <EmptyState
+          icon={<MapPinned className="size-5" aria-hidden />}
+          title={t(`replay.state.${r.status}.title` as TranslationKey)}
+          description={t(`replay.state.${r.status}.body` as TranslationKey)}
+        />
+      </div>
     );
   if (r.status !== "OK" && r.status !== "ROUND_UNAVAILABLE") return null;
   return (

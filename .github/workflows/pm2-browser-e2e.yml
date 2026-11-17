@@ -1,0 +1,73 @@
+name: PM2 browser E2E
+
+# Real browser flow against a real deployment with two real accounts (PM2 closure: deaths, replay,
+# feedback, cross-user isolation in both directions). Manual only: it signs in to production.
+#
+# Secrets (set by the project owner; never printed): PM2_E2E_A_EMAIL, PM2_E2E_A_PASSWORD,
+# PM2_E2E_B_EMAIL, PM2_E2E_B_PASSWORD. The repository is public, so this workflow records no trace,
+# video or screenshot; the only artifact is a JSON summary with statuses and counts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Deployment to test"
+        required: true
+        default: "https://gamepro.network"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pm2-browser-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      E2E_BASE_URL: ${{ inputs.base_url }}
+      E2E_A_EMAIL: ${{ secrets.PM2_E2E_A_EMAIL }}
+      E2E_A_PASSWORD: ${{ secrets.PM2_E2E_A_PASSWORD }}
+      E2E_B_EMAIL: ${{ secrets.PM2_E2E_B_EMAIL }}
+      E2E_B_PASSWORD: ${{ secrets.PM2_E2E_B_PASSWORD }}
+      E2E_SUMMARY_PATH: ${{ runner.temp }}/pm2-e2e-summary.json
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Require the two accounts
+        run: |
+          missing=""
+          for v in E2E_A_EMAIL E2E_A_PASSWORD E2E_B_EMAIL E2E_B_PASSWORD; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::MANUAL_REQUIRED: missing secrets for:$missing (repository secrets PM2_E2E_*)"
+            exit 1
+          fi
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Install Playwright (pinned in e2e/package.json)
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npx playwright --version
+      - name: Run
+        run: npx playwright test
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f "$E2E_SUMMARY_PATH" ]; then
+            { echo '## PM2 browser E2E'; echo; echo "Target: \`$E2E_BASE_URL\` · commit \`$GITHUB_SHA\`"; echo; echo '```json'; cat "$E2E_SUMMARY_PATH"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: pm2-e2e-summary
+          path: ${{ runner.temp }}/pm2-e2e-summary.json
+          if-no-files-found: ignore
+          retention-days: 30

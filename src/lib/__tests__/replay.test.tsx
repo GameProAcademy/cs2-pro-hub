@@ -287,6 +287,8 @@ describe("replay page states", () => {
       const html = render(<ReplayBody r={r} onRound={() => {}} />);
       expect(html).toContain(dictionaries["pt-BR"][`replay.state.${status}.title`]);
       expect(html).not.toContain("data-replay-svg");
+      // Machine-readable state for the browser E2E (same hook as /deaths).
+      expect(html).toContain(`data-replay-status="${status}"`);
     },
   );
 
