@@ -29,6 +29,7 @@ import type { RealPlayerDna } from "@/lib/playerDna";
 import type { PlayerOverview } from "@/lib/playerOverview";
 import type { DeathPatternsResponse } from "@/lib/diagnosis.functions";
 import { PATTERN_POLICY } from "@/lib/diagnosis/deathRules";
+import type { LatestMatchPlay } from "@/lib/coach/latestMatchPlay";
 
 export const COACH_VERSION = "ai-coach-v3";
 export const COACH_MAX_MESSAGE_CHARS = 1000;
@@ -261,6 +262,11 @@ export interface CoachFacts {
       matches: number;
     }>;
   } | null;
+  /**
+   * PM3: duels/aim (cs2.duels.v1) and utility (cs2.utility.v1) of the MOST RECENT match only, as
+   * the /duels and /utility pages show them. null = not available.
+   */
+  latestMatchPlay: LatestMatchPlay | null;
   /** Per-match rows relevant to THIS message (maps it names, else the most recent ones). */
   matchesIncluded: number;
   matches: Array<{
@@ -426,7 +432,7 @@ const NOT_AVAILABLE = [
   "player positions / heatmaps (not extracted)",
   "round-by-round economy decisions classified as eco/force/full buy (no reviewed classifier)",
   "kills and damage split by side (not stored per round; only rounds per side and side ratings exist)",
-  "enemies flashed / enemies blinded: NOT MEASURED, no per-victim blind event was recorded in these matches. A flash thrown is not an enemy flashed, and flashAssists is a different metric (kills on enemies the player had flashed), never a count of enemies flashed",
+  "enemies flashed / enemies blinded across matches: NOT MEASURED as a total or per-match row (matches[].enemiesFlashed is always null). The ONLY flash-effect numbers are in latestMatchPlay.utility (most recent match, when blindsRecorded is true); HLTV demos record no blind events. A flash thrown is not an enemy flashed, and flashAssists is a different metric (kills on enemies the player had flashed), never a count of enemies flashed",
 ];
 /** Sent instead of a value while the Score has none (never a number, never zero). */
 const PRO_SCORE_NOT_AVAILABLE =
@@ -499,6 +505,8 @@ export function buildCoachFacts(
     proScore?: ProScore;
     /** PM2: recurring death patterns (cs2.death-rules.v1) as the death review shows them. */
     deathPatterns?: DeathPatternsResponse | null;
+    /** PM3: most recent match's duels and utility, as /duels and /utility show them. */
+    latestMatchPlay?: LatestMatchPlay | null;
   } = {},
 ): CoachFacts {
   const dict = dictionaries[locale];
@@ -668,6 +676,7 @@ export function buildCoachFacts(
           })),
         }
       : null,
+    latestMatchPlay: options.latestMatchPlay ?? null,
     matchesIncluded: matches.length,
     matches,
     totals: coachTotals(allRows),
@@ -823,7 +832,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "12. Units: every count in matches[] (kills, deaths, assists, openingKills, openingDeaths, tradeKills, flashAssists) is per MATCH. A per-round rate is count / roundsPlayed; the number of matches is never a number of rounds. Copy sums and per-round rates from totals instead of computing them; totals and observations cover ALL matches together (sample.matches), while matches[] may hold only the matches relevant to this question (matchesIncluded), so never list a totals value under one map or match; if a value you need is null there, say it cannot be computed. The K/D of one match is matches[].killDeathRatio; the overall K/D is the kd observation (with its numerator / denominator); never quote one as the other. For the strongest or weakest Player DNA dimension, copy playerDna.strongest / playerDna.weakest (empty unless READY).",
     "13. Dates: when period.dateBasis (or a match's dateBasis) is 'processed', the date is when CS2 PRO processed the demo, never when the match was played; say so if you mention a date.",
     "14. Match result, score and win rate are UNAVAILABLE unless an observation with status OBSERVED or DERIVED says otherwise: never infer a win, a loss or a score from kills, rounds or anything else.",
-    `15. Flash assists: read the flashAssists observation's provenance and methods. If provenance is GAME_FLAG (every match counted by the game's own flag) you may say the game recorded the number. Otherwise it is a count derived by CS2 PRO: write it in ${LANGUAGE[locale]} like this: '${FLASH_PHRASE[locale]}', and if methods has NOT_RECORDED matches say that the counting method was not recorded for those matches. Never treat an unrecorded method as a missing event, and never conclude from a 0 that the player does not flash for teammates or throws no flashes. Enemies flashed is NOT MEASURED.`,
+    `15. Flash assists: read the flashAssists observation's provenance and methods. If provenance is GAME_FLAG (every match counted by the game's own flag) you may say the game recorded the number. Otherwise it is a count derived by CS2 PRO: write it in ${LANGUAGE[locale]} like this: '${FLASH_PHRASE[locale]}', and if methods has NOT_RECORDED matches say that the counting method was not recorded for those matches. Never treat an unrecorded method as a missing event, and never conclude from a 0 that the player does not flash for teammates or throws no flashes. Enemies flashed is NOT MEASURED across matches; for the most recent match only, use latestMatchPlay.utility (rule 26).`,
     "19. Sources: when you name where a number comes from, copy an observations[].source or a PLAYER_FACTS path exactly (e.g. totals.perRound.openingKills, matches[0].adr); never write any other table, column or source name. Every number in your answer must be copied from PLAYER_FACTS; never estimate one. Lines with an unverifiable number or source, and any comparison with other players or an average, are removed before the player sees the answer.",
     "16. declared holds what the PLAYER said about themself (goals, level, experience, roles, main difficulty, maps of interest). Use it to choose the focus and to phrase advice, but it is a preference, never a measurement: never present it as data about how they play.",
     "17. inferences (status INFERRED) are the product's documented reading of the observations; present them as such ('the X-ray points to…') and only when present.",
@@ -832,6 +841,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "23. Sides and rounds: sides.ct / sides.t .roundContext hold the player's OWN rounds on each side (version in sides.roundContextVersion): rounds won and lost are the side that won the round as recorded by the demo, compared with the player's side in that round. Never call it the match result or the score, never name teams, and never derive who won from kills or deaths. When rateStatus is INSUFFICIENT_SAMPLE there are no rates for that side: give the counts and say the sample is small. When roundContext is null, CT/T rounds won are not available. Never swap CT and T.",
     "24. Match end: matches[].matchEnd.endedBy SURRENDER means the match ended early by an official surrender after matchEnd.validRounds played rounds. Treat it as a shorter sample: never count, estimate or project the rounds that were not played, never penalise the player for them, and never present a surrendered match as a full-length one. matchEnd null means the end was not recorded for that match; say nothing about how it ended.",
     "25. Deaths: deathPatterns holds the death review's rule counts (version in deathPatterns.rulesVersion). Present a rule as a recurring pattern ONLY when its status is RECURRENT, always with its numbers (occurrences of evaluatedDeaths, over matches) and the period; with INSUFFICIENT_SAMPLE say the sample is too small and draw no tendency; NOT_SUPPORTED rules (exposure, isolation, re-peek, rotation timing) are not measured: never claim them. TRADE_NOT_OBSERVED means no teammate killed the killer within the trade window: never blame teammates and never say a trade was possible. Never give a probability or a confidence percentage for a death. deathPatterns null means the death review is not available: say nothing about death patterns.",
+    "26. Duels, aim and utility: latestMatchPlay holds ONLY the most recent match (map and dateBasis given): combat (cs2.duels.v1) and utility (cs2.utility.v1), exactly as the Duels and Utility pages show them. Every metric there has status, value, unit, sample and method: quote value and sample only for OBSERVED, DERIVED or INFERRED (say INFERRED is an attribution); INSUFFICIENT_SAMPLE means too few duels/shots/flashes to give a number; NOT_OBSERVED means that demo did not record it (e.g. throwsRecorded or blindsRecorded false), never zero. A value in percent is already a percentage. One match is one observation: never call it a tendency (rule 4). A duel is the damage traded with ONE opponent closed by a kill between the two; losing duels does not by itself prove bad aim. Crosshair placement, counter-strafe and recoil control (combat.notMeasured) are NOT MEASURED: never claim or estimate them. A flash with no enemy blinded had no MEASURED effect, which is not proof it was useless. latestMatchPlay null means not available: say nothing about duels or utility of the latest match.",
     ...coachPersonaRules(),
   ].join("\n");
 }

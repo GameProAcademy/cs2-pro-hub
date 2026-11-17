@@ -51,6 +51,12 @@ import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerDat
 import { loadCoachPreferences } from "@/lib/coachSession.functions";
 import { loadRoundContext, loadSideRounds } from "@/lib/xray.functions";
 import { loadDeathPatterns } from "@/lib/diagnosis.functions";
+import { buildCombatReport } from "@/lib/combat/duels";
+import { loadCombatInput } from "@/lib/combat.functions";
+import { buildLatestMatchPlay, type LatestMatchPlay } from "@/lib/coach/latestMatchPlay";
+import type { PlayerOverview } from "@/lib/playerOverview";
+import { buildUtilityReport } from "@/lib/utility/utility";
+import { loadUtilityInput } from "@/lib/utility.functions";
 
 export type CoachErrorCode =
   | "COACH_MESSAGE_EMPTY"
@@ -382,11 +388,13 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           );
           // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
           const coachMatchIds = overview.matches.map((m) => m.matchId);
-          const [sides, roundContext, deathPatterns] = await Promise.all([
+          const [sides, roundContext, deathPatterns, latestMatchPlay] = await Promise.all([
             loadSideRounds(db, [playerId], coachMatchIds),
             loadRoundContext(db, [playerId], coachMatchIds),
             // PM2: same numbers as the death review page; a read failure only drops the block.
             loadDeathPatterns(db, context.userId, overview.matches).catch(() => null),
+            // PM3: same reports as /duels and /utility, for the most recent match only.
+            loadLatestMatchPlay(db, context.userId, overview).catch(() => null),
           ]);
           const facts = buildCoachFacts(overview, dna, input.locale, {
             message: input.message,
@@ -395,6 +403,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             // Same rows, same pure function as the Dashboard / Performance Score.
             proScore: buildProScore(dnaRows),
             deathPatterns,
+            latestMatchPlay,
           });
           // Catalog: a few items relevant to THIS message (never the catalog itself). A
           // catalog read failure only means no suggestions; the Coach still answers.
@@ -552,4 +561,38 @@ function coachProvenance(
     `reasoning=${u.reasoningTokens ?? "?"}`,
     `cost_usd=${u.costUsd ?? "?"}`,
   ].join("|");
+}
+
+/**
+ * PM3: combat (cs2.duels.v1) and utility (cs2.utility.v1) of the player's most recent match, read
+ * with the player's own session exactly like the /duels and /utility pages. Either half is null when
+ * the player is not identified in that match.
+ */
+export async function loadLatestMatchPlay(
+  db: SupabaseClient<Database>,
+  userId: string,
+  overview: PlayerOverview,
+): Promise<LatestMatchPlay | null> {
+  const latest = [...overview.matches].sort((a, b) => b.playedAt.localeCompare(a.playedAt))[0];
+  if (!latest) return null;
+  const [combat, utility] = await Promise.all([
+    loadCombatInput(db, userId, latest.matchId),
+    loadUtilityInput(db, userId, latest),
+  ]);
+  return buildLatestMatchPlay(
+    latest,
+    combat
+      ? {
+          report: buildCombatReport(combat.input, combat.participantKey),
+          shotsAttributed: combat.input.shotsAttributed,
+        }
+      : null,
+    utility
+      ? {
+          report: buildUtilityReport(utility.input, utility.participantKey),
+          blindsRecorded: utility.input.blindsRecorded && utility.input.detonationsAttributed,
+          throwsAttributed: utility.input.throwsAttributed,
+        }
+      : null,
+  );
 }

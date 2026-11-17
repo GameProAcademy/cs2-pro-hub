@@ -153,7 +153,7 @@ export function toCombatRow(type: CombatEventRow["type"], r: Row): CombatEventRo
 
 const asSide = (v: string | null): Side | null => (v === "T" || v === "CT" ? v : null);
 
-async function loadCombatInput(
+export async function loadCombatInput(
   supabase: SupabaseClient<Database>,
   userId: string,
   matchId: string,

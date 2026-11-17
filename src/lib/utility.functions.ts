@@ -163,7 +163,7 @@ export function toUtilityRow(r: Row): UtilityEventRow | null {
 
 const asSide = (v: string | null): Side | null => (v === "T" || v === "CT" ? v : null);
 
-async function loadUtilityInput(
+export async function loadUtilityInput(
   supabase: SupabaseClient<Database>,
   userId: string,
   match: OverviewMatch,
