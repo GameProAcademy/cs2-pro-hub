@@ -51,6 +51,7 @@ SUPPORTED_EVENTS: tuple[str, ...] = (
     "flashbang_detonate",
     "smokegrenade_detonate",
     "molotov_detonate",
+    "inferno_startburn",
     "inferno_expire",
     "smokegrenade_expired",
     "decoy_detonate",
@@ -159,6 +160,39 @@ def is_valid_steam_id(value: Any) -> bool:
 def _steam_id(value: Any) -> str | None:
     text = _text(value)
     return text if text is not None and is_valid_steam_id(text) else None
+
+
+def _plain_position(row: Record) -> dict[str, float] | None:
+    """Position from the event's own unprefixed `x`/`y`/`z` columns (grenade detonations).
+
+    All three axes or nothing: a detonation point with a missing axis is not a point."""
+    out: dict[str, float] = {}
+    for axis in ("x", "y", "z"):
+        value = _num(_pick(row, axis, axis.upper()))
+        if value is None:
+            return None
+        out[axis] = float(value)
+    return out
+
+
+def _weapon_fire_name(value: Any) -> str | None:
+    """`weapon_fire.weapon` is the item class (`weapon_ak47`); damage and death events name the
+    same weapon without the prefix (`ak47`). Strip it so the three events join on one name."""
+    text = _text(value)
+    if text is None:
+        return None
+    return text[len("weapon_"):] if text.startswith("weapon_") and len(text) > len("weapon_") else text
+
+
+#: CS2 hit groups as demoparser2 names them. Anything else is kept out (never guessed).
+_HITGROUPS: frozenset[str] = frozenset({
+    "generic", "head", "chest", "stomach", "left_arm", "right_arm", "left_leg", "right_leg", "neck", "gear",
+})
+
+
+def _hitgroup(value: Any) -> str | None:
+    text = _text(value)
+    return text if text in _HITGROUPS else None
 
 
 def _position(row: Record, prefix: str) -> dict[str, float] | None:
@@ -422,12 +456,25 @@ def _event_fields(name: str, row: Record) -> Record:
         put("distance", _num(_pick(row, "distance")))
         put("position", _position(row, "attacker"))
         put("victim_position", _position(row, "user"))
+        # PM3 (R5.8.30): hit group of the killing hit, shot through smoke, killer airborne.
+        put("hitgroup", _hitgroup(_pick(row, "hitgroup")))
+        put("thru_smoke", _bool(_pick(row, "thrusmoke")))
+        put("attacker_in_air", _bool(_pick(row, "attackerinair")))
     elif name == "player_hurt":
         put("attacker", _steam_id(_pick(row, "attacker_steamid")))
         put("victim", _steam_id(_pick(row, "user_steamid")))
         put("weapon", _text(_pick(row, "weapon")))
         put("damage", _num(_pick(row, "dmg_health")))
         put("armor_damage", _num(_pick(row, "dmg_armor")))
+        # PM3 (R5.8.30): where the hit landed and the victim's health right after it.
+        put("hitgroup", _hitgroup(_pick(row, "hitgroup")))
+        put("health_after", _int(_pick(row, "health")))
+    elif name == "weapon_fire":
+        # PM3 (R5.8.30): the shooter is the event's own userid; the weapon is the item fired.
+        # No shooter => no actor (never inferred).
+        put("attacker", _steam_id(_pick(row, "user_steamid")))
+        put("weapon", _weapon_fire_name(_pick(row, "weapon")))
+        put("silenced", _bool(_pick(row, "silenced")))
     elif name == "player_blind":
         put("attacker", _steam_id(_pick(row, "attacker_steamid")))
         put("victim", _steam_id(_pick(row, "user_steamid")))
@@ -438,6 +485,8 @@ def _event_fields(name: str, row: Record) -> Record:
         # D35: these game events carry the thrower as their own `userid` (owner of the
         # projectile). No other player is ever inferred: absent thrower => no actor.
         put("attacker", _steam_id(_pick(row, "user_steamid")))
+        # PM3 (R5.8.30): where the projectile detonated / the fire started (event x/y/z).
+        put("detonation_position", _plain_position(row))
     return out
 
 

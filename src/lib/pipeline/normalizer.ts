@@ -113,6 +113,14 @@ function normalizeEvent(raw: RawParserEvent): CanonicalEvent | null {
   // Positions are stored only for the meaningful events (never per tick).
   if (raw.position) data["position"] = raw.position;
   if (raw.victim_position) data["victim_position"] = raw.victim_position;
+  // PM3 (R5.8.30) — telemetry for duels/aim (module C) and utility (module D). Absent stays absent.
+  if (typeof raw.hitgroup === "string" && raw.hitgroup) data["hitgroup"] = raw.hitgroup;
+  if (typeof raw.health_after === "number" && Number.isFinite(raw.health_after))
+    data["health_after"] = raw.health_after;
+  if (typeof raw.thru_smoke === "boolean") data["thru_smoke"] = raw.thru_smoke;
+  if (typeof raw.attacker_in_air === "boolean") data["attacker_in_air"] = raw.attacker_in_air;
+  if (typeof raw.silenced === "boolean") data["silenced"] = raw.silenced;
+  if (raw.detonation_position) data["detonation_position"] = raw.detonation_position;
 
   return {
     roundNumber: raw.round,
