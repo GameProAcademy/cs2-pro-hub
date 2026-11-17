@@ -1102,3 +1102,33 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:b440a06fc06831be3cfe0b2080f6be901dad3019`;
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `b440a06fc06831be3cfe0b2080f6be901dad3019`.
 - Rollback: Railway `7690b171` (and the service source back to `3837a810`), plus `docs/reference/r5_8_28/rollback.sql`, plus the R5.8.27 secret values.
+
+## 2026-11-14 — R5.8.29: FACEIT BOT-replacement world death (controlled)
+
+- Change (PR #300, merge `47ba6ffe`):
+  - `adapter.py` omits only the `player_death` row with a blank victim, a blank attacker and weapon `world` at the exact tick of a BOT `player_disconnect` (networkid BOT, blank xuid/user_steamid). This is the bot kicked when a disconnected player rejoins.
+  - The warning `bot_replacement_world_deaths_omitted:N` records every omission. RAW evidence is unchanged, and so are the field catalog and the mapping digests.
+  - Corpus (7 FACEIT demos, demoparser2 0.42.2): the 3 demos previously blocked by `RAW_AUDIT_BLOCKED` (nuke 3, inferno 2, mirage 1 rows) now have 0 unknown victims/attackers.
+- Release:
+  - Queue idle (0 pending/processing/cancel_requested).
+  - Merge with the service source pinned (`b440a06f`) and the watch-pattern freeze in place: nothing deployed.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:47ba6ffe…` with skipped deploys.
+  - **Persistent source aligned in the same operation:** `connect-service-source` repo `GameProAcademy/cs2-pro-hub`, branch `main`, `commitSha 47ba6ffe…`, `rootDirectory services/cs2-demo-parser`.
+    - The deployment created by that source change, `4ef83d14`, was **SKIPPED** by the watch-pattern freeze and built nothing.
+    - Exactly one deployment of the pinned commit was then triggered through the Railway agent: `3375b68b`, SUCCESS, created 23:24:52Z. This is the only build of the release.
+    - `bb92ed95` is REMOVED.
+  - Both `/version` hosts (2026-11-17 01:49Z): demoparser2 0.42.2, revision = semantic = build = `git:47ba6ffe…`, `build.commit` `47ba6ffe…`, `embedded` true, `source` railway, `declared_revision_matches` true.
+- Pins:
+  - deployment `bb92ed95…` → `3375b68b…`;
+  - commit `b440a06f…` → `47ba6ffe…` (4 in the recorder, 3 in the assertion);
+  - adapter.py `020f847a…` → `3e4f4a04…`;
+  - the parser.py, worker.py, raw_evidence.py, settings.py and workflow blobs and parser version 0.42.2 are unchanged.
+- R5.8.29 migration (`supabase/migrations/20261114230000_r5_8_29_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_29/`):
+  - recorder `99776ca5…` → `3e2125a2…`. This equals `r5_8_11.target_md5`, and equals the md5 of the managed recorder with the three pins replaced (read-only SELECT).
+  - assertion `1918875c…` → `bfd8a96d…` (read-only SELECT on the managed definition).
+  - Method note: a first draft of the spec carried wrong targets (`79b9b295…`, `b551844c…`). The committed-artifacts test (`target_md5(SPEC)`) and the read-only SELECT both rejected them before any commit. The migration would have failed closed with `R5_8_29_POSTCONDITION_INVALID`.
+- Owner action (app secrets, then publish):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f`;
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f`;
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `47ba6ffef76feae95dc98075cf3fb8089e02ce8f`.
+- Rollback: Railway `bb92ed95` (and the service source back to `b440a06f`), plus `docs/reference/r5_8_29/rollback.sql`, plus the R5.8.28 secret values.
