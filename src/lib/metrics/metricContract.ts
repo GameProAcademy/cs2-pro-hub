@@ -156,7 +156,11 @@ export type ReleaseBlocker =
   | "HEURISTIC_ATTRIBUTION"
   | "NO_LICENSED_DATASET"
   | "SAMPLE_VOLUME"
-  | "NOT_IMPLEMENTED";
+  | "NOT_IMPLEMENTED"
+  /** Matches processed before parser R5.8.30 carry no shooter / throw / hitgroup / fire telemetry. */
+  | "LEGACY_MATCHES_WITHOUT_TELEMETRY"
+  /** Present only in some demo sources (e.g. HLTV demos carry no player_blind). */
+  | "DEMO_SOURCE_DEPENDENT";
 
 export interface ReleaseEntry {
   metric_key: string;
@@ -254,23 +258,40 @@ export const RELEASE_MATRIX: readonly ReleaseEntry[] = [
   {
     metric_key: "combat.duels_by_weapon_distance",
     delivery: "4.2.5",
-    release: "PARTIAL",
-    blockers: ["NOT_IMPLEMENTED"],
-    evidence: "round_events.distance and weapon on every kill; panel not built",
+    release: "SUPPORTED",
+    blockers: [],
+    evidence:
+      "cs2.duels.v1 (src/lib/combat/duels.ts, /duels): duel win rate overall, by weapon class and by kill distance band (meters); real demo FURIA×Vitality: duels won 20 = kills, lost 12 = deaths",
+  },
+  {
+    metric_key: "combat.opening_duels",
+    delivery: "4.2.5",
+    release: "SUPPORTED",
+    blockers: [],
+    evidence: "cs2.duels.v1: duel closed by the round's first kill between opponents",
   },
   {
     metric_key: "aim.first_bullet",
     delivery: "4.2.5",
-    release: "NOT_MEASURED",
-    blockers: ["L03_USERCMD", "SHOOTER_NOT_ATTRIBUTED"],
-    evidence: "L03; weapon_fire has no actor (0/16892)",
+    release: "PARTIAL",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence:
+      "cs2.duels.v1: burst's first bullet hit, shot↔hit by shooter + tick (100% in the corpus); weapon_fire shooter only from R5.8.30 (PR #310)",
+  },
+  {
+    metric_key: "aim.shot_accuracy",
+    delivery: "4.2.5",
+    release: "PARTIAL",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence: "cs2.duels.v1 shot_hit_rate and head_hit_share (player_hurt hitgroup); R5.8.30+ only",
   },
   {
     metric_key: "aim.spray",
     delivery: "4.2.5",
     release: "NOT_MEASURED",
-    blockers: ["L03_USERCMD", "SHOOTER_NOT_ATTRIBUTED"],
-    evidence: "ADMISSION_CONTRACT_V3 L03 (usercmd unavailable)",
+    blockers: ["L03_USERCMD"],
+    evidence:
+      "recoil control needs aim punch per bullet (not persisted); /duels shows hit rate by bullet position only, labelled as not a recoil score",
   },
   {
     metric_key: "aim.crosshair_placement",
@@ -289,9 +310,26 @@ export const RELEASE_MATRIX: readonly ReleaseEntry[] = [
   {
     metric_key: "utility.flash_affected",
     delivery: "4.2.6",
-    release: "NOT_MEASURED",
-    blockers: ["NOT_IMPLEMENTED"],
-    evidence: "enemiesFlashed not observed in production matches",
+    release: "PARTIAL",
+    blockers: ["DEMO_SOURCE_DEPENDENT"],
+    evidence:
+      "cs2.utility.v1 (src/lib/utility/utility.ts, /utility): player_blind tied to the flash detonation by thrower + tick (100% in 3 real demos); HLTV demos carry no player_blind → NOT_OBSERVED",
+  },
+  {
+    metric_key: "utility.throws_and_timing",
+    delivery: "4.2.6",
+    release: "PARTIAL",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence:
+      "cs2.utility.v1: detonations by thrower and round phase for every match; throws (weapon_fire) and fire starts (inferno_startburn) from R5.8.30; throws = detonations per type in 3 real demos",
+  },
+  {
+    metric_key: "utility.he_fire_damage",
+    delivery: "4.2.6",
+    release: "SUPPORTED",
+    blockers: [],
+    evidence:
+      "cs2.utility.v1: player_hurt with hegrenade/inferno/molotov/incgrenade split by victim side",
   },
   {
     metric_key: "utility.flash_assist",

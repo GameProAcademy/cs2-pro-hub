@@ -12,6 +12,7 @@ import { profileEs } from "./profile/es";
 import { spatialEs } from "./spatial/es";
 import { diagnosisEs } from "./diagnosis/es";
 import { combatEs } from "./combat/es";
+import { nadeEs } from "./nade/es";
 import { replayEs } from "./replay/es";
 
 export const es: Dictionary = {
@@ -19,6 +20,7 @@ export const es: Dictionary = {
   ...spatialEs,
   ...diagnosisEs,
   ...combatEs,
+  ...nadeEs,
   ...replayEs,
   ...catalogEs,
   ...demoFlowEs,

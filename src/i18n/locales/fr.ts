@@ -12,6 +12,7 @@ import { profileFr } from "./profile/fr";
 import { spatialFr } from "./spatial/fr";
 import { diagnosisFr } from "./diagnosis/fr";
 import { combatFr } from "./combat/fr";
+import { nadeFr } from "./nade/fr";
 import { replayFr } from "./replay/fr";
 
 export const fr: Dictionary = {
@@ -19,6 +20,7 @@ export const fr: Dictionary = {
   ...spatialFr,
   ...diagnosisFr,
   ...combatFr,
+  ...nadeFr,
   ...replayFr,
   ...catalogFr,
   ...demoFlowFr,
