@@ -133,32 +133,41 @@ export async function loadPlayerOverview(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<PlayerOverview> {
+  // PM3 latency (Server-Timing, 2026-11-17): every read here is a ~160 ms round-trip, so the
+  // independent ones run together. Semantics and error precedence are unchanged: each result is
+  // checked in the original order before anything is built.
   // A replaced attempt is history of its replacement, not a separate outcome.
-  const { data: jobs, error: jobsError } = await supabase
-    .from("demo_jobs")
-    .select(JOB_COLUMNS)
-    .eq("user_id", userId)
-    .is("superseded_by_job_id", null)
-    .order("queued_at", { ascending: false })
-    .limit(MAX_JOBS);
+  const [jobsRead, playerIds] = await Promise.all([
+    supabase
+      .from("demo_jobs")
+      .select(JOB_COLUMNS)
+      .eq("user_id", userId)
+      .is("superseded_by_job_id", null)
+      .order("queued_at", { ascending: false })
+      .limit(MAX_JOBS),
+    ownPlayerIds(supabase, userId, "PLAYER_OVERVIEW"),
+  ]);
+  const { data: jobs, error: jobsError } = jobsRead;
   if (jobsError) throw new Error(`PLAYER_OVERVIEW_JOBS_FAILED:${jobsError.code ?? "unknown"}`);
 
   const uploadIds = [...new Set((jobs ?? []).map((job) => job.upload_id))];
-  const { data: uploads, error: uploadsError } = uploadIds.length
-    ? await supabase.from("uploads").select("id, file_name").in("id", uploadIds)
-    : { data: [], error: null };
+  const [uploadsRead, metricsRead] = await Promise.all([
+    uploadIds.length
+      ? supabase.from("uploads").select("id, file_name").in("id", uploadIds)
+      : Promise.resolve({ data: [], error: null }),
+    playerIds.length
+      ? supabase
+          .from("match_metrics")
+          .select(METRIC_COLUMNS)
+          .in("player_id", playerIds)
+          .order("created_at", { ascending: false })
+          .limit(MAX_MATCHES)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const { data: uploads, error: uploadsError } = uploadsRead;
   if (uploadsError)
     throw new Error(`PLAYER_OVERVIEW_UPLOADS_FAILED:${uploadsError.code ?? "unknown"}`);
-
-  const playerIds = await ownPlayerIds(supabase, userId, "PLAYER_OVERVIEW");
-  const { data: metrics, error: metricsError } = playerIds.length
-    ? await supabase
-        .from("match_metrics")
-        .select(METRIC_COLUMNS)
-        .in("player_id", playerIds)
-        .order("created_at", { ascending: false })
-        .limit(MAX_MATCHES)
-    : { data: [], error: null };
+  const { data: metrics, error: metricsError } = metricsRead;
   if (metricsError)
     throw new Error(`PLAYER_OVERVIEW_METRICS_FAILED:${metricsError.code ?? "unknown"}`);
 
@@ -166,9 +175,15 @@ export async function loadPlayerOverview(
   const quarantined = await quarantinedOwn((metrics ?? []).map((row) => row.match_id));
   const visibleMetrics = (metrics ?? []).filter((row) => !quarantined.has(row.match_id));
   const matchIds = [...new Set(visibleMetrics.map((row) => row.match_id))];
-  const { data: matches, error: matchesError } = matchIds.length
-    ? await supabase.from("matches").select(MATCH_COLUMNS).in("id", matchIds)
-    : { data: [], error: null };
+  // Fase 4.0.1 — flash-assist provenance, read defensively: a missing table or a failed read
+  // only means "method not recorded"; it never hides or changes a metric.
+  const [matchesRead, methods] = await Promise.all([
+    matchIds.length
+      ? supabase.from("matches").select(MATCH_COLUMNS).in("id", matchIds)
+      : Promise.resolve({ data: [], error: null }),
+    loadFlashMethods(supabase, playerIds, matchIds),
+  ]);
+  const { data: matches, error: matchesError } = matchesRead;
   if (matchesError)
     throw new Error(`PLAYER_OVERVIEW_MATCHES_FAILED:${matchesError.code ?? "unknown"}`);
 
@@ -179,9 +194,6 @@ export async function loadPlayerOverview(
     matches: (matches ?? []) as OverviewMatchRow[],
     now: new Date(),
   });
-  // Fase 4.0.1 — flash-assist provenance, read defensively: a missing table or a failed read
-  // only means "method not recorded"; it never hides or changes a metric.
-  const methods = await loadFlashMethods(supabase, playerIds, matchIds);
   for (const m of overview.matches) m.flashAssistMethod = methods.get(m.matchId) ?? "NOT_RECORDED";
   return overview;
 }
