@@ -1352,6 +1352,48 @@
     "services/cs2-demo-parser/tests/test_raw_evidence.py"
    ]
   },
+  "player_disconnect.networkid": {
+   "consumers": [
+    "parser.attach_round_end_context",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM4 R5.8.31 (module E/F economy and round state, 2026-11-17)",
+   "reason": "Tells the BOT replacing a player (networkid BOT) apart from a human disconnect.",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm4_round_context.py",
+    "src/lib/pipeline/__tests__/pm4RoundContext.test.ts"
+   ]
+  },
+  "player_disconnect.tick": {
+   "consumers": [
+    "parser.attach_round_end_context",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM4 R5.8.31 (module E/F economy and round state, 2026-11-17)",
+   "reason": "Places the disconnect inside a round window [start_tick, end_tick].",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm4_round_context.py",
+    "src/lib/pipeline/__tests__/pm4RoundContext.test.ts"
+   ]
+  },
+  "player_disconnect.user_steamid": {
+   "consumers": [
+    "parser.attach_round_end_context",
+    "normalizer.normalizeEvent",
+    "CanonicalEvent"
+   ],
+   "introduced_in": "PM4 R5.8.31 (module E/F economy and round state, 2026-11-17)",
+   "reason": "Human who disconnected inside a round (round state: survival/alive counts exclude him).",
+   "reviewed": "2026-11-17",
+   "tests": [
+    "services/cs2-demo-parser/tests/test_pm4_round_context.py",
+    "src/lib/pipeline/__tests__/pm4RoundContext.test.ts"
+   ]
+  },
   "player_hurt.health": {
    "consumers": [
     "adapter._event_fields",

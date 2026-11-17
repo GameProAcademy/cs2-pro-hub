@@ -98,10 +98,10 @@ REVIEWED_RAW_ONLY_EVENT_FIELDS: dict[str, frozenset[str]] = {
     # ever_fully_connected: a newer CS2 build adds this flag to player_disconnect. Observed in
     # production on 2026-11-03 (job e4088318, nemiga-vs-furia-m1-ancient, manifest of attempt 1:
     # the only UNMAPPED_BUT_AVAILABLE field, which failed RAW-EVIDENCE-01 and RAW→CANONICAL).
-    # Reviewed: neither adapter.py nor the Canonical mapping reads player_disconnect at all.
+    # PM4 (R5.8.31): user_steamid, networkid and tick are now read (parser.attach_round_end_context:
+    # humans who disconnected inside a round, on that round's round_end event) -> MAPPED below.
     "player_disconnect": frozenset({
-        "PlayerID", "__event__", "ever_fully_connected", "name", "networkid", "reason", "tick",
-        "user_name", "user_steamid", "xuid",
+        "PlayerID", "__event__", "ever_fully_connected", "name", "reason", "user_name", "xuid",
     }),
     "player_footstep": frozenset({"__event__", "tick", "user_name", "user_steamid"}),
     # vote_cast: a server vote (e.g. a timeout or surrender vote). Observed on 2026-11-13 in the
@@ -301,6 +301,12 @@ MAPPED_RAW_FIELDS: dict[str, tuple[str | None, str | None, str]] = {
     "player_death.hitgroup": ("events[].hitgroup", "CanonicalEvent.data.hitgroup", "MAPPED"),
     "player_death.thrusmoke": ("events[].thru_smoke", "CanonicalEvent.data.thru_smoke", "MAPPED"),
     "player_death.attackerinair": ("events[].attacker_in_air", "CanonicalEvent.data.attacker_in_air", "MAPPED"),
+    # PM4 (R5.8.31) — economy and round state (modules E/F). A human's player_disconnect inside a
+    # round window is carried on that round's round_end event; the BOT replacement is excluded
+    # (networkid BOT), so networkid and tick are read to decide it.
+    "player_disconnect.user_steamid": ("events[round_end].disconnected", "CanonicalEvent.data.disconnected", "DERIVED"),
+    "player_disconnect.networkid": ("events[round_end].disconnected", "CanonicalEvent.data.disconnected", "DERIVED"),
+    "player_disconnect.tick": ("events[round_end].disconnected", "CanonicalEvent.data.disconnected", "DERIVED"),
     **{
         f"{event}.{axis}": (f"events[].detonation_position.{axis}", "CanonicalEvent.data.detonation_position", "MAPPED")
         for event in (

@@ -106,6 +106,10 @@ export interface RawParserEvent {
   silenced?: boolean | undefined;
   /** PM3 (R5.8.30): where a grenade detonated / a fire started (all three axes or absent). */
   detonation_position?: RawParserPosition | undefined;
+  /** PM4 (R5.8.31), round_end only: cash_spent_this_round per player at the round end tick. */
+  money_spent?: Record<string, number> | undefined;
+  /** PM4 (R5.8.31), round_end only: humans who disconnected inside the round, `{steamId: tick}`. */
+  disconnected?: Record<string, number> | undefined;
 }
 
 export interface HotSemanticObservationBase {

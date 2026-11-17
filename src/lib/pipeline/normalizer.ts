@@ -95,6 +95,16 @@ function sourceParticipantKey(player: RawParserOutput["players"][number]): strin
   return steamId || null;
 }
 
+const STEAM_KEY = /^[0-9]{1,20}$/;
+/** `{steamId: finite number}` with at least one entry, else null (never an empty or coerced map). */
+function steamNumberMap(value: unknown): Record<string, number> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>))
+    if (STEAM_KEY.test(k) && typeof v === "number" && Number.isFinite(v)) out[k] = v;
+  return Object.keys(out).length ? out : null;
+}
+
 function normalizeEvent(raw: RawParserEvent): CanonicalEvent | null {
   const alias = EVENT_ALIASES[raw.type] ?? raw.type;
   if (!EVENT_TYPES.has(alias)) return null;
@@ -121,6 +131,14 @@ function normalizeEvent(raw: RawParserEvent): CanonicalEvent | null {
   if (typeof raw.attacker_in_air === "boolean") data["attacker_in_air"] = raw.attacker_in_air;
   if (typeof raw.silenced === "boolean") data["silenced"] = raw.silenced;
   if (raw.detonation_position) data["detonation_position"] = raw.detonation_position;
+  // PM4 (R5.8.31) — round_end facts for economy (module E) and round state (module F). Only
+  // well-formed `{steamId: finite number}` maps are stored; anything else stays absent.
+  if (type === "round_end") {
+    const spent = steamNumberMap(raw.money_spent);
+    if (spent) data["money_spent"] = spent;
+    const gone = steamNumberMap(raw.disconnected);
+    if (gone) data["disconnected"] = gone;
+  }
 
   return {
     roundNumber: raw.round,

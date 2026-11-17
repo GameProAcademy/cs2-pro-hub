@@ -273,7 +273,10 @@ def _parse_round_sides(
 
 
 ECONOMY_START_PROPS = ("team_num", "balance", "start_balance", "current_equip_value", "round_start_equip_value")
-ECONOMY_END_PROPS = ("team_num", "balance")
+# PM4 (R5.8.31): cash_spent_this_round at the round end tick is what the player spent in that
+# round (purchases are only possible inside the buy window; 679/679 player-rounds identical to the
+# value at buytime_ended in the corpus, and the only reading available on HLTV demos).
+ECONOMY_END_PROPS = ("team_num", "balance", "cash_spent_this_round")
 
 
 def _parse_round_economy(
@@ -292,6 +295,8 @@ def _parse_round_economy(
       * equipment_value = round_start_equip_value (equipment held when the round started,
                           before buying), else current_equip_value;
       * money_end       = balance at the round end tick.
+      * money_spent     = cash_spent_this_round at the round end tick (PM4, R5.8.31): what the
+                          player spent in that round; buying is only possible in the buy window.
     Only players on a side (team_num 2/3) are kept; a value that is missing or not finite is
     absent (never 0); zero is kept as zero. Two different values for one player at one tick
     drop that player's field at that tick (no guess).
@@ -342,7 +347,10 @@ def _parse_round_economy(
             "money_start": ("start_balance", "balance"),
             "equipment_value": ("round_start_equip_value", "current_equip_value"),
         })
-        end = _read(ECONOMY_END_PROPS, ends, {"money_end": ("balance",)})
+        end = _read(ECONOMY_END_PROPS, ends, {
+            "money_end": ("balance",),
+            "money_spent": ("cash_spent_this_round",),
+        })
     except BaseException as exc:  # noqa: BLE001 - recorded as evidence
         _reraise_non_demo_failure(exc)
         return {}, exc
@@ -850,9 +858,11 @@ def enrich_rounds_from_tick_evidence(raw: dict[str, Any], output: dict[str, Any]
             read = (economy.get("start") or {}).get(start_tick) or {}
             money_start = dict(read.get("money_start") or {})
             equipment_value = dict(read.get("equipment_value") or {})
+        money_spent: dict[str, int | float] = {}
         if isinstance(end_tick, int) and end_tick in (economy.get("end_ticks") or ()):
             read = (economy.get("end") or {}).get(end_tick) or {}
             money_end = dict(read.get("money_end") or {})
+            money_spent = dict(read.get("money_spent") or {})
         # D29: the dedicated round-start read is the primary source; the thinned general
         # sample may add a player it missed, but a disagreement between the two drops
         # that player for the round (no guess).
@@ -873,6 +883,59 @@ def enrich_rounds_from_tick_evidence(raw: dict[str, Any], output: dict[str, Any]
             round_row["money_end"] = dict(sorted(money_end.items()))
         if equipment_value:
             round_row["equipment_value"] = dict(sorted(equipment_value.items()))
+        if money_spent:
+            round_row["money_spent"] = dict(sorted(money_spent.items()))
+
+
+def _human_steam_id(row: Any) -> str | None:
+    """A player_disconnect row of a human (the BOT replacing a player carries networkid BOT)."""
+    if not isinstance(row, dict):
+        return None
+    if str(row.get("networkid") or "").strip().upper() == "BOT":
+        return None
+    value = row.get("user_steamid")
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return str(value)
+    if isinstance(value, str) and value.isdigit() and int(value) > 0:
+        return value
+    return None
+
+
+def attach_round_end_context(raw: dict[str, Any], output: dict[str, Any]) -> None:
+    """PM4 (R5.8.31): round-level facts observed at the round end, on that round's round_end event.
+
+    * ``money_spent``  — the round's ``money_spent`` read (cash_spent_this_round at the end tick);
+    * ``disconnected`` — humans whose ``player_disconnect`` fired inside the round window
+      (start_tick <= tick <= end_tick), as ``{steam_id: tick}``; BOTs are never listed.
+
+    Only the round_end event whose tick is the round's own end tick receives them, and only when the
+    fact exists: no key is ever written with an empty or guessed value. The canonical contract keeps
+    round/round-player metadata empty on the server path, so the event data is the carrier.
+    """
+    rounds = {r.get("number"): r for r in output.get("rounds") or [] if isinstance(r, dict)}
+    disconnects = [
+        (row.get("tick"), _human_steam_id(row))
+        for row in (raw.get("event_tables") or {}).get("player_disconnect") or []
+        if isinstance(row, dict)
+    ]
+    for event in output.get("events") or []:
+        if not isinstance(event, dict) or event.get("type") != "round_end":
+            continue
+        round_row = rounds.get(event.get("round"))
+        if not round_row or event.get("tick") != round_row.get("end_tick"):
+            continue
+        spent = round_row.get("money_spent")
+        if spent:
+            event["money_spent"] = dict(spent)
+        start, end = round_row.get("start_tick"), round_row.get("end_tick")
+        if isinstance(start, int) and isinstance(end, int):
+            gone = {
+                sid: tick
+                for tick, sid in disconnects
+                if sid is not None and isinstance(tick, int) and start <= tick <= end
+            }
+            if gone:
+                event["disconnected"] = dict(sorted(gone.items()))
 
 
 def _contextualize_rows(rows: list[dict[str, Any]], *, drop_warmup: bool = True) -> list[dict[str, Any]]:
@@ -1326,6 +1389,7 @@ def parse_demo_file(path: str) -> dict[str, Any]:
             for warning in output.get("warnings") or []
             if not str(warning).startswith("economy_unavailable:")
         ]
+    attach_round_end_context(raw, output)
     output["raw_evidence"] = build_raw_evidence(raw, output)
     # PM2 4.2.4: sampled positions per round for the 2D replay, after (and apart from) the governed
     # RAW evidence, so the field catalog, matrix and mapping digest are unchanged.

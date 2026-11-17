@@ -6,11 +6,11 @@
   "UNMAPPED"
  ],
  "counts": {
-  "CANONICAL": 166,
+  "CANONICAL": 169,
   "IGNORED_APPROVED": 60,
-  "RAW_ONLY": 217
+  "RAW_ONLY": 214
  },
- "digest": "5b3762ab97e98ccc2dd34cbc9ebfd2fd26b7b97a42895303d91f6717b6b0aee8",
+ "digest": "400ca126b0f721713b2273824a4529f26b65529bd14a1d58684689e311f5985a",
  "entries": [
   {
    "class": "RAW_ONLY",
@@ -5463,19 +5463,25 @@
    "status": "RAW_ONLY_INTENTIONAL"
   },
   {
-   "class": "RAW_ONLY",
+   "app_field": "events[round_end].disconnected",
+   "canonical_field": "CanonicalEvent.data.disconnected",
+   "class": "CANONICAL",
    "field": "player_disconnect.networkid",
    "review": {
-    "consumers": [],
-    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
-    "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
-    "reviewed": "2026-10-14",
+    "consumers": [
+     "parser.attach_round_end_context",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM4 R5.8.31 (module E/F economy and round state, 2026-11-17)",
+    "reason": "Tells the BOT replacing a player (networkid BOT) apart from a human disconnect.",
+    "reviewed": "2026-11-17",
     "tests": [
-     "services/cs2-demo-parser/tests/test_raw_evidence.py",
-     "services/cs2-demo-parser/tests/test_field_governance.py"
+     "services/cs2-demo-parser/tests/test_pm4_round_context.py",
+     "src/lib/pipeline/__tests__/pm4RoundContext.test.ts"
     ]
    },
-   "status": "RAW_ONLY_INTENTIONAL"
+   "status": "DERIVED"
   },
   {
    "class": "RAW_ONLY",
@@ -5493,19 +5499,25 @@
    "status": "RAW_ONLY_INTENTIONAL"
   },
   {
-   "class": "RAW_ONLY",
+   "app_field": "events[round_end].disconnected",
+   "canonical_field": "CanonicalEvent.data.disconnected",
+   "class": "CANONICAL",
    "field": "player_disconnect.tick",
    "review": {
-    "consumers": [],
-    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
-    "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
-    "reviewed": "2026-10-14",
+    "consumers": [
+     "parser.attach_round_end_context",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM4 R5.8.31 (module E/F economy and round state, 2026-11-17)",
+    "reason": "Places the disconnect inside a round window [start_tick, end_tick].",
+    "reviewed": "2026-11-17",
     "tests": [
-     "services/cs2-demo-parser/tests/test_raw_evidence.py",
-     "services/cs2-demo-parser/tests/test_field_governance.py"
+     "services/cs2-demo-parser/tests/test_pm4_round_context.py",
+     "src/lib/pipeline/__tests__/pm4RoundContext.test.ts"
     ]
    },
-   "status": "RAW_ONLY_INTENTIONAL"
+   "status": "DERIVED"
   },
   {
    "class": "RAW_ONLY",
@@ -5523,19 +5535,25 @@
    "status": "RAW_ONLY_INTENTIONAL"
   },
   {
-   "class": "RAW_ONLY",
+   "app_field": "events[round_end].disconnected",
+   "canonical_field": "CanonicalEvent.data.disconnected",
+   "class": "CANONICAL",
    "field": "player_disconnect.user_steamid",
    "review": {
-    "consumers": [],
-    "introduced_in": "FASE 2.7 RAW evidence contract (pre-R5.8)",
-    "reason": "RAW_ONLY: Player session lifecycle (connect, spawn, disconnect); not read by adapter or Canonical mapping.",
-    "reviewed": "2026-10-14",
+    "consumers": [
+     "parser.attach_round_end_context",
+     "normalizer.normalizeEvent",
+     "CanonicalEvent"
+    ],
+    "introduced_in": "PM4 R5.8.31 (module E/F economy and round state, 2026-11-17)",
+    "reason": "Human who disconnected inside a round (round state: survival/alive counts exclude him).",
+    "reviewed": "2026-11-17",
     "tests": [
-     "services/cs2-demo-parser/tests/test_raw_evidence.py",
-     "services/cs2-demo-parser/tests/test_field_governance.py"
+     "services/cs2-demo-parser/tests/test_pm4_round_context.py",
+     "src/lib/pipeline/__tests__/pm4RoundContext.test.ts"
     ]
    },
-   "status": "RAW_ONLY_INTENTIONAL"
+   "status": "DERIVED"
   },
   {
    "class": "RAW_ONLY",
@@ -7969,7 +7987,7 @@
   }
  ],
  "schema": 1,
- "source_blob": "81c0f7e5d690fcf9796838eaad6901446901a586",
+ "source_blob": "3890313eb4855fc58f9636d9688309e3356790b7",
  "source_of_truth": "services/cs2-demo-parser/raw_evidence.py",
  "unmapped_rule": "any observed field not listed here is UNMAPPED_BUT_AVAILABLE and blocks admission"
 }
