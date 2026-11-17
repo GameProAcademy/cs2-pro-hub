@@ -116,6 +116,7 @@ export const profileEn: Record<keyof typeof profilePtBR, string> = {
   "security.confirmCode": "Confirmation code",
   "security.confirmSubmit": "Complete change",
   "security.resend": "Resend code",
+  "security.resendSuccess": "A new code was sent. Use the latest code received by email.",
   "security.resendWait": "Please wait to resend",
   "security.strengthLabel": "Password strength",
   "security.strength.weak": "Weak",
