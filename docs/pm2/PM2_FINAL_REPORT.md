@@ -76,7 +76,13 @@ Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃ
 - **B (diagnóstico):**
   - contrato, regras, agregação, API, UI, feedback e Coach;
   - exposição, isolamento, re-peek e rotação ficam **NOT_SUPPORTED**: exigem posições de companheiros e adversários ao longo do tempo, que a ficha ainda não lê. As trajetórias novas passam a guardar esse dado só para partidas novas.
-- **I (replay):** worker, persistência, API e UI completos; validação em produção do caminho com dados depende de uma demo nova.
+- **I (replay):** worker, persistência, API e UI completos e **VALIDADOS EM PRODUÇÃO** em 2026-11-17 (detalhe em §26):
+  - partida `daef42da`, job `93450453`, `de_nuke`, demo FACEIT enviada pelo dono;
+  - parser `git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f` (R5.8.29), Railway `3375b68b`;
+  - 24/24 rounds com trajetória (`COMPLETE`), 7274 amostras, `step_ticks` 16, nenhum round pulado;
+  - navegação: round 3 com 2500/2500 amostras e 10 jogadores; play avançou até 4,1 s e pause parou; troca de round (6, 7, 8, 12, 20) carregou o segmento de cada um;
+  - deep link `/deaths` → `/replay?round=1&tick=14552` abriu em 13,3 s;
+  - limitações observadas: o segmento leva 2,7–3,0 s por round (§16, §27); partidas processadas antes do R5.8.28 mostram `NOT_RECORDED` e não são reprocessadas.
 
 ## 6. Oito funcionalidades diferenciais (parcela PM2)
 
@@ -192,7 +198,7 @@ Demo local autorizada (Dust2 profissional pública):
 
 - Partidas processadas antes do R5.8.28 não têm replay (`NOT_RECORDED`) e não são reprocessadas (decisão do prompt). Só a partida Nuke de 17/11 tem trajetória.
 - Overpass, Train e Vertigo continuam NOT_VALIDATED, sem desenho.
-- Segmento do replay em produção: 2,7–3,0 s por round. A causa não foi medida. Hipótese: o handler recarrega o overview completo do jogador a cada round.
+- Segmento do replay em produção: 2,7–3,0 s de espera no servidor por round, mais 0,4–0,9 s no cliente antes da requisição. Investigação e hipóteses em §27; nenhuma otimização no PM2.
 - Exposição, isolamento, re-peek e rotação: NOT_SUPPORTED.
 - Event refs não vão ao Coach.
 - Sem E2E automatizado de browser.
@@ -216,13 +222,15 @@ Nenhum prompt foi enviado ao agente Lovable. A publicação foi feita só pelo c
 
 ## 20. Recomendação para o Prompt 3 de 5
 
-Começar o PM3 (4.2.5–4.2.6, módulos C e D) **depois** do item 1 da §17. O PM3 deve consumir trajetórias, e o caminho com dados ainda não foi visto em produção.
+- A validação real do replay em produção **já ocorreu** (§5, §26). Não é preciso outra demo para esse critério.
+- O PM2 ainda tem critérios formais pendentes: o teste IDOR em dois sentidos com duas contas reais e o E2E automatizado de browser (§17, §28). Eles devem ser fechados **antes** de iniciar o PM3.
+- O início do PM3 (4.2.5–4.2.6, módulos C e D) depende de autorização explícita do dono.
 
-Prioridades:
+Prioridades para o PM3, depois dessa autorização:
 
-1. Validar a transformação de radar de Inferno, Nuke e Cache com demos autorizadas que o parser leia de ponta a ponta. Dust2 e Mirage já estão validados.
+1. Investigar a latência do segmento do replay (2,7–3,0 s por round; §27) como item de observabilidade e performance. Não amplia o escopo do PM2: a correção, se houver, vai em PR separado, com benchmark antes e depois.
 2. Usar `round_trajectories` (companheiros e adversários ao longo do tempo) para tirar exposição e isolamento de NOT_SUPPORTED, com uma nova versão de regras `cs2.death-rules.v2`.
-3. Adicionar E2E de browser para `/deaths` e `/replay`.
+3. Validar Overpass, Train e Vertigo só quando houver demos autorizadas desses mapas. Até lá, continuam NOT_VALIDATED, sem desenho.
 
 ## 21. Alerta de segurança do Lovable
 
@@ -318,3 +326,71 @@ Demo enviada pelo dono no app: `demo-faceit-nuke.dem`, job `93450453`, partida `
 | Latência (Resource Timing do navegador) | Segmento por round: 2752, 2743, 2948, 2776 e 3019 ms (rounds 6, 7, 8, 12, 20); 16–32 KB comprimidos, 292–616 KB decodificados                                                                                                                  |
 
 Capturas: tiradas no navegador do dono durante a sessão; não foram versionadas, porque mostram dados da conta.
+
+## 27. Latência do replay (investigação, sem otimização)
+
+Ambiente: produção, app `76fa4887`, partida `daef42da`, 2026-11-17 ~05:30Z. Navegador do dono, conta do dono. Nada foi alterado.
+
+**Método.**
+
+- Navegador: Resource Timing de cada chamada `_serverFn`. A espera é `responseStart − requestStart` (servidor + rede); o download é `responseEnd − responseStart`.
+- Clique → render: `performance.now()` no clique até o round novo aparecer com o SVG.
+- Banco: `EXPLAIN ANALYZE` das consultas do segmento. Com service role (sem RLS) e como `authenticated` com os claims do dono (com RLS), dentro de transação desfeita com `ROLLBACK`.
+- Leitura do código: `getReplaySegment`, `loadPlayerOverview`, `requireSupabaseAuth` e `beforeLoad` de `_authenticated`.
+
+**Medições.**
+
+| Etapa                                                                | Valor                                                                      | Fonte                                      |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------ |
+| Espera no servidor por segmento (troca de round, requisição isolada) | 2683, 2691, 2705, 2727 e 2951 ms                                           | Resource Timing, rounds 9, 10, 11, 13 e 14 |
+| Download do segmento                                                 | 2–3 ms (15–20 KB comprimidos)                                              | Resource Timing                            |
+| Clique → saída da requisição                                         | 411 e 875 ms                                                               | `performance.now()`                        |
+| Resposta → render                                                    | 30 e 873 ms                                                                | `performance.now()`                        |
+| Clique → render, round novo                                          | 3394, 3652 e 4456 ms                                                       | `performance.now()`                        |
+| Clique → render, round já visitado (cache do React Query)            | 479 ms, nenhuma chamada `_serverFn`                                        | `performance.now()` + Resource Timing      |
+| Chamadas ao Supabase em toda troca de round, inclusive em cache      | `auth/v1/user` 464 ms e `rest/v1/profiles` 173 ms                          | Resource Timing                            |
+| Função de servidor leve isolada                                      | 273–470 ms                                                                 | Resource Timing                            |
+| Carga inicial da página (5 chamadas concorrentes)                    | o segmento esperou 3808 ms; as outras, 1427–2569 ms                        | Resource Timing                            |
+| SQL do segmento sem RLS                                              | 0,13–0,42 ms de execução, ≤ 2,7 ms de planejamento                         | `EXPLAIN ANALYZE`                          |
+| SQL do segmento com RLS (`authenticated`)                            | `round_trajectories` 3,3 ms; `round_events` 9,1 ms; `match_metrics` 2,2 ms | `EXPLAIN ANALYZE`                          |
+| Ida e volta navegador → API REST do Supabase                         | 173–188 ms                                                                 | Resource Timing                            |
+
+**Contagem de idas ao banco no servidor (leitura do código).** `getReplaySegment` executa em sequência:
+
+- `loadPlayerOverview`, com cerca de 7 chamadas: jobs, uploads, ids de jogador, métricas, quarentena, partidas e método de flash;
+- `ownPlayerIds` de novo;
+- `ownParticipantKeys`;
+- `match_trajectories`;
+- `match_rounds` e `round_trajectories` (em paralelo);
+- a trajetória do round e os eventos.
+
+São cerca de 12 idas sequenciais à API REST, além da verificação do token em `requireSupabaseAuth` (`getClaims`).
+
+**Hipótese mais provável (não comprovada; falta instrumentação no servidor):** a espera de 2,7–3,0 s vem da soma de cerca de 12 idas sequenciais da função de servidor à API REST do Supabase, cada uma com custo fixo de rede e gateway. A maior parte delas é a reconstrução do overview completo só para confirmar que a partida pertence ao usuário. O SQL soma menos de 100 ms, mesmo com RLS.
+
+Coerência dos números: 12 idas × ~200 ms ≈ 2,4 s, mais a autenticação, e uma função leve de 1–2 idas leva 273–470 ms. A latência servidor → Supabase não foi medida diretamente, porque o servidor do app não tem instrumentação.
+
+**Hipótese secundária, com mecanismo confirmado no código e na medição:** cada troca de round muda a URL e roda o `beforeLoad` de `_authenticated`, que chama `supabase.auth.getUser()` (464 ms) e depois lê `profiles` (173 ms) antes da requisição sair. Isso explica os 0,4–0,9 s antes da requisição e os 479 ms de um round que já está em cache.
+
+**Hipóteses descartadas, com a medição que as descarta:**
+
+- tempo de execução SQL e planos: ≤ 9 ms com RLS;
+- tamanho e transferência do payload: download de 2–3 ms;
+- worker e parser: o segmento não chama o worker;
+- descompressão: o corpo é JSON pequeno;
+- render: 30 ms no caso típico. O valor de 873 ms foi um caso isolado, não investigado.
+
+**Primeiro acesso × seguintes.** Sem cold start visível: a espera fica estável em 2,7–3,0 s nas trocas de round. Na carga inicial, as 5 funções concorrentes pioram (até 3,8 s), o que sugere que as chamadas competem entre si no servidor.
+
+**Impacto observado:** um round novo leva 3,4–4,5 s até aparecer; um round já visitado, cerca de 0,5 s. O replay funciona; não é defeito de correção nem de segurança.
+
+**Recomendação para o PM3 (item de observabilidade e performance, PR separado com benchmark antes e depois):**
+
+1. Instrumentar o servidor com `Server-Timing` por etapa (autenticação, overview, ownership, trajetória e eventos) para comprovar ou descartar a hipótese principal.
+2. Verificar a ownership da partida com uma consulta direta protegida por RLS, sem reconstruir o overview inteiro, e paralelizar as leituras independentes. Exige teste IDOR antes e depois.
+3. Avaliar se o `beforeLoad` precisa de `getUser()` em rede a cada mudança de busca na mesma rota, sem enfraquecer o fail-closed da autenticação.
+
+## 28. Teste IDOR em dois sentidos e E2E de browser: estado formal
+
+- **IDOR em dois sentidos com duas contas reais:** MANUAL_REQUIRED. Hoje existe só uma direção, já validada antes: a conta do dono abrindo o id de uma partida real de outro usuário recebe NOT_FOUND. O harness no PostgreSQL descartável passou 39/39 com dois usuários sintéticos. Faltam uma segunda conta real com uma partida processada e as credenciais das duas contas em secrets do GitHub. Esta sessão não cria contas nem digita senhas.
+- **E2E automatizado de browser:** PENDENTE. Não havia infraestrutura de E2E no repositório. O fluxo com Playwright roda no GitHub Actions contra a produção, porque o sandbox não alcança o domínio, e depende das mesmas credenciais em secrets.
