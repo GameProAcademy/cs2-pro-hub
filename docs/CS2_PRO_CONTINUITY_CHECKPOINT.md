@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-17 (America/Sao_Paulo) — PM3 C3–C5 (módulos C e D implementados; release R5.8.30) · por: sessão Claude
+Atualizado em: 2026-11-17 (America/Sao_Paulo) — PM3 CONCLUÍDO (C6) · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,21 +12,21 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM3 — Etapa B (Fases 4.2.5 e 4.2.6, módulos C e D): ATIVA** desde 2026-11-17 (autorização explícita do dono). PM1, PM6 e PM2 concluídos                                                                                                                                                                                                                                                   |
-| Etapa atual                        | C5 release/produção: worker R5.8.30 no ar e migration aplicada; módulos C (#311) e D (#313) em `main`, **ainda não publicados**; Coach + E2E no #315 (CI)                                                                                                                                                                                                                                   |
-| Última etapa concluída             | PM3 C3: #310 telemetria (R5.8.30), #311 módulo C `/duels`, #312 re-pin R5.8.30, #313 módulo D `/utility`, #314 `Server-Timing` do replay; migration `20261117120000` aplicada e registrada (detalhe: `docs/pm3/PM3_REPORT.md`)                                                                                                                                                              |
-| Operações em andamento             | #315 (Coach com C/D da última partida + E2E de `/duels` e `/utility`) e este PR de docs, ambos com CI em execução                                                                                                                                                                                                                                                                           |
-| Processos em execução              | Esperas de CI apenas                                                                                                                                                                                                                                                                                                                                                                        |
-| Branch ativa                       | `feat/pm3-coach-combat-utility` (#315) e `docs/pm3-c0-c5` (este PR)                                                                                                                                                                                                                                                                                                                         |
-| Último commit confirmado em `main` | `5ad16f13` (merge do #314). Código funcional: `afa58592` (#313), `7f1d8852` (#311), `4cacaf5c` (#312), `768646ea` (#310, worker)                                                                                                                                                                                                                                                            |
-| Build validado em produção         | App: ainda publicação `0719c851` de `d68a82db` (os PRs #311–#314 **não estão publicados**). Worker: Railway `3335c88d` SUCCESS, commit `768646ea` (R5.8.30); Source persistente `768646ea`; o deploy da troca de Source (`12cb2d07`) foi SKIPPED pelo freeze; `3375b68b` REMOVED. `/version` nos dois hosts (12:20Z): `git:768646ea…`, demoparser2 0.42.2, `declared_revision_matches` true |
-| Gates mais recentes                | #310 `e0799dd7`, #311 `d13dc1f7`, #312 `d04784bc`, #313 `da340db0` e #314 `68a38e73`: todos os checks verdes (Main required gates, F553, parser, contract-sensitive, web e, no #312, queue semantics/recovery). H.3-E com o worker R5.8.30 **pendente** dos secrets do dono e da publicação                                                                                                 |
-| Problemas abertos                  | Não bloqueiam: alerta de segurança do Lovable NOT_VERIFIED; Overpass, Train e Vertigo NOT_VALIDATED; etapa E DEFERRED; latência do replay (medição em produção depois da publicação do #314)                                                                                                                                                                                                |
-| **Próxima ação exata**             | Dono troca os 3 secrets (MANUAL_REQUIRED, §22 item 5) → merge do #315 → **uma** publicação do app → attestation (`parser-runtime-attestation.yml`) + H.3-E → E2E `PM2 browser E2E` → medição `Server-Timing` do replay → demo nova (FACEIT/GC) pela conta A para validar C/D em produção → C6                                                                                               |
-| Ações que NÃO devem ser repetidas  | Tudo do PM1, PM6 e PM2 (#278–#308); releases R5.8.25–R5.8.30 (worker `3335c88d`, migration `20261117120000` já aplicada); troca da senha da conta A                                                                                                                                                                                                                                         |
-| Ações manuais necessárias          | **MANUAL_REQUIRED:** 3 secrets do app para R5.8.30 (§22 item 5); depois, uma demo nova de FACEIT/GC enviada pela conta A                                                                                                                                                                                                                                                                    |
+| Item                               | Valor                                                                                                                                                                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | **PM3 — Etapa B (Fases 4.2.5 e 4.2.6, módulos C e D): CONCLUÍDA** em 2026-11-17 (`docs/pm3/PM3_REPORT.md` C6). PM1, PM6, PM2 e PM3 concluídos. PM4/PM5 **não iniciados**: exigem nova autorização                       |
+| Etapa atual                        | Nenhuma em execução. Aguardando instrução do dono                                                                                                                                                                       |
+| Última etapa concluída             | PM3 C6: C e D em produção. H.3-E PASS, E2E 12/12 (incluindo `/duels` e `/utility`), demo nova da conta A com paridade exata produção × local, e latência do replay −34% (espera) / −42% (handler) medida                |
+| Operações em andamento             | Nenhuma (este PR de docs)                                                                                                                                                                                               |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                  |
+| Branch ativa                       | `docs/pm3-c6-closure` (este PR)                                                                                                                                                                                         |
+| Último commit confirmado em `main` | `ad7b73b2` (merge do #317)                                                                                                                                                                                              |
+| Build validado em produção         | App: publicação de `ad7b73b2`. Worker: Railway `3335c88d`, `768646ea` (R5.8.30), Source persistente `768646ea`; `/version` `git:768646ea…`, `declared_revision_matches` true                                            |
+| Gates mais recentes                | `cf1c58ac`: attestation 44122215373 success; H.3-E PASS 18/18 (44098640101, attempt 2); E2E 44122519497 12/12. `ad7b73b2`: E2E 44134721473 12/12; H.3-E PASS (44135596325; Quality Gates 44130271326, F553 44135539281) |
+| Problemas abertos                  | Não bloqueiam: alerta de segurança do Lovable NOT_VERIFIED; Overpass, Train e Vertigo NOT_VALIDATED; etapa E DEFERRED; `overview` ainda 0,7–1,1 s por requisição (riscos residuais no PM3 C6)                           |
+| **Próxima ação exata**             | Nenhuma no PM3. Próxima fase (PM4/PM5) só com autorização explícita do dono                                                                                                                                             |
+| Ações que NÃO devem ser repetidas  | Tudo do PM1, PM6, PM2 e PM3 (#278–#317); releases R5.8.25–R5.8.30; migration `20261117120000`; troca dos secrets R5.8.30; demo nova da conta A                                                                          |
+| Ações manuais necessárias          | Nenhuma                                                                                                                                                                                                                 |
 
 Checkpoint e relatório vivo da fase ativa: `docs/pm3/PM3_CHECKPOINT.md` e `docs/pm3/PM3_REPORT.md`.
 
@@ -38,13 +38,13 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 
 ## 2. Estado atual do projeto
 
-- `main` = `5ad16f13` (2026-11-17).
+- `main` = `ad7b73b2` (2026-11-17).
 - Fundação publicada: Score `pro-score-v1` e DNA `dna-weighted-v2`.
 - **PM1** (4.2.1–4.2.2): concluído e validado em produção (`docs/pm1/PM1_EXECUTION_REPORT.md`).
 - **PM6** (compatibilidade de demos, integridade de partida, nicks, segurança): **concluído** em 2026-11-14 (#290 `66d4af1d`; `docs/pm6/PM6_FINAL_REPORT.md` §11, "pronto para o PM2, com ressalvas classificadas").
 - **PM2** (4.2.3–4.2.4, módulos B e I): **COMPLETE** em 2026-11-17 (`docs/pm2/PM2_FINAL_REPORT.md` §30).
 - Parser em produção: R5.8.30 (`768646ea`, demoparser2 0.42.2; Railway `3335c88d`).
-- **PM3: ativo** — C e D implementados e em `main`; publicação, H.3-E e validação em produção pendentes.
+- **PM3** (4.2.5–4.2.6, módulos C e D): **concluído** em 2026-11-17 (`docs/pm3/PM3_REPORT.md` C6).
 
 ## 3. Objetivo da missão vigente
 
@@ -268,7 +268,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 4. **PM2 (feito em 2026-11-17):** duas contas reais de teste, A e B, e os 4 secrets `PM2_E2E_*`. Troca da senha da conta A
    (exposta na URL na run 44035115612, antes do #306): **confirmada pelo dono** em 2026-11-17. Nenhum segredo registrado.
 
-5. **PM3 / R5.8.30 (MANUAL_REQUIRED, pendente):** nos secrets do app (Lovable → Cloud → Secrets):
+5. **PM3 / R5.8.30 (feito em 2026-11-17):** nos secrets do app (Lovable → Cloud → Secrets):
    `DEMO_PARSER_EXPECTED_REVISION` = `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:768646ea76646219b1749f9fd2e757703292a24c`;
    `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `768646ea76646219b1749f9fd2e757703292a24c`. Depois: uma demo nova de FACEIT ou GC
    (HLTV não traz `player_blind`) enviada pela conta A, para validar C/D em produção.
@@ -308,13 +308,11 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: **PM3 (Etapa B), ATIVA**. Módulos C e D implementados em `main`; release C5 em andamento
-- Estado: worker R5.8.30 no ar + migration aplicada; app ainda **não publicado** com C/D
-- Última etapa concluída: #310–#314 merged
-- Próxima ação: secrets do dono → merge #315 → publicar → attestation/H.3-E → E2E → `Server-Timing` → demo nova → C6
-- Branches: `feat/pm3-coach-combat-utility` (#315), `docs/pm3-c0-c5`
-- Commit: `main` `5ad16f13`
-- CI: #310–#314 verdes; #315 em execução
-- Bloqueio: MANUAL_REQUIRED dos 3 secrets (§22 item 5)
-- Arquivo central: este. Fase ativa: `docs/pm3/PM3_CHECKPOINT.md`; relatório: `docs/pm3/PM3_REPORT.md`
+- Fase atual: nenhuma ativa. PM1, PM6, PM2 e **PM3 concluídos**; PM4/PM5 aguardam autorização
+- Produção: app de `ad7b73b2`; worker R5.8.30 (`3335c88d`, `768646ea`)
+- Última etapa: PM3 C6 (relatório `docs/pm3/PM3_REPORT.md`)
+- Próxima ação: aguardar instrução do dono
+- Commit: `main` `ad7b73b2`
+- Bloqueios: nenhum
+- Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`
 - Não repetir: ver a tabela de retomada
