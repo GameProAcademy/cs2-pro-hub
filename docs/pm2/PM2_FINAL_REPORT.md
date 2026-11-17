@@ -4,7 +4,7 @@ Sessão `session_012aG79D5h8yCsYxNjWpDaHG` · 2026-11-14 (America/Sao_Paulo).
 
 Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃO VALIDADO · PENDENTE · NÃO SUPORTADO.
 
-**Veredito: PARCIAL.** As duas fases estão implementadas, integradas, testadas, publicadas e funcionando em produção. Ficam pendentes critérios de aceite que dependem de uma demo nova e de ações do dono (§16–§17). Nada aqui está declarado 100% concluído.
+**Veredito: PARCIAL.** As duas fases estão implementadas, integradas, testadas, publicadas e funcionando em produção. Desde 2026-11-17, o replay também está validado em produção com uma demo nova enviada pelo dono (§26). Ficam pendentes: o teste IDOR com um segundo usuário real, um E2E automatizado de browser, 3 mapas sem validação, o alerta de segurança NOT_VERIFIED e a etapa E DEFERRED (§16–§17). Nada aqui está declarado 100% concluído.
 
 ## 1. Resumo executivo
 
@@ -26,6 +26,10 @@ Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃ
   - o Source persistente da Railway foi alinhado ao commit aprovado na mesma operação;
   - um único build;
   - atestação VERIFIED e H.3-E PASS 18/18.
+- **Release do worker R5.8.29** (correção da morte de BOT substituído em demos FACEIT, #300):
+  - mesmo procedimento controlado, com um único build `3375b68b`;
+  - re-pin #301;
+  - atestação (run 44013092142) e H.3-E PASS 18/18 em `76fa4887`.
 
 ## 2. Baseline
 
@@ -46,7 +50,7 @@ Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃ
 | Fatos e inferências separados              | VALIDADO EM PRODUÇÃO (rótulo de proveniência em cada valor)                                                                                                                                          |
 | Padrões exigem amostra                     | VALIDADO EM PRODUÇÃO (51 mortes / 4 partidas; política mostrada na tela)                                                                                                                             |
 | Eventos especiais tratados                 | VALIDADO EM TESTE (team/self/world/unknown/unclassified, round inválido)                                                                                                                             |
-| Links para heatmap e replay                | VALIDADO EM PRODUÇÃO (links presentes); o destino do replay ainda mostra `NOT_RECORDED` (§16)                                                                                                        |
+| Links para heatmap e replay                | VALIDADO EM PRODUÇÃO: em 2026-11-17, "Ver no replay 2D" da morte do round 1 abriu `/replay` no round 1, tick 14552 (13,3 s), com o radar desenhado (§26)                                             |
 | Ownership/RLS                              | VALIDADO EM TESTE com 2 usuários (PostgreSQL descartável, 39/39); em produção, o id de partida real de outro usuário dá NOT_FOUND                                                                    |
 | UI e i18n completos                        | VALIDADO EM TESTE (5 idiomas); produção vista em pt-BR                                                                                                                                               |
 | Integridade da partida preservada          | VALIDADO EM PRODUÇÃO (pré-contrato declarado como "fim não verificado")                                                                                                                              |
@@ -56,23 +60,29 @@ Estados usados: VALIDADO EM PRODUÇÃO · VALIDADO EM TESTE · IMPLEMENTADO, NÃ
 
 ## 4. Fase 4.2.4 — PARCIAL
 
-| Critério (§21.2)                                                                             | Estado                                                                                                                                                                                                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Replay abre o round correto, timeline e eventos sincronizados, controles, seleção de jogador | VALIDADO EM TESTE, incluindo a renderização da UI real com trajetórias de uma demo autorizada (GamersClub Mirage, round 5: 3720/3720 amostras, 64 ticks/s comprovados, 7 kills sincronizadas no tempo, nenhum SteamID no segmento). Em produção só há o estado `NOT_RECORDED`, porque nenhuma partida nova foi processada após a release |
-| Heatmap e death review abrem no tick correto                                                 | Deep link `/replay?matchId&round&tick` VALIDADO EM TESTE                                                                                                                                                                                                                                                                                 |
-| Lacunas e dados ausentes comunicados                                                         | VALIDADO EM TESTE; `NOT_RECORDED` e `NOT_FOUND` VALIDADOS EM PRODUÇÃO                                                                                                                                                                                                                                                                    |
-| Segmentos com limites                                                                        | VALIDADO EM TESTE (1 round por requisição, 500 eventos, 12 jogadores, 1600 amostras)                                                                                                                                                                                                                                                     |
-| Performance e memória medidas                                                                | Worker medido com 5 demos locais (§12, §24; pico 4,0 GB contra limite de 8 GB; HOT máximo 6,1 MB contra 8 MB). Tempo da API em produção PENDENTE (sem trajetória gravada)                                                                                                                                                                |
-| Ownership/RLS                                                                                | VALIDADO EM TESTE (dono lê; não-dono, anon e escrita de jogador recusados); NOT_FOUND em produção                                                                                                                                                                                                                                        |
-| Transformação espacial por mapa suportado                                                    | `de_dust2` e `de_mirage` VALIDATED (Mirage validado neste PM com 2 demos independentes, §22); os demais não desenham (MAP_NOT_VALIDATED)                                                                                                                                                                                                 |
-| E2E e regressão                                                                              | Regressão VALIDADA; E2E de browser PENDENTE                                                                                                                                                                                                                                                                                              |
+| Critério (§21.2)                                                                             | Estado                                                                                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Replay abre o round correto, timeline e eventos sincronizados, controles, seleção de jogador | VALIDADO EM PRODUÇÃO (2026-11-17, demo FACEIT Nuke enviada pelo dono). Round 3: 2500/2500 amostras, 10 jogadores, rótulo "Você", 8 eventos em segundos; o play avançou até 4,1 s e o pause parou; nenhum SteamID no DOM (§26). Também VALIDADO EM TESTE (GamersClub Mirage) |
+| Heatmap e death review abrem no tick correto                                                 | A ficha de morte abrindo no tick correto foi VALIDADA EM PRODUÇÃO (round 1, tick 14552, aberto em 13,3 s). Heatmap → replay: VALIDADO EM TESTE                                                                                                                              |
+| Lacunas e dados ausentes comunicados                                                         | VALIDADO EM TESTE. Em produção foram VALIDADOS `NOT_RECORDED` (partida Dust2 de 13/11, processada antes do replay existir), `NOT_FOUND` (partida ainda sem jogador associado) e a legenda de amostras observadas e interpoladas                                             |
+| Segmentos com limites                                                                        | VALIDADO EM TESTE (1 round por requisição, 500 eventos, 12 jogadores, 1600 amostras)                                                                                                                                                                                        |
+| Performance e memória medidas                                                                | Worker medido com o corpus local de demos (§12, §24; pico 4,0 GB contra limite de 8 GB; HOT máximo 6,1 MB contra 8 MB). Em produção, o segmento de um round levou de 2,7 a 3,0 s (5 rounds; 16–32 KB comprimidos, 292–616 KB decodificados; §26)                            |
+| Ownership/RLS                                                                                | VALIDADO EM TESTE (dono lê; não-dono, anon e escrita de jogador recusados); NOT_FOUND em produção                                                                                                                                                                           |
+| Transformação espacial por mapa suportado                                                    | 7 mapas VALIDATED (Dust2, Mirage, Inferno, Nuke, Ancient, Anubis e Cache; §22). Overpass, Train e Vertigo não desenham (MAP_NOT_VALIDATED). Nuke desenhado em produção (§26)                                                                                                |
+| E2E e regressão                                                                              | Regressão VALIDADA; E2E de browser PENDENTE                                                                                                                                                                                                                                 |
 
 ## 5. Módulos B e I
 
 - **B (diagnóstico):**
   - contrato, regras, agregação, API, UI, feedback e Coach;
   - exposição, isolamento, re-peek e rotação ficam **NOT_SUPPORTED**: exigem posições de companheiros e adversários ao longo do tempo, que a ficha ainda não lê. As trajetórias novas passam a guardar esse dado só para partidas novas.
-- **I (replay):** worker, persistência, API e UI completos; validação em produção do caminho com dados depende de uma demo nova.
+- **I (replay):** worker, persistência, API e UI completos e **VALIDADOS EM PRODUÇÃO** em 2026-11-17 (detalhe em §26):
+  - partida `daef42da`, job `93450453`, `de_nuke`, demo FACEIT enviada pelo dono;
+  - parser `git:47ba6ffef76feae95dc98075cf3fb8089e02ce8f` (R5.8.29), Railway `3375b68b`;
+  - 24/24 rounds com trajetória (`COMPLETE`), 7274 amostras, `step_ticks` 16, nenhum round pulado;
+  - navegação: round 3 com 2500/2500 amostras e 10 jogadores; play avançou até 4,1 s e pause parou; troca de round (6, 7, 8, 12, 20) carregou o segmento de cada um;
+  - deep link `/deaths` → `/replay?round=1&tick=14552` abriu em 13,3 s;
+  - limitações observadas: o segmento leva 2,7–3,0 s por round (§16, §27); partidas processadas antes do R5.8.28 mostram `NOT_RECORDED` e não são reprocessadas.
 
 ## 6. Oito funcionalidades diferenciais (parcela PM2)
 
@@ -98,24 +108,30 @@ Política de padrão: pelo menos 10 mortes avaliadas, 3 partidas avaliadas e 4 o
 
 ## 8. Contratos e migrations
 
-| Migration                                      | Conteúdo                                                                                    | Produção                                                                                                                   |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `20261114130000_pm2_death_feedback`            | `death_feedback`, `owns_death_event`, RLS só do dono                                        | aplicada e registrada (`9d5b2e95`, md5 `7064b74d…`)                                                                        |
-| `20261114140000_pm2_round_trajectories`        | `match_trajectories`, `round_trajectories`, leitura pelo dono, escrita só pela service role | aplicada e registrada (`b440a06f`, md5 `3bd1922c…`)                                                                        |
-| `20261114190000_r5_8_28_repin_runtime_release` | re-pin R5.8.28                                                                              | aplicada e registrada (`80ee284c`, md5 `20d31485…`); md5 das funções lidas depois: `99776ca5…` / `1918875c…` / `f74d8af9…` |
+| Migration                                      | Conteúdo                                                                                    | Produção                                                                                                                                                                     |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261114130000_pm2_death_feedback`            | `death_feedback`, `owns_death_event`, RLS só do dono                                        | aplicada e registrada (`9d5b2e95`, md5 `7064b74d…`)                                                                                                                          |
+| `20261114140000_pm2_round_trajectories`        | `match_trajectories`, `round_trajectories`, leitura pelo dono, escrita só pela service role | aplicada e registrada (`b440a06f`, md5 `3bd1922c…`)                                                                                                                          |
+| `20261114190000_r5_8_28_repin_runtime_release` | re-pin R5.8.28                                                                              | aplicada e registrada (`80ee284c`, md5 `20d31485…`); md5 das funções lidas depois: `99776ca5…` / `1918875c…` / `f74d8af9…`                                                   |
+| `20261114230000_r5_8_29_repin_runtime_release` | re-pin R5.8.29                                                                              | dry-run em produção com exceção proposital (estado inalterado depois); aplicada e registrada (`76fa4887`, md5 `d41c9512…`); funções: `3e2125a2…` / `bfd8a96d…` / `f74d8af9…` |
 
 Contratos: `cs2.death-context.v1`, `cs2.death-rules.v1`, `cs2.round-trajectory.v1`, `cs2.replay-segment.v1`, `CoachFacts.deathPatterns`.
 
 ## 9. PRs e merges
 
-| PR   | Conteúdo                    | Merge      |
-| ---- | --------------------------- | ---------- |
-| #291 | C0–C2                       | `ed124279` |
-| #292 | contratos puros             | `4b635721` |
-| #293 | API `/deaths`, UI, feedback | `9d5b2e95` |
-| #294 | trajetórias e replay        | `b440a06f` |
-| #295 | Coach (regra 25)            | `51b88fea` |
-| #296 | re-pin R5.8.28              | `80ee284c` |
+| PR   | Conteúdo                                             | Merge      |
+| ---- | ---------------------------------------------------- | ---------- |
+| #291 | C0–C2                                                | `ed124279` |
+| #292 | contratos puros                                      | `4b635721` |
+| #293 | API `/deaths`, UI, feedback                          | `9d5b2e95` |
+| #294 | trajetórias e replay                                 | `b440a06f` |
+| #295 | Coach (regra 25)                                     | `51b88fea` |
+| #296 | re-pin R5.8.28                                       | `80ee284c` |
+| #297 | relatório C3–C6, Mirage VALIDATED, seletor do replay | `883f68e2` |
+| #298 | `/maps` com parâmetros extras                        | `3eee0480` |
+| #299 | Inferno, Nuke, Ancient, Anubis e Cache VALIDATED     | `e04893ab` |
+| #300 | morte de BOT substituído (FACEIT)                    | `47ba6ffe` |
+| #301 | re-pin R5.8.29                                       | `76fa4887` |
 
 ## 10. Workflows e testes
 
@@ -149,8 +165,9 @@ Demo local autorizada (Dust2 profissional pública):
 
 ## 13. Deploy e SHA servido
 
-- Worker: Railway `bb92ed95` (commit `b440a06f`). Os dois hosts `/version`: `git:b440a06f…`, `declared_revision_matches` true.
-- App: publicado pelo conector a partir de `main` `51b88fea` (publicação `34eeeac7`).
+- Worker: Railway `3375b68b` (commit `47ba6ffe`, R5.8.29). Os dois hosts `/version`: `git:47ba6ffe…`, demoparser2 0.42.2, `declared_revision_matches` true.
+- App: publicado pelo conector a partir de `main` `76fa4887` (publicação `99590af9`, 2026-11-17).
+- Histórico: R5.8.28, com Railway `bb92ed95` e app em `51b88fea`.
 
 ## 14. Identidade do parser e H.3-E
 
@@ -158,6 +175,13 @@ Demo local autorizada (Dust2 profissional pública):
 - Atestação VERIFIED: provenance `e5793f1a-ca5d-47f1-9b8c-02bea413d6e9`, digest `6432b232…`.
 - H.3-E PASS 18/18 (run 43635475197).
 - O Source persistente da Railway agora é `b440a06f` (o metadado `4716f894` foi resolvido): a troca de Source gerou `ef2caa23`, SKIPPED pelo freeze e sem build; o único build é `bb92ed95`.
+- **Re-pin R5.8.29:**
+  - muda deployment, commit e o blob `adapter.py` (`020f847a…` → `3e4f4a04…`).
+  - A troca de Source para `47ba6ffe` gerou `4ef83d14`, SKIPPED pelo freeze; o único build é `3375b68b`.
+  - Os 3 secrets foram trocados pelo dono.
+  - Atestação run 44013092142: success.
+  - H.3-E PASS 18/18 em `76fa4887` (run 44005644742, reexecutada depois dos secrets e da publicação).
+  - Correção de método: o primeiro rascunho do spec tinha md5 de destino errados. O teste de artefatos e um SELECT somente leitura em produção recusaram esses valores antes do commit; a migration teria falhado fechada.
 
 ## 15. Falhas encontradas e corrigidas
 
@@ -172,8 +196,9 @@ Demo local autorizada (Dust2 profissional pública):
 
 ## 16. Limitações e dados não medidos
 
-- Replay em produção sem dados até uma demo nova; partidas antigas não são reprocessadas (decisão do prompt).
-- Só Dust2 e Mirage são VALIDATED; Cache, Inferno, Nuke e os demais continuam sem desenho.
+- Partidas processadas antes do R5.8.28 não têm replay (`NOT_RECORDED`) e não são reprocessadas (decisão do prompt). Só a partida Nuke de 17/11 tem trajetória.
+- Overpass, Train e Vertigo continuam NOT_VALIDATED, sem desenho.
+- Segmento do replay em produção: 2,7–3,0 s de espera no servidor por round, mais 0,4–0,9 s no cliente antes da requisição. Investigação e hipóteses em §27; nenhuma otimização no PM2.
 - Exposição, isolamento, re-peek e rotação: NOT_SUPPORTED.
 - Event refs não vão ao Coach.
 - Sem E2E automatizado de browser.
@@ -181,16 +206,14 @@ Demo local autorizada (Dust2 profissional pública):
 
 ## 17. Ações manuais
 
-1. **Upload de uma demo nova pelo próprio dono no app** ("Analisar meu jogo"), para validar o replay de ponta a ponta em produção. A autorização existe (2026-11-14 17:05), mas o upload não pôde ser feito por esta sessão: o navegador automatizado só envia até 10 MB, as demos têm de 196 a 473 MB e não há shell no computador do dono. Use uma demo em que você jogou (por exemplo `demo2.dem` ou `demo3.dem`, que parseiam COMPLETE). Depois confira:
-   - `select status, count(*) from match_trajectories group by 1`;
-   - abrir `/replay`: o round deve abrir, os controles funcionar e o rótulo "Você" aparecer.
+1. ~~Upload de uma demo nova pelo dono~~: feito em 2026-11-17 (`demo-faceit-nuke.dem`; §26).
 2. **Validar o teste IDOR com um segundo usuário real.**
 3. **Alerta de segurança do Lovable:** revisar manualmente no painel (§21).
 
 ## 18. Riscos residuais e rollback
 
 - **Risco:** trajetória maior que o esperado num mapa novo. O round é pulado por inteiro (limites) e o job nunca falha (best effort).
-- **Rollback do worker:** Railway `7690b171`, Source de volta para `3837a810`, `docs/reference/r5_8_28/rollback.sql` e os secrets de R5.8.27.
+- **Rollback do worker (R5.8.29):** Railway `bb92ed95`, Source de volta para `b440a06f`, `docs/reference/r5_8_29/rollback.sql` e os secrets de R5.8.28.
 - **Rollback do app:** reverter os merges. As tabelas aditivas podem ficar.
 
 ## 19. Lovable
@@ -199,13 +222,15 @@ Nenhum prompt foi enviado ao agente Lovable. A publicação foi feita só pelo c
 
 ## 20. Recomendação para o Prompt 3 de 5
 
-Começar o PM3 (4.2.5–4.2.6, módulos C e D) **depois** do item 1 da §17. O PM3 deve consumir trajetórias, e o caminho com dados ainda não foi visto em produção.
+- A validação real do replay em produção **já ocorreu** (§5, §26). Não é preciso outra demo para esse critério.
+- O PM2 ainda tem critérios formais pendentes: o teste IDOR em dois sentidos com duas contas reais e o E2E automatizado de browser (§17, §28). Eles devem ser fechados **antes** de iniciar o PM3.
+- O início do PM3 (4.2.5–4.2.6, módulos C e D) depende de autorização explícita do dono.
 
-Prioridades:
+Prioridades para o PM3, depois dessa autorização:
 
-1. Validar a transformação de radar de Inferno, Nuke e Cache com demos autorizadas que o parser leia de ponta a ponta. Dust2 e Mirage já estão validados.
+1. Investigar a latência do segmento do replay (2,7–3,0 s por round; §27) como item de observabilidade e performance. Não amplia o escopo do PM2: a correção, se houver, vai em PR separado, com benchmark antes e depois.
 2. Usar `round_trajectories` (companheiros e adversários ao longo do tempo) para tirar exposição e isolamento de NOT_SUPPORTED, com uma nova versão de regras `cs2.death-rules.v2`.
-3. Adicionar E2E de browser para `/deaths` e `/replay`.
+3. Validar Overpass, Train e Vertigo só quando houver demos autorizadas desses mapas. Até lá, continuam NOT_VALIDATED, sem desenho.
 
 ## 21. Alerta de segurança do Lovable
 
@@ -275,10 +300,97 @@ Todas terminam com `game_phase = 5` (fim oficial).
 
 - A admissão v3 bloqueou a partida: `RAW-V2-14-combat: kill_victim_unknown`.
 - Causa provada: quando o jogador desconectado reconecta, o BOT que o substituía é expulso, e o jogo emite um `player_death` sem vítima, sem atacante e com arma `world`, no tick exato do `player_disconnect` desse BOT (`networkid BOT`, `xuid 0`). O roster continua com 10 jogadores. 3 das 7 demos FACEIT seriam bloqueadas por isso.
-- Correção no worker (`adapter.drop_bot_replacement_world_deaths`): omite só a linha com todas essas evidências, mantém a linha na evidência RAW e informa a contagem. O gate de admissão não muda. Exige release R5.8.29.
+- Correção no worker (`adapter.drop_bot_replacement_world_deaths`): omite só a linha com todas essas evidências, mantém a linha na evidência RAW e informa a contagem. O gate de admissão não muda. Publicada na R5.8.29.
+- Em produção (2026-11-17), a mesma demo foi aceita: 181 kills, nenhuma sem vítima, igual ao parse local.
 
 Nenhuma demo foi enviada a serviço externo ou ao GitHub.
 
 ## 25. Etapa E
 
 `DEFERRED — TECHNICALLY FEASIBLE, NOT REQUIRED FOR PM2`.
+
+## 26. Validação do replay em produção (2026-11-17)
+
+Demo enviada pelo dono no app: `demo-faceit-nuke.dem`, job `93450453`, partida `daef42da`, `de_nuke`. Parser `git:47ba6ffe…` (R5.8.29).
+
+| Verificação                             | Evidência                                                                                                                                                                                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admissão                                | `processed`. A tentativa anterior (`10c88d1b`) foi bloqueada antes da correção; esta passou                                                                                                                                                    |
+| Eventos                                 | 181 kills (igual ao parse local), 0 kills sem vítima, 5 plants e 2 defuses                                                                                                                                                                     |
+| Trajetória                              | `match_trajectories.status = COMPLETE`, 24/24 rounds, 7274 amostras, `step_ticks` 16, nada pulado, `parser_revision` `git:47ba6ffe…`                                                                                                           |
+| Ownership                               | Antes de o jogador ser escolhido, `/replay` respondeu `NOT_FOUND` (a partida ainda não era do usuário). Depois da escolha manual pelo dono (`self_declared_player`), o job reprocessou: `identity_status resolved`, 1 linha em `match_metrics` |
+| `/replay` round 3                       | SVG com o radar de Nuke, 10 jogadores (CT1–CT5, "Você", T1–T4), "2500 de 2500 amostras observadas · a cada 16 ticks", 8 eventos em segundos, legenda de observado, interpolado, morto e sem amostra. Play avançou até 4,1 s e pause parou      |
+| Privacidade                             | Nenhum padrão de SteamID64 no DOM                                                                                                                                                                                                              |
+| Partida antiga                          | Dust2 de 13/11: "Replay não gravado para esta partida" (`NOT_RECORDED`), sem desenho                                                                                                                                                           |
+| Integração B+I                          | `/deaths` da partida: 19 fichas e 19 radares. "Ver no replay 2D" (round 1) abriu `round=1&tick=14552` em 13,3 s                                                                                                                                |
+| Latência (Resource Timing do navegador) | Segmento por round: 2752, 2743, 2948, 2776 e 3019 ms (rounds 6, 7, 8, 12, 20); 16–32 KB comprimidos, 292–616 KB decodificados                                                                                                                  |
+
+Capturas: tiradas no navegador do dono durante a sessão; não foram versionadas, porque mostram dados da conta.
+
+## 27. Latência do replay (investigação, sem otimização)
+
+Ambiente: produção, app `76fa4887`, partida `daef42da`, 2026-11-17 ~05:30Z. Navegador do dono, conta do dono. Nada foi alterado.
+
+**Método.**
+
+- Navegador: Resource Timing de cada chamada `_serverFn`. A espera é `responseStart − requestStart` (servidor + rede); o download é `responseEnd − responseStart`.
+- Clique → render: `performance.now()` no clique até o round novo aparecer com o SVG.
+- Banco: `EXPLAIN ANALYZE` das consultas do segmento. Com service role (sem RLS) e como `authenticated` com os claims do dono (com RLS), dentro de transação desfeita com `ROLLBACK`.
+- Leitura do código: `getReplaySegment`, `loadPlayerOverview`, `requireSupabaseAuth` e `beforeLoad` de `_authenticated`.
+
+**Medições.**
+
+| Etapa                                                                | Valor                                                                      | Fonte                                      |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------ |
+| Espera no servidor por segmento (troca de round, requisição isolada) | 2683, 2691, 2705, 2727 e 2951 ms                                           | Resource Timing, rounds 9, 10, 11, 13 e 14 |
+| Download do segmento                                                 | 2–3 ms (15–20 KB comprimidos)                                              | Resource Timing                            |
+| Clique → saída da requisição                                         | 411 e 875 ms                                                               | `performance.now()`                        |
+| Resposta → render                                                    | 30 e 873 ms                                                                | `performance.now()`                        |
+| Clique → render, round novo                                          | 3394, 3652 e 4456 ms                                                       | `performance.now()`                        |
+| Clique → render, round já visitado (cache do React Query)            | 479 ms, nenhuma chamada `_serverFn`                                        | `performance.now()` + Resource Timing      |
+| Chamadas ao Supabase em toda troca de round, inclusive em cache      | `auth/v1/user` 464 ms e `rest/v1/profiles` 173 ms                          | Resource Timing                            |
+| Função de servidor leve isolada                                      | 273–470 ms                                                                 | Resource Timing                            |
+| Carga inicial da página (5 chamadas concorrentes)                    | o segmento esperou 3808 ms; as outras, 1427–2569 ms                        | Resource Timing                            |
+| SQL do segmento sem RLS                                              | 0,13–0,42 ms de execução, ≤ 2,7 ms de planejamento                         | `EXPLAIN ANALYZE`                          |
+| SQL do segmento com RLS (`authenticated`)                            | `round_trajectories` 3,3 ms; `round_events` 9,1 ms; `match_metrics` 2,2 ms | `EXPLAIN ANALYZE`                          |
+| Ida e volta navegador → API REST do Supabase                         | 173–188 ms                                                                 | Resource Timing                            |
+
+**Contagem de idas ao banco no servidor (leitura do código).** `getReplaySegment` executa em sequência:
+
+- `loadPlayerOverview`, com cerca de 7 chamadas: jobs, uploads, ids de jogador, métricas, quarentena, partidas e método de flash;
+- `ownPlayerIds` de novo;
+- `ownParticipantKeys`;
+- `match_trajectories`;
+- `match_rounds` e `round_trajectories` (em paralelo);
+- a trajetória do round e os eventos.
+
+São cerca de 12 idas sequenciais à API REST, além da verificação do token em `requireSupabaseAuth` (`getClaims`).
+
+**Hipótese mais provável (não comprovada; falta instrumentação no servidor):** a espera de 2,7–3,0 s vem da soma de cerca de 12 idas sequenciais da função de servidor à API REST do Supabase, cada uma com custo fixo de rede e gateway. A maior parte delas é a reconstrução do overview completo só para confirmar que a partida pertence ao usuário. O SQL soma menos de 100 ms, mesmo com RLS.
+
+Coerência dos números: 12 idas × ~200 ms ≈ 2,4 s, mais a autenticação, e uma função leve de 1–2 idas leva 273–470 ms. A latência servidor → Supabase não foi medida diretamente, porque o servidor do app não tem instrumentação.
+
+**Hipótese secundária, com mecanismo confirmado no código e na medição:** cada troca de round muda a URL e roda o `beforeLoad` de `_authenticated`, que chama `supabase.auth.getUser()` (464 ms) e depois lê `profiles` (173 ms) antes da requisição sair. Isso explica os 0,4–0,9 s antes da requisição e os 479 ms de um round que já está em cache.
+
+**Hipóteses descartadas, com a medição que as descarta:**
+
+- tempo de execução SQL e planos: ≤ 9 ms com RLS;
+- tamanho e transferência do payload: download de 2–3 ms;
+- worker e parser: o segmento não chama o worker;
+- descompressão: o corpo é JSON pequeno;
+- render: 30 ms no caso típico. O valor de 873 ms foi um caso isolado, não investigado.
+
+**Primeiro acesso × seguintes.** Sem cold start visível: a espera fica estável em 2,7–3,0 s nas trocas de round. Na carga inicial, as 5 funções concorrentes pioram (até 3,8 s), o que sugere que as chamadas competem entre si no servidor.
+
+**Impacto observado:** um round novo leva 3,4–4,5 s até aparecer; um round já visitado, cerca de 0,5 s. O replay funciona; não é defeito de correção nem de segurança.
+
+**Recomendação para o PM3 (item de observabilidade e performance, PR separado com benchmark antes e depois):**
+
+1. Instrumentar o servidor com `Server-Timing` por etapa (autenticação, overview, ownership, trajetória e eventos) para comprovar ou descartar a hipótese principal.
+2. Verificar a ownership da partida com uma consulta direta protegida por RLS, sem reconstruir o overview inteiro, e paralelizar as leituras independentes. Exige teste IDOR antes e depois.
+3. Avaliar se o `beforeLoad` precisa de `getUser()` em rede a cada mudança de busca na mesma rota, sem enfraquecer o fail-closed da autenticação.
+
+## 28. Teste IDOR em dois sentidos e E2E de browser: estado formal
+
+- **IDOR em dois sentidos com duas contas reais:** MANUAL_REQUIRED. Hoje existe só uma direção, já validada antes: a conta do dono abrindo o id de uma partida real de outro usuário recebe NOT_FOUND. O harness no PostgreSQL descartável passou 39/39 com dois usuários sintéticos. Faltam uma segunda conta real com uma partida processada e as credenciais das duas contas em secrets do GitHub. Esta sessão não cria contas nem digita senhas.
+- **E2E automatizado de browser:** PENDENTE. Não havia infraestrutura de E2E no repositório. O fluxo com Playwright roda no GitHub Actions contra a produção, porque o sandbox não alcança o domínio, e depende das mesmas credenciais em secrets.
