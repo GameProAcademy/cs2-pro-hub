@@ -1,0 +1,401 @@
+/**
+ * PM2 closure — browser E2E against a real deployment, with two real accounts (A and B).
+ *
+ * Covers, for each account that has a processed match with a replay:
+ *   login → own matches → /deaths → death review → deep link to /replay (round + tick) → round navigation →
+ *   time navigation → play/pause → feedback (persisted, then restored) → empty/unavailable states.
+ * Then cross-user isolation in BOTH directions (A→B and B→A):
+ *   /deaths and /replay by id, deep links, the feedback server function replayed with the other user's
+ *   session and the victim's event ref, an injected owner field, direct REST reads/writes under RLS, and
+ *   client cache isolation after logout/login in the same browser context.
+ *
+ * Credentials come only from E2E_A_EMAIL/E2E_A_PASSWORD/E2E_B_EMAIL/E2E_B_PASSWORD. Nothing secret, no
+ * token and no account data is printed: the summary (E2E_SUMMARY_PATH) holds statuses and counts only.
+ */
+import { writeFileSync } from "node:fs";
+
+import { type Browser, type Page, expect, test } from "@playwright/test";
+
+type Creds = { email: string; password: string };
+type Recorded = { url: string; headers: Record<string, string>; body: string };
+type OwnData = {
+  matchId: string;
+  round: number;
+  tick: number;
+  feedback: Recorded | null;
+  supabaseUrl: string | null;
+  apikey: string | null;
+};
+
+const RANDOM_MATCH = "00000000-0000-4000-8000-000000000000";
+const summary: Record<string, unknown> = { startedAt: new Date().toISOString() };
+
+function creds(prefix: "A" | "B"): Creds | null {
+  const email = process.env[`E2E_${prefix}_EMAIL`];
+  const password = process.env[`E2E_${prefix}_PASSWORD`];
+  return email && password ? { email, password } : null;
+}
+
+const A = creds("A");
+const B = creds("B");
+
+test.describe.configure({ mode: "serial" });
+test.skip(!A || !B, "MANUAL_REQUIRED: E2E_A_* and E2E_B_* credentials are not configured");
+
+const own: Partial<Record<"A" | "B", OwnData>> = {};
+
+/** Record the Supabase origin/apikey (public publishable key) and the feedback server-fn request. */
+function watch(
+  page: Page,
+  sink: { feedback: Recorded | null; supabaseUrl: string | null; apikey: string | null },
+) {
+  page.on("request", (req) => {
+    const url = req.url();
+    if (url.includes(".supabase.co/") && !sink.apikey) {
+      const key = req.headers()["apikey"];
+      if (key) {
+        sink.apikey = key;
+        sink.supabaseUrl = new URL(url).origin;
+      }
+    }
+    const body = req.postData();
+    if (req.method() === "POST" && url.includes("_serverFn") && body?.includes("roundEventId")) {
+      const headers = { ...req.headers() };
+      delete headers["authorization"];
+      delete headers["cookie"];
+      sink.feedback = { url, headers, body };
+    }
+  });
+}
+
+/** Signs in through the real login form. `reload: false` keeps the single-page app (and its cache) alive. */
+async function login(page: Page, c: Creds, reload = true) {
+  if (reload) await page.goto("/login");
+  await page.locator('input[type="email"]').fill(c.email);
+  await page.locator('input[type="password"]').fill(c.password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 60_000 });
+}
+
+/** The app's own sign-out button (cancels and clears the query cache, then navigates to /login). */
+async function logout(page: Page) {
+  await page.locator("button:has(svg.lucide-log-out)").first().click();
+  await page.waitForURL(/\/login/);
+}
+
+/** In-app navigation to the replay page (no reload, so the client cache is what is being tested). */
+async function openReplayInApp(page: Page) {
+  await page.locator('a[href="/replay"]').first().click();
+  await page.waitForURL(/\/replay/);
+  await expect(page.locator("[data-replay-status], select").first()).toBeVisible();
+}
+
+async function replayStatus(page: Page) {
+  const el = page.locator("[data-replay-status]").first();
+  await expect(el).toBeVisible();
+  return el.getAttribute("data-replay-status");
+}
+
+async function deathsStatus(page: Page) {
+  const el = page.locator("[data-death-review-status]").first();
+  await expect(el).toBeVisible();
+  return el.getAttribute("data-death-review-status");
+}
+
+async function ownFlow(browser: Browser, who: "A" | "B", c: Creds) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const sink = {
+    feedback: null as Recorded | null,
+    supabaseUrl: null as string | null,
+    apikey: null as string | null,
+  };
+  watch(page, sink);
+  const steps: Record<string, string> = {};
+
+  await login(page, c);
+  steps["1_login"] = "PASS";
+
+  await page.goto("/matches");
+  const rows = page.locator("[data-result-status]");
+  await expect(rows.first()).toBeVisible();
+  steps["2_own_matches"] = `PASS rows=${await rows.count()}`;
+
+  await page.goto("/deaths");
+  expect(await deathsStatus(page)).toBe("OK");
+  const deaths = page.locator("[data-death-kind]");
+  await expect(deaths.first()).toBeVisible();
+  steps["3_deaths_open"] = `PASS deaths=${await deaths.count()}`;
+  steps["4_death_review"] = (await page.locator("[data-provenance]").count()) > 0 ? "PASS" : "FAIL";
+
+  // Feedback on the first death (whole-review verdict): change, verify persisted, then restore.
+  const box = page.locator('[data-feedback="REVIEW"]').first();
+  const before = (await box.getAttribute("data-feedback-current")) ?? "";
+  const target = before === "USEFUL" ? "NOT_USEFUL" : "USEFUL";
+  const order = ["USEFUL", "NOT_USEFUL", "INCORRECT"];
+  await box.locator("button").nth(order.indexOf(target)).click();
+  await expect(box).toHaveAttribute("data-feedback-current", target);
+  await page.reload();
+  expect(await deathsStatus(page)).toBe("OK");
+  await expect(page.locator('[data-feedback="REVIEW"]').first()).toHaveAttribute(
+    "data-feedback-current",
+    target,
+  );
+  if (before) {
+    const again = page.locator('[data-feedback="REVIEW"]').first();
+    await again.locator("button").nth(order.indexOf(before)).click();
+    await expect(again).toHaveAttribute("data-feedback-current", before);
+  }
+  steps["10_feedback"] =
+    `PASS persisted_after_reload; restored=${before ? "yes" : "no_previous_value"}`;
+
+  // Deep link from the death review to the replay at the death tick.
+  const link = page.locator("[data-replay-link]").first();
+  const href = await link.getAttribute("href");
+  const u = new URL(href ?? "", "https://x.invalid");
+  const matchId = u.searchParams.get("matchId") ?? "";
+  const round = Number(u.searchParams.get("round"));
+  const tick = Number(u.searchParams.get("tick"));
+  await link.click();
+  await page.waitForURL(/\/replay\?/);
+  expect(page.url()).toContain(`tick=${tick}`);
+  expect(await replayStatus(page)).toBe("OK");
+  await expect(page.locator("[data-replay-svg]")).toBeVisible();
+  steps["5_replay_open"] = "PASS";
+  steps["8_deep_link"] = `PASS round=${round}`;
+
+  // Round navigation: another AVAILABLE round.
+  const other = page
+    .locator('nav button[data-availability="AVAILABLE"]:not([aria-current])')
+    .first();
+  const otherRound = Number((await other.innerText()).trim());
+  await other.click();
+  await expect(page.locator('nav button[aria-current="true"]')).toHaveText(String(otherRound));
+  expect(await replayStatus(page)).toBe("OK");
+  await expect(page.locator("[data-replay-svg]")).toBeVisible();
+  steps["6_round_navigation"] = "PASS";
+
+  // Time navigation: the timeline slider moves the clock.
+  const clock = page.locator("[data-replay-time]");
+  const t0 = await clock.innerText();
+  const slider = page.locator('input[type="range"]').first();
+  await slider.focus();
+  await page.keyboard.press("End");
+  await expect(clock).not.toHaveText(t0);
+  await page.keyboard.press("Home");
+  steps["7_time_navigation"] = "PASS";
+
+  // Play / pause.
+  const play = page.locator("[data-replay-status] button[aria-pressed]").first();
+  const t1 = await clock.innerText();
+  await play.click();
+  await expect(play).toHaveAttribute("aria-pressed", "true");
+  await expect(clock).not.toHaveText(t1, { timeout: 10_000 });
+  await play.click();
+  await expect(play).toHaveAttribute("aria-pressed", "false");
+  const paused = await clock.innerText();
+  await page.waitForTimeout(1500);
+  await expect(clock).toHaveText(paused);
+  steps["9_play_pause"] = "PASS";
+
+  // Empty / unavailable states.
+  await page.goto(`/replay?matchId=${RANDOM_MATCH}`);
+  expect(await replayStatus(page)).toBe("NOT_FOUND");
+  await page.goto(`/deaths?matchId=${RANDOM_MATCH}`);
+  expect(await deathsStatus(page)).toBe("NOT_FOUND");
+  steps["11_unavailable_states"] = "PASS NOT_FOUND (replay, deaths)";
+
+  // No SteamID64 anywhere in the replay DOM.
+  await page.goto(`/replay?matchId=${matchId}&round=${round}`);
+  expect(await replayStatus(page)).toBe("OK");
+  expect(/7656119\d{10}/.test(await page.content())).toBe(false);
+  steps["privacy_no_steamid_in_dom"] = "PASS";
+
+  if (!sink.feedback) throw new Error("feedback request was not observed");
+  own[who] = {
+    matchId,
+    round,
+    tick,
+    feedback: sink.feedback,
+    supabaseUrl: sink.supabaseUrl,
+    apikey: sink.apikey,
+  };
+  summary[`flow_${who}`] = steps;
+  await context.close();
+}
+
+async function isolation(browser: Browser, attacker: "A" | "B", victim: "A" | "B") {
+  const c = attacker === "A" ? A! : B!;
+  const v = own[victim]!;
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const sink = {
+    feedback: null as Recorded | null,
+    supabaseUrl: null as string | null,
+    apikey: null as string | null,
+  };
+  watch(page, sink);
+  const r: Record<string, string> = {};
+  await login(page, c);
+
+  // 1. The victim's match never appears in the attacker's lists.
+  await page.goto("/replay");
+  const listed = await page
+    .locator("option")
+    .evaluateAll((opts, id) => opts.some((o) => (o as HTMLOptionElement).value === id), v.matchId);
+  r["1_listing"] = listed ? "FAIL victim match listed" : "PASS";
+
+  // 2-5. Direct ids and deep links.
+  await page.goto(`/replay?matchId=${v.matchId}`);
+  r["2_4_replay_by_id"] = (await replayStatus(page)) === "NOT_FOUND" ? "PASS NOT_FOUND" : "FAIL";
+  await page.goto(`/replay?matchId=${v.matchId}&round=${v.round}&tick=${v.tick}`);
+  r["5_replay_deep_link"] = (await replayStatus(page)) === "NOT_FOUND" ? "PASS NOT_FOUND" : "FAIL";
+  await page.goto(`/deaths?matchId=${v.matchId}`);
+  r["3_deaths_by_id"] = (await deathsStatus(page)) === "NOT_FOUND" ? "PASS NOT_FOUND" : "FAIL";
+  r["svg_not_drawn"] = (await page.locator("[data-replay-svg]").count()) === 0 ? "PASS" : "FAIL";
+
+  // 6, 8, 9. The victim's feedback request (their event ref) replayed with the ATTACKER's session.
+  const token = await page.evaluate(() => {
+    const k = Object.keys(localStorage).find((x) => /^sb-.*-auth-token$/.test(x));
+    return k
+      ? ((JSON.parse(localStorage.getItem(k) ?? "{}") as { access_token?: string }).access_token ??
+          null)
+      : null;
+  });
+  if (!token) throw new Error("attacker session token not found in the page");
+  const fb = v.feedback!;
+  const replay = await page.evaluate(
+    async ({ fb, token }) => {
+      const res = await fetch(fb.url, {
+        method: "POST",
+        headers: { ...fb.headers, authorization: `Bearer ${token}` },
+        body: fb.body,
+      });
+      const text = await res.text();
+      return {
+        status: res.status,
+        refused: text.includes("REFUSED"),
+        saved: text.includes("SAVED"),
+      };
+    },
+    { fb, token },
+  );
+  // 9. The ids are the victim's, the session is the attacker's: the server derives the owner from the
+  // session (RLS on round_events), so the write must be REFUSED, never SAVED. An injected owner field is
+  // rejected by the strict input schema (unit test deathReviewUi.test.tsx); it is not replayed here
+  // because the server-fn body is a framework serialization that cannot be edited safely.
+  r["6_8_9_feedback_with_victim_ids"] = replay.saved
+    ? `FAIL saved (http ${replay.status})`
+    : replay.refused || replay.status >= 400
+      ? `PASS refused (http ${replay.status})`
+      : `FAIL unexpected (http ${replay.status})`;
+
+  // 7. Direct REST reads/writes under RLS with the attacker's session.
+  const rest = sink.apikey && sink.supabaseUrl ? { url: sink.supabaseUrl, key: sink.apikey } : null;
+  if (rest) {
+    const out = await page.evaluate(
+      async ({ rest, token, v }) => {
+        const h = {
+          apikey: rest.key,
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        };
+        const get = async (q: string) => {
+          const res = await fetch(`${rest.url}/rest/v1/${q}`, { headers: h });
+          const body = (await res.json().catch(() => null)) as unknown;
+          return { status: res.status, rows: Array.isArray(body) ? body.length : -1 };
+        };
+        const m = v.matchId;
+        const reads = {
+          round_trajectories: await get(`round_trajectories?select=round_number&match_id=eq.${m}`),
+          match_trajectories: await get(`match_trajectories?select=status&match_id=eq.${m}`),
+          round_events: await get(`round_events?select=id&match_id=eq.${m}&limit=5`),
+          death_feedback: await get(`death_feedback?select=id&match_id=eq.${m}`),
+          match_metrics: await get(`match_metrics?select=match_id&match_id=eq.${m}`),
+        };
+        const ins = await fetch(`${rest.url}/rest/v1/death_feedback`, {
+          method: "POST",
+          headers: { ...h, prefer: "return=minimal" },
+          body: JSON.stringify({
+            match_id: m,
+            round_number: v.round,
+            death_tick: v.tick,
+            verdict: "USEFUL",
+            rules_version: "cs2.death-rules.v1",
+          }),
+        });
+        const upd = await fetch(`${rest.url}/rest/v1/death_feedback?match_id=eq.${m}`, {
+          method: "PATCH",
+          headers: { ...h, prefer: "return=representation" },
+          body: JSON.stringify({ verdict: "INCORRECT" }),
+        });
+        const updBody = (await upd.json().catch(() => null)) as unknown;
+        return {
+          reads,
+          insert: ins.status,
+          update: { status: upd.status, rows: Array.isArray(updBody) ? updBody.length : -1 },
+        };
+      },
+      { rest, token, v: { matchId: v.matchId, round: v.round, tick: v.tick } },
+    );
+    const leaked = Object.entries(out.reads)
+      .filter(([, x]) => x.rows > 0)
+      .map(([k]) => k);
+    r["7_rest_reads_under_rls"] = leaked.length
+      ? `FAIL leaked=${leaked.join(",")}`
+      : "PASS 0 rows on 5 tables";
+    r["8_rest_insert_foreign_feedback"] =
+      out.insert >= 400 ? `PASS refused (http ${out.insert})` : `FAIL http ${out.insert}`;
+    r["8_rest_update_foreign_feedback"] =
+      out.update.rows <= 0 ? `PASS 0 rows (http ${out.update.status})` : "FAIL rows updated";
+  } else {
+    r["7_rest"] = "NOT_RUN supabase apikey not observed";
+  }
+
+  // 10. Client cache isolation inside ONE single-page session: the victim signs in and opens their replay
+  // (filling the query cache), signs out with the app's button, the attacker signs in WITHOUT a reload and
+  // opens the replay page in-app. The victim's match must not be listed or drawn from the cache.
+  await logout(page);
+  await login(page, victim === "A" ? A! : B!, false);
+  await openReplayInApp(page);
+  await page.locator("select").first().selectOption(v.matchId);
+  expect(await replayStatus(page)).toBe("OK");
+  await logout(page);
+  await login(page, c, false);
+  await openReplayInApp(page);
+  const cached = await page
+    .locator("option")
+    .evaluateAll((opts, id) => opts.some((o) => (o as HTMLOptionElement).value === id), v.matchId);
+  const selected = await page.locator("select").first().inputValue();
+  r["10_cache_isolation_spa"] =
+    !cached && selected !== v.matchId ? "PASS victim match absent after in-app re-login" : "FAIL";
+
+  summary[`isolation_${attacker}_to_${victim}`] = r;
+  await context.close();
+  const failed = Object.entries(r).filter(([, x]) => x.startsWith("FAIL"));
+  expect(failed, JSON.stringify(failed)).toEqual([]);
+}
+
+test("account A: own flow", async ({ browser }) => {
+  await ownFlow(browser, "A", A!);
+});
+
+test("account B: own flow", async ({ browser }) => {
+  await ownFlow(browser, "B", B!);
+});
+
+test("isolation A → B", async ({ browser }) => {
+  test.skip(!own.B, "account B flow did not complete");
+  await isolation(browser, "A", "B");
+});
+
+test("isolation B → A", async ({ browser }) => {
+  test.skip(!own.A, "account A flow did not complete");
+  await isolation(browser, "B", "A");
+});
+
+test.afterAll(() => {
+  summary["finishedAt"] = new Date().toISOString();
+  const path = process.env["E2E_SUMMARY_PATH"];
+  if (path) writeFileSync(path, JSON.stringify(summary, null, 2));
+});

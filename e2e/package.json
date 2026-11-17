@@ -1,0 +1,12 @@
+{
+  "name": "cs2-pro-hub-e2e",
+  "private": true,
+  "description": "Browser E2E for the PM2 flows (deaths, replay, feedback, cross-user isolation). Isolated from the app dependencies.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
