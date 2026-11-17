@@ -44,7 +44,12 @@ const r5813DeploymentMigration = readFileSync(
 // R5.8.27 after PM6 C (PR #287, parser.py and adapter.py blobs);
 // R5.8.28 after PM2 round trajectories (PR #294, parser.py blob);
 // R5.8.29 after the FACEIT BOT-replacement fix (PR #300, adapter.py blob);
-// R5.8.30 after the PM3 telemetry release (PR #310, adapter.py and raw_evidence.py blobs).
+// R5.8.30 after the PM3 telemetry release (PR #310, adapter.py and raw_evidence.py blobs);
+// R5.8.31 after the PM4 round-economy telemetry (PR #319, parser.py and raw_evidence.py blobs).
+const r5831ReleaseMigration = readFileSync(
+  resolve("supabase/migrations/20261117235000_r5_8_31_repin_runtime_release.sql"),
+  "utf8",
+);
 const r5830ReleaseMigration = readFileSync(
   resolve("supabase/migrations/20261117120000_r5_8_30_repin_runtime_release.sql"),
   "utf8",
@@ -153,13 +158,15 @@ function parity(args: {
 describe("H.3-E.8.1 database attestation identity parity", () => {
   it("binds application, workflow registry, and database migration to the approved identity", () => {
     expect(workflowRegistry.source_sha).toBe(APPROVED_ATTESTATION_WORKFLOW_SHA);
-    // R5.8.30 lists its pins as arrays: the head identity is in the new-pin list.
-    const r5830NewPins = r5830ReleaseMigration.slice(
-      r5830ReleaseMigration.indexOf("_new_pins constant"),
-      r5830ReleaseMigration.indexOf("_counts constant"),
+    // R5.8.31 lists its pins as arrays: the head identity is in the new-pin list.
+    const r5831NewPins = r5831ReleaseMigration.slice(
+      r5831ReleaseMigration.indexOf("_new_pins constant"),
+      r5831ReleaseMigration.indexOf("_counts constant"),
     );
-    expect(r5830NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
-    expect(r5830NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5831NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.deploymentId}'`);
+    expect(r5831NewPins).toContain(`'${PARSER_ATTESTATION_EXPECTED.commit}'`);
+    expect(r5831ReleaseMigration).toContain("'3335c88d-2a0f-461c-8919-5d6086b518fd'");
+    expect(r5830ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5830ReleaseMigration).toContain("'3375b68b-c996-445f-b979-ed6318c89970'");
     expect(r5829ReleaseMigration).not.toContain(PARSER_ATTESTATION_EXPECTED.deploymentId);
     expect(r5829ReleaseMigration).toContain("'bb92ed95-7dd6-4d1c-af27-057140f038dd'");

@@ -1165,3 +1165,33 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:768646ea76646219b1749f9fd2e757703292a24c`;
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `768646ea76646219b1749f9fd2e757703292a24c`.
 - Rollback: Railway `3375b68b` (and the service source back to `47ba6ffe`), plus `docs/reference/r5_8_30/rollback.sql`, plus the R5.8.29 secret values.
+
+## 2026-11-17 — R5.8.31: PM4 round economy and disconnects (controlled)
+
+- Change (PR #319, merge `0c646583`), for PM4 modules E/F:
+  - `parser.py` reads `cash_spent_this_round` at each round end (equal to the value at `buytime_ended` in 679/679 player-rounds, and present in HLTV demos that carry no `buytime_ended`).
+  - It attaches `money_spent` per player and the human `player_disconnect` ticks of the round to each `round_end` event.
+  - `raw_evidence.py` maps the `player_disconnect` fields. The field catalog was regenerated, and the RAW audit passes on real demos.
+  - Absent values stay absent, never zero.
+- Release:
+  - Queue idle.
+  - Merge with the service source pinned (`768646ea`) and the watch-pattern freeze in place: nothing deployed.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:0c646583…` with skipped deploys.
+  - **Persistent source aligned in the same operation:** `connect-service-source` to `commitSha 0c646583…`.
+    - The deployment created by that source change, `90e6a5d5`, was **SKIPPED** by the watch-pattern freeze and built nothing.
+    - Exactly one deployment was then triggered through the Railway agent: `584ea563`, SUCCESS, created 23:48:09Z. This is the only build of the release.
+  - Both `/version` hosts (2026-11-17 23:58Z): demoparser2 0.42.2, revision = semantic = build = `git:0c646583…`, `build.commit` `0c646583…`, `embedded` true, `source` railway, `declared_revision_matches` true.
+- Pins:
+  - deployment `3335c88d…` → `584ea563…`;
+  - commit `768646ea…` → `0c646583…` (4 in the recorder, 3 in the assertion);
+  - parser.py `bc30a72f…` → `421dfd95…`;
+  - raw_evidence.py `81c0f7e5…` → `3890313e…`;
+  - the adapter.py, worker.py, settings.py and workflow blobs and parser version 0.42.2 are unchanged.
+- R5.8.31 migration (`supabase/migrations/20261117235000_r5_8_31_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_31/`):
+  - recorder `b46f6701…` → `515f433f…`. This equals `r5_8_11.target_md5` and the read-only md5 of the managed recorder with the four pins replaced.
+  - assertion `95dc9e5f…` → `e35c5ff8…`.
+- Owner action (app secrets, then publish):
+  - `DEMO_PARSER_EXPECTED_REVISION` = `git:0c646583dc98426d4a2298a8797658253ad565c0`;
+  - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:0c646583dc98426d4a2298a8797658253ad565c0`;
+  - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `0c646583dc98426d4a2298a8797658253ad565c0`.
+- Rollback: Railway `3335c88d` (and the service source back to `768646ea`), plus `docs/reference/r5_8_31/rollback.sql`, plus the R5.8.30 secret values.
