@@ -92,43 +92,48 @@ export const getReplaySegment = createServerFn({ method: "GET" })
     }
   });
 
-async function replaySegment(
+export async function replaySegment(
   supabase: Parameters<typeof loadPlayerOverview>[0],
   userId: string,
   data: z.infer<typeof replayInput>,
   timer: ReturnType<typeof stageTimer>,
 ): Promise<ReplayResponse> {
-  const overview = await loadPlayerOverview(supabase, userId);
+  // PM3 latency: player ids do not depend on the overview, so both are read together.
+  const [overview, playerIds] = await Promise.all([
+    loadPlayerOverview(supabase, userId),
+    ownPlayerIds(supabase, userId, "REPLAY"),
+  ]);
   timer.mark("overview");
   const match = overview.matches.find((m) => m.matchId === data.matchId);
+  // A match id outside the caller's own overview is never queried (IDOR → NOT_FOUND).
   if (!match) return { status: "NOT_FOUND" };
-  const playerIds = await ownPlayerIds(supabase, userId, "REPLAY");
-  const keys = playerIds.length
-    ? await ownParticipantKeys(supabase, playerIds, [match.matchId])
-    : new Map();
-  const ownKey = keys.get(match.matchId);
-  timer.mark("ownership");
-  if (!ownKey) return { status: "NO_PARTICIPANT" };
-
-  const { data: status, error: statusError } = await supabase
-    .from("match_trajectories")
-    .select("status, reason, skipped")
-    .eq("match_id", match.matchId)
-    .maybeSingle();
-  timer.mark("trajectory_status");
-  if (statusError) throw new Error(`REPLAY_READ_FAILED:${statusError.code ?? "unknown"}`);
-  if (!status) return { status: "NOT_RECORDED", map: match.map };
-  if (status.status === "UNAVAILABLE")
-    return { status: "UNAVAILABLE", map: match.map, reason: status.reason };
-
-  const [played, stored] = await Promise.all([
+  // Once the match is the caller's own, the participant key, the trajectory status and the
+  // rounds are independent reads: they run together and are evaluated in the original order.
+  const [keys, statusRead, played, stored] = await Promise.all([
+    playerIds.length
+      ? ownParticipantKeys(supabase, playerIds, [match.matchId])
+      : Promise.resolve(new Map<string, string>()),
+    supabase
+      .from("match_trajectories")
+      .select("status, reason, skipped")
+      .eq("match_id", match.matchId)
+      .maybeSingle(),
     supabase
       .from("match_rounds")
       .select("round_number, start_tick, end_tick")
       .eq("match_id", match.matchId),
     supabase.from("round_trajectories").select("round_number").eq("match_id", match.matchId),
   ]);
-  timer.mark("rounds");
+  timer.mark("match_reads");
+  const ownKey = keys.get(match.matchId);
+  if (!ownKey) return { status: "NO_PARTICIPANT" };
+
+  const { data: status, error: statusError } = statusRead;
+  if (statusError) throw new Error(`REPLAY_READ_FAILED:${statusError.code ?? "unknown"}`);
+  if (!status) return { status: "NOT_RECORDED", map: match.map };
+  if (status.status === "UNAVAILABLE")
+    return { status: "UNAVAILABLE", map: match.map, reason: status.reason };
+
   const failed = played.error ?? stored.error;
   if (failed) throw new Error(`REPLAY_READ_FAILED:${failed.code ?? "unknown"}`);
   const skipped = Array.isArray(status.skipped)
