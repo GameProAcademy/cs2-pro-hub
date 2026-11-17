@@ -1544,7 +1544,7 @@ def _validate_r5829_chain_under_r5830_head() -> None:
         raise RuntimeError(f"R5_8_30_ROLLBACK_NOT_AT_R5_8_29_TARGETS: {rewound} != {expected}")
     try:
         _validate_r5829_migration()
-        _validate_r5827_chain_under_r5829_head()
+        _validate_r5828_chain_under_r5829_head()
     finally:
         result = _psql("\\i supabase/migrations/20261117120000_r5_8_30_repin_runtime_release.sql\n")
         if result.returncode != 0:
