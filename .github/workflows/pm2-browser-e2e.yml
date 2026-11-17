@@ -35,7 +35,8 @@ jobs:
       E2E_A_PASSWORD: ${{ secrets.PM2_E2E_A_PASSWORD }}
       E2E_B_EMAIL: ${{ secrets.PM2_E2E_B_EMAIL }}
       E2E_B_PASSWORD: ${{ secrets.PM2_E2E_B_PASSWORD }}
-      E2E_SUMMARY_PATH: ${{ runner.temp }}/pm2-e2e-summary.json
+      # job-level env has no `runner` context (it invalidated the workflow); github.workspace is allowed
+      E2E_SUMMARY_PATH: ${{ github.workspace }}/pm2-e2e-summary.json
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Require the two accounts
@@ -68,6 +69,6 @@ jobs:
         if: always()
         with:
           name: pm2-e2e-summary
-          path: ${{ runner.temp }}/pm2-e2e-summary.json
+          path: ${{ github.workspace }}/pm2-e2e-summary.json
           if-no-files-found: ignore
           retention-days: 30
