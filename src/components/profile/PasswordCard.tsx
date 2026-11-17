@@ -50,6 +50,7 @@ export function PasswordCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const strength = passwordStrength(next);
 
@@ -59,6 +60,7 @@ export function PasswordCard() {
     setConfirm("");
     setNonce("");
     setStage("form");
+    setResendSuccess(false);
   }
 
   async function applyPassword(withNonce?: string) {
@@ -105,21 +107,23 @@ export function PasswordCard() {
 
     // Official secure-password-change path: Supabase issues a one-time nonce by
     // email. The nonce never contains the password.
-    const { error: nonceError } = await supabase.auth.reauthenticate();
-    if (!nonceError) {
+    // Secure password change is fail-closed: never fall back to an update
+    // without the email nonce when reauthentication fails.
+    try {
+      const { error: nonceError } = await supabase.auth.reauthenticate();
+      if (nonceError) {
+        setLoading(false);
+        setError(t("security.errorGeneric"));
+        return;
+      }
+      setNonce("");
+      setResendSuccess(false);
       setLoading(false);
       setStage("confirm");
-      return;
-    }
-
-    const ok = await applyPassword();
-    setLoading(false);
-    if (!ok) {
+    } catch {
+      setLoading(false);
       setError(t("security.errorGeneric"));
-      return;
     }
-    reset();
-    setSuccess(true);
   }
 
   async function handleConfirm(event: React.FormEvent) {
@@ -131,23 +135,42 @@ export function PasswordCard() {
       return;
     }
     setLoading(true);
-    const ok = await applyPassword(nonce.trim());
-    setLoading(false);
-    if (!ok) {
-      // Wrong, expired or already used code: nothing changed.
+    try {
+      const ok = await applyPassword(nonce.trim());
+      if (!ok) {
+        // Wrong, expired or already used code: nothing changed.
+        setError(t("security.errorGeneric"));
+        return;
+      }
+      reset();
+      setSuccess(true);
+    } catch {
       setError(t("security.errorGeneric"));
-      return;
+    } finally {
+      setLoading(false);
     }
-    reset();
-    setSuccess(true);
   }
 
   async function handleResend() {
     if (loading) return;
+    setError(null);
+    setResendSuccess(false);
     setLoading(true);
-    const { error: resendError } = await supabase.auth.reauthenticate();
-    setLoading(false);
-    if (resendError) setError(t("security.errorGeneric"));
+    try {
+      const { error: resendError } = await supabase.auth.reauthenticate();
+      if (resendError) {
+        setError(t("security.errorGeneric"));
+        return;
+      }
+      // A newly issued nonce may supersede the previous one. Never leave the
+      // old value in the input after a successful resend.
+      setNonce("");
+      setResendSuccess(true);
+    } catch {
+      setError(t("security.errorGeneric"));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -253,6 +276,14 @@ export function PasswordCard() {
               className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs leading-relaxed text-destructive-foreground"
             >
               {error}
+            </p>
+          ) : null}
+          {resendSuccess ? (
+            <p
+              role="status"
+              className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs leading-relaxed text-foreground"
+            >
+              {t("security.resendSuccess")}
             </p>
           ) : null}
 
