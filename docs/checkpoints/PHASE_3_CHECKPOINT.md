@@ -1,6 +1,9 @@
 # Fase 3 — checkpoint
 
-Situação: **PENDENTE (não iniciada)** · Atualizado em: 2026-11-11
+Situação: **HISTÓRICO** · Atualizado em: 2026-11-17
+
+> Substituído por `docs/pm3/PM3_CHECKPOINT.md` (PM3 = Fases 4.2.5–4.2.6, módulos C e D, ativo desde 2026-11-17).
+> O conteúdo abaixo é o modelo original de 2026-11-11, mantido como histórico.
 
 > O nome, o objetivo e o escopo desta fase **não estão documentados** e não foram inventados.
 > Preencher a seção A com o texto do dono do projeto antes de qualquer trabalho.

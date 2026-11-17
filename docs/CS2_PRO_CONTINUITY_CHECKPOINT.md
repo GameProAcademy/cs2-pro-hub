@@ -4,50 +4,61 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-14 (America/Sao_Paulo), PM2 v2 — C3–C6 · por: sessão Claude
+Atualizado em: 2026-11-17 (America/Sao_Paulo) — reconciliação no início do PM3 · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
-PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL.
+PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro de uma data passada, não o estado atual).
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                                                                                                                                                 |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM2 v2: COMPLETE (2026-11-17), Etapa A do Prompt Mestre 3.** O PM3 (4.2.5–4.2.6, módulos C e D) NÃO foi iniciado e depende de autorização explícita                                                                                                                                                                                                 |
-| Etapa atual                        | PM2 fechado: replay VALIDADO EM PRODUÇÃO (relatório §26); E2E de browser e IDOR em dois sentidos 12/12 em produção (run 44062163308, §28); credenciais na URL corrigidas (#306, §29). Decisão: **PM2 COMPLETE** (§30)                                                                                                                                 |
-| Última etapa concluída             | Release R5.8.29: #300 `47ba6ffe` (morte de BOT substituído em FACEIT) → Source alinhado a `47ba6ffe` (`4ef83d14` SKIPPED) → único build `3375b68b` → `/version` nos 2 hosts → re-pin #301 `76fa4887` (dry-run, aplicação e registro da migration) → secrets trocados pelo dono → publicação `99590af9` → atestação run 44013092142 → H.3-E PASS 18/18 |
-| Última operação concluída          | Validação do replay em produção com `demo-faceit-nuke.dem` enviada pelo dono: job `93450453` processado, trajetória COMPLETE 24/24, `/replay` round 3 desenhado (2500/2500 amostras, play/pause), deep link de `/deaths` para o tick 14552, `NOT_RECORDED` na partida antiga, nenhum SteamID no DOM                                                   |
-| Operações em andamento             | Nenhuma                                                                                                                                                                                                                                                                                                                                               |
-| Processos em execução              | Nenhum                                                                                                                                                                                                                                                                                                                                                |
-| Alterações locais não commitadas   | Nenhuma                                                                                                                                                                                                                                                                                                                                               |
-| Branch ativa                       | `main`                                                                                                                                                                                                                                                                                                                                                |
-| Último commit confirmado em `main` | `b0452747` (merge do #307). Fechamento: #302 → `e20a7459`; #303 → `6d3b91d7`; #304 → `226e37ce`; #306 → `d68a82db`; #307 → `b0452747`. Antes: #301 → `76fa4887`, #300 → `47ba6ffe`, #299 → `e04893ab`. Este PR de docs entra depois de CI verde no SHA exato                                                                                          |
-| Build validado em produção         | App: `d68a82db` (publicação `0719c851`; `/login` com `method="post"` e `fieldset disabled` antes da hidratação). Worker: Railway `3375b68b` SUCCESS, commit `47ba6ffe`. `/version` (2026-11-17 ~10:15Z): `git:47ba6ffe…`, demoparser2 0.42.2, `declared_revision_matches` true. H.3-E PASS em `d68a82db` (44061713392)                                |
-| Problemas abertos                  | Não bloqueiam o PM2: trocar a senha da conta de teste A (relatório §17 item 4); latência do segmento do replay (§27, item do PM3); Overpass/Train/Vertigo NOT_VALIDATED; alerta de segurança do Lovable NOT_VERIFIED; etapa E DEFERRED                                                                                                                |
-| **Próxima ação exata**             | Aguardar autorização explícita do dono para a Etapa B (PM3). Antes disso, nenhuma implementação de 4.2.5/4.2.6                                                                                                                                                                                                                                        |
-| Ações que NÃO devem ser repetidas  | Tudo do PM6; PM2 #291–#301; releases R5.8.28 e R5.8.29; migrations até `20261114230000`; validação dos 7 mapas; testes de corpus do PM2; validação do replay em produção                                                                                                                                                                              |
-| Ações manuais necessárias          | Relatório PM2 §17: trocar a senha da conta A e atualizar `PM2_E2E_A_PASSWORD`; revisar o alerta de segurança do Lovable                                                                                                                                                                                                                               |
+| Item                               | Valor                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | **PM3 — Etapa B (Fases 4.2.5 e 4.2.6, módulos C e D): AUTORIZADA E ATIVA** desde 2026-11-17 (autorização explícita do dono, adendo do Prompt Mestre 3 atualizado). PM1, PM6 e PM2 concluídos                                                                                                                                                             |
+| Etapa atual                        | PM3-0: reconciliação deste checkpoint (este PR). Em seguida: auditoria de entrada e inventário de telemetria (C0/C1)                                                                                                                                                                                                                                     |
+| Última etapa concluída             | Fechamento do PM2 (Etapa A): PRs #302–#308; E2E de browser e IDOR em dois sentidos 12/12 em produção (run [44062163308](https://github.com/GameProAcademy/cs2-pro-hub/actions/runs/44062163308)); decisão **PM2 COMPLETE** (relatório PM2 §30)                                                                                                           |
+| Operações em andamento             | PM3-0 (este PR de docs)                                                                                                                                                                                                                                                                                                                                  |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                                                                                                                                                   |
+| Branch ativa                       | `docs/pm3-checkpoint-reconcile` (a partir de `main` `ab2d83c6`)                                                                                                                                                                                                                                                                                          |
+| Último commit confirmado em `main` | `ab2d83c6` (merge do #308, docs). Código funcional do app: `d68a82db` (#306); E2E: `b0452747` (#307)                                                                                                                                                                                                                                                     |
+| Build validado em produção         | App: publicação `0719c851` de `d68a82db`. Os commits seguintes em `main` (`b0452747`, `ab2d83c6`) só mudam `e2e/` e `docs/`, então não exigem publicação. Worker: Railway `3375b68b` SUCCESS, commit `47ba6ffe` (R5.8.29); Source persistente `47ba6ffe`. `/version` (2026-11-17): `git:47ba6ffe…`, demoparser2 0.42.2, `declared_revision_matches` true |
+| Gates mais recentes                | `d68a82db`: Quality Gates 44056954897, F553 44061668885, H.3-E PASS 44061713392. `b0452747`: Quality Gates 44062153309, F553 44066198361, H.3-E PASS 44066240775. `ab2d83c6`: em execução (a 1ª H.3-E falhou cedo, 44069437909, padrão conhecido do §21 item 5)                                                                                          |
+| Problemas abertos                  | Não bloqueiam o PM3: alerta de segurança do Lovable NOT_VERIFIED; Overpass, Train e Vertigo NOT_VALIDATED; etapa E DEFERRED; latência do segmento do replay (relatório PM2 §27, item do PM3)                                                                                                                                                             |
+| **Próxima ação exata**             | Merge deste PR → C0 (auditoria de entrada) e C1 (inventário de telemetria de mira, duelos, movimento e utilitários) em `docs/pm3/` → implementação dos módulos C e D em PRs pequenos                                                                                                                                                                     |
+| Ações que NÃO devem ser repetidas  | Tudo do PM1, do PM6 e do PM2 (#278–#308); releases R5.8.25–R5.8.29; validação do replay com demo nova; E2E/IDOR do PM2 (reexecutar o workflow `PM2 browser E2E` só como regressão); troca da senha da conta de teste A (o dono confirmou que foi feita)                                                                                                  |
+| Ações manuais necessárias          | Nenhuma no momento. Alerta de segurança do Lovable: revisão do dono, quando quiser (§21 item 18)                                                                                                                                                                                                                                                         |
+
+Checkpoint e relatório vivo da fase ativa: `docs/pm3/PM3_CHECKPOINT.md` e `docs/pm3/PM3_REPORT.md`.
 
 ## 1. Identificação
 
 Projeto: CS2 PRO Hub / CS2 PRO AI Coach · Repositório: `GameProAcademy/cs2-pro-hub` ·
-Aplicação: https://gamepro.network · Banco e publicação: Lovable Cloud · Parser: Railway.
+Aplicação: https://gamepro.network · Banco e publicação: Lovable Cloud (projeto `91478977-…`; a conta Supabase pessoal
+vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 
 ## 2. Estado atual do projeto
 
-`main` = `e2d2bdd6` (merge do #277), CI verde no SHA exato. Fundação publicada (Score `pro-score-v1`, DNA
-`dna-weighted-v2`). Fase 4.2: especificação v1.1 registrada; **PM1 (4.2.1–4.2.2) concluído e validado em
-produção**: `metric-contract-v1.1`, `spatial-heatmap-v1`, `/maps`, release do parser R5.8.25 (demoparser2 0.42.2).
-Relatório: `docs/pm1/PM1_EXECUTION_REPORT.md`. Em execução: PM6 (`docs/pm6/`).
+- `main` = `ab2d83c6` (2026-11-17).
+- Fundação publicada: Score `pro-score-v1` e DNA `dna-weighted-v2`.
+- **PM1** (4.2.1–4.2.2): concluído e validado em produção (`docs/pm1/PM1_EXECUTION_REPORT.md`).
+- **PM6** (compatibilidade de demos, integridade de partida, nicks, segurança): **concluído** em 2026-11-14 (#290 `66d4af1d`; `docs/pm6/PM6_FINAL_REPORT.md` §11, "pronto para o PM2, com ressalvas classificadas").
+- **PM2** (4.2.3–4.2.4, módulos B e I): **COMPLETE** em 2026-11-17 (`docs/pm2/PM2_FINAL_REPORT.md` §30).
+- Parser em produção: R5.8.29 (`47ba6ffe`, demoparser2 0.42.2).
+- **PM3: ativo.**
 
 ## 3. Objetivo da missão vigente
 
-Missões concluídas: fundação; protocolo de continuidade (#260, #261); metodologia (2026-11-11); mapeamento 4.2
-(#263); PM1 (#270–#277). **Missão vigente: PM6**, a matriz de compatibilidade de demos CS2 (FACEIT, GamersClub,
-Valve, servidores privados, torneios). O texto do dono foi recebido em 2026-11-13. Ordem: gate de reconciliação
-read-only → baseline, pesquisa e benchmark → harness/corpus → protocolo → usercmd/timing → capabilities →
-eventos → performance → release. Nada de Lovable, backfill ou reprocessamento sem autorização específica.
+**Missão vigente: PM3 (Etapa B)**, Fases 4.2.5 (mira, confrontos e movimentação; módulo C) e 4.2.6 (inteligência de
+utilitários; módulo D), até produção, nos 5 idiomas, com métricas só quando a telemetria as sustenta (o resto fica
+`NOT_MEASURED`). Prompt: Prompt Mestre 3 atualizado em 2026-11-17 (o adendo prevalece). Limites:
+
+- nenhum prompt ao agente Lovable;
+- nenhum reprocessamento em massa;
+- nada de Tutor LMS;
+- Coach continua em OpenRouter `openai/gpt-oss-20b`, sem fallback.
+
+Missões concluídas: fundação; protocolo de continuidade (#260, #261); metodologia (2026-11-11); mapeamento 4.2 (#263);
+PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308).
 
 ## 4–5. Fase 4.2: entregas, módulos, Prompts Mestres e fases do protocolo
 
@@ -62,17 +73,17 @@ eventos → performance → release. Nada de Lovable, backfill ou reprocessament
   - PM5 = 4.2.9–4.2.10 (H, I, J).
 - **PM6** (2026-11-13) é uma missão transversal de compatibilidade de demos, executada antes do PM2.
 - As "Fases 1–5" originais deste protocolo correspondem aos PM1–PM5.
-- Os arquivos `checkpoints/PHASE_*` ficam como histórico. O estado por PM vive nos relatórios
-  `docs/pm1/` e `docs/pm6/`.
+- Os arquivos `checkpoints/PHASE_*` ficam como histórico. O estado por PM vive em
+  `docs/pm1/`, `docs/pm6/`, `docs/pm2/` e `docs/pm3/`.
 
-| Fase    | Nome / escopo                    | Situação                             | Checkpoint                           |
-| ------- | -------------------------------- | ------------------------------------ | ------------------------------------ |
-| 1 (PM1) | 4.2.1–4.2.2, módulos A e B       | CONCLUÍDA, validada em produção      | `pm1/PM1_EXECUTION_REPORT.md`        |
-| PM6     | Compatibilidade de demos         | EM EXECUÇÃO                          | `pm6/PM6_POST_PM1_RECONCILIATION.md` |
-| 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | COMPLETE (2026-11-17; relatório §30) | `pm2/PM2_FINAL_REPORT.md`            |
-| 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | PENDENTE                             | `checkpoints/PHASE_3_CHECKPOINT.md`  |
-| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | PENDENTE                             | `checkpoints/PHASE_4_CHECKPOINT.md`  |
-| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | PENDENTE                             | `checkpoints/PHASE_5_CHECKPOINT.md`  |
+| Fase    | Nome / escopo                    | Situação                             | Checkpoint                          |
+| ------- | -------------------------------- | ------------------------------------ | ----------------------------------- |
+| 1 (PM1) | 4.2.1–4.2.2, módulos A e B       | CONCLUÍDA, validada em produção      | `pm1/PM1_EXECUTION_REPORT.md`       |
+| PM6     | Compatibilidade de demos         | CONCLUÍDA (2026-11-14, #290)         | `pm6/PM6_FINAL_REPORT.md`           |
+| 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | COMPLETE (2026-11-17; relatório §30) | `pm2/PM2_FINAL_REPORT.md`           |
+| 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | ATIVA (autorizada em 2026-11-17)     | `pm3/PM3_CHECKPOINT.md`             |
+| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | PENDENTE                             | `checkpoints/PHASE_4_CHECKPOINT.md` |
+| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | PENDENTE                             | `checkpoints/PHASE_5_CHECKPOINT.md` |
 
 ## 6–8. Fase em execução, última etapa, próxima ação
 
@@ -116,68 +127,84 @@ Lista e evidências em `checkpoints/FOUNDATION_CHECKPOINT.md` §C e em
 
 ## 14. Testes executados
 
-PM1/R5.8.25: worker 554, scripts 423, vitest com cerca de 2.360 aprovados; CI verde no SHA exato de cada PR e em `e2d2bdd6`
-(relatório PM1 §10; reconciliação PM6 §C). Fundação, histórico: suíte local com PostgreSQL descartável após #258: 2311 aprovados, 1 ignorado, 0 falhas.
-`proScore.test.tsx` 28; `playerDnaV2.test.ts` 25; mutantes 6/6 + 4/4 + 1/1 detectados; `tsc`
-0 erros; ESLint 0 erros. Estado: VALIDADO EM TESTE.
+- PM2 (2026-11-17):
+  - vitest 685/685 nas suítes de UI/lib tocadas;
+  - `pytest scripts/tests scripts/ci` 461;
+  - E2E de browser em produção 12/12 (run 44062163308): contas A e B, isolamento A→B e B→A, regressão dos formulários de autenticação.
+  - Detalhe: relatório PM2 §28–§30.
+- HISTÓRICO, PM1/R5.8.25: worker 554, scripts 423, vitest com cerca de 2.360 aprovados; CI verde no SHA exato de cada PR e em `e2d2bdd6`.
+- HISTÓRICO, fundação: 2311 aprovados, 1 ignorado, 0 falhas.
 
 ## 15. Testes pendentes
 
-E2E automatizado das telas novas (não existe); tabela do Score em celular com dados reais;
-idiomas ≠ pt-BR em produção.
+Do PM3, a definir no plano C2 (`docs/pm3/`). Herdados: tabela do Score em celular com dados reais; idiomas ≠ pt-BR verificados em
+produção (o E2E roda em pt-BR).
 
 ## 16–17. Branches, commits e PRs
 
-| PR                                 | Branch                              | Merge em `main`       | Estado                                                          |
-| ---------------------------------- | ----------------------------------- | --------------------- | --------------------------------------------------------------- |
-| #256 DNA v2                        | `fix/player-dna-v2`                 | `0ebfedf2`            | merged                                                          |
-| #257 Score v1                      | `feat/pro-score-v1`                 | `975c7d11`            | merged                                                          |
-| #258 Coach/Score                   | `fix/coach-score-facts`             | `f1276859`            | merged                                                          |
-| #259 Relatório de fundação         | `docs/foundation-report`            | `13cfcde8`            | merged                                                          |
-| #260 Protocolo de continuidade     | `docs/continuity-checkpoints`       | `72fb0cdb`            | merged                                                          |
-| #261 Checkpoint pós-#260           | `docs/continuity-after-260`         | `106f20c6`            | merged                                                          |
-| #262 Metodologia                   | `docs/product-methodology`          | `b2c8219c`            | merged (PR `82efb867`, 5 checks verdes)                         |
-| #263 Marco 0 Mapeamento 4.2        | `docs/fase-4-2-mapping`             | `bf57069e`            | merged, gates verdes                                            |
-| #264 Marco 1 round-context-v1      | `feat/round-context-v1`             | `e60a70f6`            | merged, gates verdes, publicado e validado                      |
-| #265 Textos do Raio-X              | `fix/xray-side-copy`                | `f4460123`            | merged                                                          |
-| #266 4.2.1 metric-contract-v1      | `feat/metric-contract-v1`           | `4c6f5067`            | merged, gates verdes                                            |
-| #267 spatial-v1 camada A (parser)  | `feat/spatial-v1-event-positions`   | `4badf606`            | merged; release R5.8.24 concluída (#268/#269)                   |
-| #270–#273 PM1 A–D                  | `feat/pm1-*`                        | `e6e507d3`…`ea7ed8df` | merged, publicados (`/maps`)                                    |
-| #274 Polimento do heatmap          | `fix/pm1-heatmap-ui-polish`         | `616c51f8`            | merged                                                          |
-| #275 demoparser2 0.42.2 (R5.8.25)  | `release/r5-8-25-demoparser2-0422`  | `c3593d48`            | merged; worker no ar (`d57b9089`)                               |
-| #276 Re-pin R5.8.25                | `release/r5-8-25-repin`             | `67655b5a`            | merged; migration aplicada; atestação VERIFIED                  |
-| #277 Evidência PM1 / matriz        | `docs/pm1-r5825-evidence`           | `e2d2bdd6`            | merged; CI verde em `e2d2bdd6`                                  |
-| #278 PM6 PR A Reconciliação/corpus | `docs/pm6-a-reconciliation`         | `0bdb2719`            | merged, 5/5 verde                                               |
-| #279 PM6 PR F Revisão FACEIT/GC    | `fix/pm6-f-faceit-gc-event-review`  | `7e84f6da`            | merged; worker no ar (`2f0e6812`, R5.8.26)                      |
-| #280 PM6 PR B Harness              | `feat/pm6-b-compat-harness`         | `3b7680b9`            | merged, 5/5 verde                                               |
-| #281 PM6 checkpoint                | `docs/pm6-checkpoint-after-278-280` | `ba6e6016`            | merged                                                          |
-| #282 Re-pin R5.8.26                | `release/r5-8-26-repin`             | `90689c95`            | merged, 7/7; migration aplicada; atestação VERIFIED; H.3-E PASS |
+| PR                                                                             | Branch                                                           | Merge em `main`       | Estado                                                          |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------- | --------------------------------------------------------------- |
+| #256 DNA v2                                                                    | `fix/player-dna-v2`                                              | `0ebfedf2`            | merged                                                          |
+| #257 Score v1                                                                  | `feat/pro-score-v1`                                              | `975c7d11`            | merged                                                          |
+| #258 Coach/Score                                                               | `fix/coach-score-facts`                                          | `f1276859`            | merged                                                          |
+| #259 Relatório de fundação                                                     | `docs/foundation-report`                                         | `13cfcde8`            | merged                                                          |
+| #260 Protocolo de continuidade                                                 | `docs/continuity-checkpoints`                                    | `72fb0cdb`            | merged                                                          |
+| #261 Checkpoint pós-#260                                                       | `docs/continuity-after-260`                                      | `106f20c6`            | merged                                                          |
+| #262 Metodologia                                                               | `docs/product-methodology`                                       | `b2c8219c`            | merged (PR `82efb867`, 5 checks verdes)                         |
+| #263 Marco 0 Mapeamento 4.2                                                    | `docs/fase-4-2-mapping`                                          | `bf57069e`            | merged, gates verdes                                            |
+| #264 Marco 1 round-context-v1                                                  | `feat/round-context-v1`                                          | `e60a70f6`            | merged, gates verdes, publicado e validado                      |
+| #265 Textos do Raio-X                                                          | `fix/xray-side-copy`                                             | `f4460123`            | merged                                                          |
+| #266 4.2.1 metric-contract-v1                                                  | `feat/metric-contract-v1`                                        | `4c6f5067`            | merged, gates verdes                                            |
+| #267 spatial-v1 camada A (parser)                                              | `feat/spatial-v1-event-positions`                                | `4badf606`            | merged; release R5.8.24 concluída (#268/#269)                   |
+| #270–#273 PM1 A–D                                                              | `feat/pm1-*`                                                     | `e6e507d3`…`ea7ed8df` | merged, publicados (`/maps`)                                    |
+| #274 Polimento do heatmap                                                      | `fix/pm1-heatmap-ui-polish`                                      | `616c51f8`            | merged                                                          |
+| #275 demoparser2 0.42.2 (R5.8.25)                                              | `release/r5-8-25-demoparser2-0422`                               | `c3593d48`            | merged; worker no ar (`d57b9089`)                               |
+| #276 Re-pin R5.8.25                                                            | `release/r5-8-25-repin`                                          | `67655b5a`            | merged; migration aplicada; atestação VERIFIED                  |
+| #277 Evidência PM1 / matriz                                                    | `docs/pm1-r5825-evidence`                                        | `e2d2bdd6`            | merged; CI verde em `e2d2bdd6`                                  |
+| #278 PM6 PR A Reconciliação/corpus                                             | `docs/pm6-a-reconciliation`                                      | `0bdb2719`            | merged, 5/5 verde                                               |
+| #279 PM6 PR F Revisão FACEIT/GC                                                | `fix/pm6-f-faceit-gc-event-review`                               | `7e84f6da`            | merged; worker no ar (`2f0e6812`, R5.8.26)                      |
+| #280 PM6 PR B Harness                                                          | `feat/pm6-b-compat-harness`                                      | `3b7680b9`            | merged, 5/5 verde                                               |
+| #281 PM6 checkpoint                                                            | `docs/pm6-checkpoint-after-278-280`                              | `ba6e6016`            | merged                                                          |
+| #282 Re-pin R5.8.26                                                            | `release/r5-8-26-repin`                                          | `90689c95`            | merged, 7/7; migration aplicada; atestação VERIFIED; H.3-E PASS |
+| #283–#290 PM6 (docs, segurança, integridade, nicks, R5.8.27, relatório final)  | `docs/pm6-*`, `fix/pm6-*`, `feat/pm6-*`, `release/r5-8-27-repin` | `8f6e915f`…`66d4af1d` | merged (#290 fecha o PM6)                                       |
+| #291–#297 PM2 (C0–C2, death context/review, replay, Coach, R5.8.28, relatório) | `docs/pm2-*`, `feat/pm2-*`, `release/r5-8-28-repin`              | `ed124279`…`883f68e2` | merged                                                          |
+| #298 `/maps` com parâmetros extras                                             | `fix/maps-unknown-search-params`                                 | `3eee0480`            | merged                                                          |
+| #299 Radar de 5 mapas validado                                                 | `feat/validate-radar-five-maps`                                  | `e04893ab`            | merged                                                          |
+| #300 Morte de BOT substituído (FACEIT)                                         | `fix/faceit-bot-replacement-world-deaths`                        | `47ba6ffe`            | merged; worker R5.8.29 (`3375b68b`)                             |
+| #301 Re-pin R5.8.29                                                            | `release/r5-8-29-repin`                                          | `76fa4887`            | merged; migration aplicada; atestação success; H.3-E PASS       |
+| #302 Docs PM2 (replay em produção)                                             | `docs/pm2-replay-production-validation`                          | `e20a7459`            | merged                                                          |
+| #303 E2E de browser + hook de estado do replay                                 | `test/replay-state-hook`                                         | `6d3b91d7`            | merged                                                          |
+| #304 Workflow do E2E                                                           | `fix/pm2-e2e-workflow`                                           | `226e37ce`            | merged                                                          |
+| #305 Reautenticação da troca de senha (outra sessão)                           | `fix/password-reauthentication-resend`                           | `c82bbf8a`            | merged                                                          |
+| #306 Credenciais nunca na URL (formulários de autenticação)                    | `fix/auth-forms-no-credentials-in-url`                           | `d68a82db`            | merged; publicado (`0719c851`); validado em produção            |
+| #307 E2E: hidratação + guard de credenciais                                    | `fix/pm2-e2e-login-hydration`                                    | `b0452747`            | merged; E2E 12/12                                               |
+| #308 Fechamento do PM2                                                         | `docs/pm2-closure-e2e-idor`                                      | `ab2d83c6`            | merged                                                          |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
 
 ## 18. Estado do CI
 
-`main` `e2d2bdd6`: Quality Gates (43373885573), Queue Semantics Probe (43373885425), R5.8.3 (43373885821),
-R5.8.4 (43373915358), F553 pós-conclusão (43377059225): todos `success`. H.3-E: 1ª execução BLOCKED
-(43376276588, F553 ainda rodando); 2ª PASS 18/18 (43377084815). CONFIRMADO em 2026-11-13 (reconciliação PM6 §C).
+Atual: ver "Gates mais recentes" na tabela de retomada. Padrão conhecido: a H.3-E dispara cedo em todo merge e falha com
+`RUN_NOT_COMPLETED` enquanto os Quality Gates rodam; a execução seguinte, depois do F553, passa (§21 item 5).
 
-R5.8.26: #282 7/7 `success` no head `9e799136`; atestação `parser-runtime-attestation.yml` (43523117499) `success`,
-proveniência `dcaaf0a7` VERIFIED; H.3-E em `90689c95` (43523214027) PASS 18/18 na 1ª execução. CONFIRMADO em 2026-11-13 22:56Z.
+HISTÓRICO:
+
+- `e2d2bdd6` (2026-11-13): gates verdes; H.3-E PASS 18/18 (43377084815).
+- R5.8.26: #282 7/7; atestação 43523117499; H.3-E PASS (43523214027).
 
 ## 19. Publicação e deploy
 
-App:
+- App atual: publicação `0719c851` de `d68a82db` (2026-11-17). Validado em produção (relatório PM2 §29): `/login` com
+  `method="post"` e `fieldset disabled` antes da hidratação.
+- Worker atual: Railway `3375b68b` (`47ba6ffe`, R5.8.29). Source persistente alinhado; o `4716f894` do §21 item 10 está resolvido.
+- Publicação do app pelo conector (`deploy_project`):
+  - **HISTÓRICO:** a regra do PM6 §14 (2026-11-13) deixava a publicação como ação manual do dono.
+  - No PM2, o dono autorizou publicar pelo conector.
+  - O Prompt Mestre 3 atualizado autoriza publicar e fazer deploy após os gates.
+  - Publicação nunca é feita pelo agente Lovable.
 
-- `67655b5a`: VALIDADO EM PRODUÇÃO em 2026-11-13 (`/maps`, demo autorizada).
-- `e2d2bdd6`: publicado (`879daee6`), mas o SHA do bundle não é verificável (`NOT_VERIFIABLE_WITH_AVAILABLE_EVIDENCE`,
-  reconciliação PM6 §E). Diferença funcional nula.
-
-**Regra do PM6 §14:** a partir de 2026-11-13 a publicação do app é ação manual do dono. O Claude não aciona
-`deploy_project`.
-
-Worker: Railway `d57b9089` (`c3593d48`), atestado (`841c0bb9`). A configuração do serviço mostrava
-`source.commitSha = 4716f894` (reconciliação PM6 §A).
+HISTÓRICO: app `67655b5a` e `e2d2bdd6` (2026-11-13); worker `d57b9089` (`c3593d48`).
 
 ## 20. Gates de segurança e critérios não comprovados
 
@@ -190,20 +217,18 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 1. Índices por dimensão do DNA não calibrados (regra "< 60" do Raio-X e prioridade de treino).
 2. Pesos do Score não ajustados estatisticamente.
-3. Posições: o parser no ar (`c3593d48`, demoparser2 0.42.2) emite posição do atacante e da vítima no tick da morte; partidas antigas continuam sem posição (nada reprocessado); qualquer métrica espacial depende da revisão de L02.
+3. Posições: o parser no ar (R5.8.29) emite posição do atacante e da vítima no tick da morte e trajetórias por round
+   (`cs2.round-trajectory.v1`, a cada 16 ticks, desde R5.8.28). Partidas antigas continuam sem essas posições (nada reprocessado).
 4. `buy_context` e `survived` vazios em `round_players`; `weapon_fire` sem autor.
 5. H.3-E Activation Gate falha na 1ª execução de todo merge e passa na 2ª.
 6. `gate1d.test.ts` estourou 5 s uma vez no CI (hipótese: carga do runner).
 7. Amostra de produção mínima (3 perfis, 6 partidas, 5 linhas de features).
 8. Constantes de normalização do DNA (ex.: ÷120, ÷12, ÷0,4, ÷2,5, rating ÷1,6) funcionam como
    escalas de referência sem fonte (metodologia §3.2).
-9. Posições contínuas: as amostras de tick do parser (até 4.096 linhas, desbaste uniforme) continuam
-   persistidas só como contagens. As únicas posições persistidas são as do tick da morte (item 3). Não há
-   trajetória, presença nem exposição (L02).
-10. Railway: a configuração do serviço mostrava `source.commitSha = 4716f894` (R5.8.16) enquanto o
-    deployment ativo é `c3593d48`. Provável pin persistente; um deploy pela fonte construiria código antigo. Esse
-    código falharia fechado na atestação, na ponte e no lock. Reler com o conector e só alterar com autorização
-    (reconciliação PM6 §A).
+9. Posições contínuas: desde R5.8.28 há trajetórias por round, só xyz e vivo/morto, sem ângulos de visão nem velocidade.
+   Exposição e isolamento continuam NOT_SUPPORTED (relatório PM2 §16).
+10. HISTÓRICO (resolvido no R5.8.28/R5.8.29): o Source persistente da Railway apontava `4716f894`. Hoje aponta o commit
+    da release ativa (`47ba6ffe`). Releases usam troca de Source + um único build (relatório PM2 §1).
 11. O `/version` do worker declara `parser.version` por constante; a versão instalada só aparece no preflight
     autenticado e não é comparada no startup (reconciliação PM6 §B.3).
 12. `L04-MATCH-RESULT-UNRESOLVED` bloqueia identidade de time, placar e resultado da partida. O
@@ -229,32 +254,31 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 ## 22. Dependências de ações manuais (dono do projeto)
 
 1. ~~Enviar os cinco Prompts Mestres; confirmar o módulo J~~: resolvido em 2026-11-12.
-2. Restabelecer os conectores Railway, Lovable e remote-devices (502 em 2026-11-13). Sem eles: nada de leitura da
-   config Railway e do Lovable, nem acesso às 3 demos da pasta Downloads autorizadas no PM6.
+2. HISTÓRICO: conectores Railway, Lovable e remote-devices restabelecidos (usados no PM2 em 2026-11-14/17).
 3. Autorização específica continua exigida para: reprocessar/backfill de demos reais, mudanças
    destrutivas, segurança, billing e custos relevantes.
 
-4. **PM2 (feito em 2026-11-17):** duas contas reais de teste, A e B, e os 4 secrets `PM2_E2E_*`. Pendente só a higiene: trocar a senha da
-   conta A, que foi parar na URL de `/login` na run 44035115612, antes da correção #306.
+4. **PM2 (feito em 2026-11-17):** duas contas reais de teste, A e B, e os 4 secrets `PM2_E2E_*`. Troca da senha da conta A
+   (exposta na URL na run 44035115612, antes do #306): **confirmada pelo dono** em 2026-11-17. Nenhum segredo registrado.
 
-## 22-A. Estado do PM2 no fechamento (2026-11-17)
+## 22-A. Estado do PM2 no fechamento (2026-11-17, HISTÓRICO)
 
-| Item               | Estado                                                                                                             | Evidência                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| PRs                | #291–#301 merged; #302 (docs) aberto                                                                               | merges: #299 `e04893ab`, #300 `47ba6ffe`, #301 `76fa4887` |
-| Railway / release  | R5.8.29: deployment `3375b68b` SUCCESS (`4ef83d14` SKIPPED pelo freeze; `bb92ed95` REMOVED)                        | `list-deployments` 2026-11-17                             |
-| Runtime identity   | `git:47ba6ffe…` nos 2 hosts, demoparser2 0.42.2, `declared_revision_matches` true                                  | `/version` 2026-11-17                                     |
-| Atestação / H.3-E  | run 44013092142 success; H.3-E PASS 18/18 em `76fa4887`                                                            | Actions                                                   |
-| Demo FACEIT Nuke   | job `93450453` processado, 181 kills, 0 kills sem vítima                                                           | relatório §24, §26                                        |
-| Replay em produção | VALIDADO: 24/24 rounds, 7274 amostras, play/pause, deep link de `/deaths`                                          | relatório §5, §26                                         |
-| Mapas              | VALIDATED: Dust2, Mirage, Inferno, Nuke, Ancient, Anubis e Cache. NOT_VALIDATED: Overpass, Train e Vertigo         | relatório §22                                             |
-| Pendências formais | nenhuma. IDOR em dois sentidos e E2E de browser 12/12 em produção (run 44062163308)                                | relatório §28, §30                                        |
-| Riscos residuais   | latência do segmento de 2,7–3,0 s (hipótese em §27); alerta de segurança do Lovable NOT_VERIFIED; etapa E DEFERRED | relatório §16, §21, §25, §27                              |
-| Recomendação       | PM3 só com autorização explícita; a latência entra como item de observabilidade                                    | relatório §20                                             |
+| Item                | Estado                                                                                                                              | Evidência                     |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| PRs                 | #291–#308 merged (fechamento: #302 `e20a7459`, #303 `6d3b91d7`, #304 `226e37ce`, #306 `d68a82db`, #307 `b0452747`, #308 `ab2d83c6`) | GitHub                        |
+| Railway / release   | R5.8.29: deployment `3375b68b` SUCCESS (`4ef83d14` SKIPPED pelo freeze; `bb92ed95` REMOVED)                                         | `list-deployments` 2026-11-17 |
+| Runtime identity    | `git:47ba6ffe…` nos 2 hosts, demoparser2 0.42.2, `declared_revision_matches` true                                                   | `/version` 2026-11-17         |
+| Atestação / H.3-E   | run 44013092142 success; H.3-E PASS 18/18 em `76fa4887`                                                                             | Actions                       |
+| Demo FACEIT Nuke    | job `93450453` processado, 181 kills, 0 kills sem vítima                                                                            | relatório §24, §26            |
+| Replay em produção  | VALIDADO: 24/24 rounds, 7274 amostras, play/pause, deep link de `/deaths`                                                           | relatório §5, §26             |
+| Mapas               | VALIDATED: Dust2, Mirage, Inferno, Nuke, Ancient, Anubis e Cache. NOT_VALIDATED: Overpass, Train e Vertigo                          | relatório §22                 |
+| Pendências formais  | nenhuma. IDOR em dois sentidos e E2E de browser 12/12 em produção (run 44062163308)                                                 | relatório §28, §30            |
+| Riscos residuais    | latência do segmento de 2,7–3,0 s (hipótese em §27); alerta de segurança do Lovable NOT_VERIFIED; etapa E DEFERRED                  | relatório §16, §21, §25, §27  |
+| Decisão / sequência | PM2 COMPLETE; PM3 autorizado em 2026-11-17 e ativo; a latência entra no PM3 como item de observabilidade                            | relatório §20, §30            |
 
 ## 23. Checkpoints individuais
 
-`docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
+`docs/pm3/PM3_CHECKPOINT.md` (fase ativa) · `docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
 `docs/checkpoints/PHASE_{1..5}_CHECKPOINT.md` · protocolo em `docs/checkpoints/README.md`.
 Preexistente e preservado: `docs/A9_1_CONTINUITY_CHECKPOINT.md`.
 Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
@@ -272,16 +296,16 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: PM2 COMPLETE (2026-11-17). PM3 (Etapa B) não iniciado; exige autorização explícita
-- Estado: diagnóstico de mortes, replay, E2E de browser e IDOR em dois sentidos VALIDADOS EM PRODUÇÃO; credenciais na URL corrigidas (#306)
-- Última etapa concluída: fechamento do PM2 (PRs #302, #303, #304, #306 e #307; E2E run 44062163308, 12/12)
-- Próxima ação: aguardar autorização para o PM3. Higiene: trocar a senha da conta de teste A
-- Branch: `main`
-- Commit: `b0452747` (merge do #307), mais o PR de docs do fechamento
-- PR: docs do fechamento do PM2
-- CI: #306 e #307 verdes no SHA exato; H.3-E PASS em `d68a82db`
-- Testes pendentes: nenhum para o PM2
+- Fase atual: **PM3 (Etapa B), ATIVA**. Módulos C (mira, confrontos e movimento) e D (utilitários). Autorizado em 2026-11-17
+- Estado: PM1, PM6 e PM2 concluídos. PM3 em PM3-0 (reconciliação deste checkpoint)
+- Última etapa concluída: fechamento do PM2 (#302–#308; E2E 12/12 em produção)
+- Próxima ação: C0/C1 do PM3 (auditoria de entrada + inventário de telemetria) em `docs/pm3/`, depois implementação
+- Branch: `docs/pm3-checkpoint-reconcile` → `main`
+- Commit: `main` `ab2d83c6`
+- PR: reconciliação do checkpoint (PM3-0)
+- CI: gates de `ab2d83c6` em execução no momento desta escrita
+- Testes pendentes: os do PM3 (plano C2)
 - Bloqueios: nenhum
-- Arquivo central: `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`
-- Relatórios por PM: `docs/pm1/`, `docs/pm2/PM2_FINAL_REPORT.md` (§26–§30), `docs/pm6/`
-- Não repetir: validação do replay com nova demo; releases R5.8.28 e R5.8.29; E2E/IDOR do PM2 (só reexecutar o workflow `PM2 browser E2E` como regressão)
+- Arquivo central: este. Fase ativa: `docs/pm3/PM3_CHECKPOINT.md`
+- Relatórios por PM: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`
+- Não repetir: ver a tabela de retomada
