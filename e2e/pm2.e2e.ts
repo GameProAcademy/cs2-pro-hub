@@ -68,13 +68,51 @@ function watch(
   });
 }
 
-/** Signs in through the real login form. `reload: false` keeps the single-page app (and its cache) alive. */
+/**
+ * Credential guard: every request of the page passes through it. A request whose URL carries an
+ * `email=`/`password=` field or any configured credential value is ABORTED before it leaves the browser
+ * (so a regression can never leak to the server) and recorded by path only — never the query, never a
+ * value. Run 44035115612 showed why: a submit before hydration became GET /login?email=…&password=….
+ */
+const blocked = new WeakMap<Page, string[]>();
+const SECRET_VALUES = [A?.email, A?.password, B?.email, B?.password]
+  .filter((v): v is string => Boolean(v))
+  .flatMap((v) => [v, encodeURIComponent(v)]);
+
+async function armCredentialGuard(page: Page) {
+  const hits: string[] = [];
+  blocked.set(page, hits);
+  await page.route("**/*", async (route) => {
+    const url = route.request().url();
+    if (/[?&](email|password)=/i.test(url) || SECRET_VALUES.some((v) => url.includes(v))) {
+      hits.push(`${route.request().method()} ${new URL(url).pathname}`);
+      await route.abort("blockedbyclient");
+      return;
+    }
+    await route.fallback();
+  });
+}
+
+function assertNoCredentialInUrl(page: Page, where: string) {
+  const hits = blocked.get(page) ?? [];
+  expect(hits, `CREDENTIALS_IN_URL at ${where}: blocked ${hits.join(", ")}`).toEqual([]);
+}
+
+/**
+ * Signs in through the real login form, only once the app is hydrated and interactive
+ * (`form[data-hydrated="true"]`, set by SafeForm after React mounts — no fixed sleep).
+ * `reload: false` keeps the single-page app (and its cache) alive.
+ */
 async function login(page: Page, c: Creds, reload = true) {
   if (reload) await page.goto("/login");
-  await page.locator('input[type="email"]').fill(c.email);
-  await page.locator('input[type="password"]').fill(c.password);
-  await page.locator('button[type="submit"]').click();
+  const form = page.locator('form[data-hydrated="true"]');
+  await form.waitFor({ state: "visible", timeout: 60_000 });
+  await expect(form.locator('button[type="submit"]')).toBeEnabled();
+  await form.locator('input[type="email"]').fill(c.email);
+  await form.locator('input[type="password"]').fill(c.password);
+  await form.locator('button[type="submit"]').click();
   await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 60_000 });
+  assertNoCredentialInUrl(page, "login");
 }
 
 /** The app's own sign-out button (cancels and clears the query cache, then navigates to /login). */
@@ -105,6 +143,7 @@ async function deathsStatus(page: Page) {
 async function ownFlow(browser: Browser, who: "A" | "B", c: Creds) {
   const context = await browser.newContext();
   const page = await context.newPage();
+  await armCredentialGuard(page);
   const sink = {
     feedback: null as Recorded | null,
     supabaseUrl: null as string | null,
@@ -220,6 +259,8 @@ async function ownFlow(browser: Browser, who: "A" | "B", c: Creds) {
     supabaseUrl: sink.supabaseUrl,
     apikey: sink.apikey,
   };
+  assertNoCredentialInUrl(page, `flow_${who}`);
+  steps["credential_guard"] = "PASS 0 requests with credentials in the URL";
   summary[`flow_${who}`] = steps;
   await context.close();
 }
@@ -229,6 +270,7 @@ async function isolation(browser: Browser, attacker: "A" | "B", victim: "A" | "B
   const v = own[victim]!;
   const context = await browser.newContext();
   const page = await context.newPage();
+  await armCredentialGuard(page);
   const sink = {
     feedback: null as Recorded | null,
     supabaseUrl: null as string | null,
@@ -370,6 +412,8 @@ async function isolation(browser: Browser, attacker: "A" | "B", victim: "A" | "B
   r["10_cache_isolation_spa"] =
     !cached && selected !== v.matchId ? "PASS victim match absent after in-app re-login" : "FAIL";
 
+  assertNoCredentialInUrl(page, `isolation_${attacker}_to_${victim}`);
+  r["credential_guard"] = "PASS 0 requests with credentials in the URL";
   summary[`isolation_${attacker}_to_${victim}`] = r;
   await context.close();
   const failed = Object.entries(r).filter(([, x]) => x.startsWith("FAIL"));
