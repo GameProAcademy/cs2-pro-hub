@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorKey, fetchAccountStatus, isValidEmail, touchLastLogin } from "@/lib/auth";
+import { SafeForm } from "@/components/common/SafeForm";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -106,7 +107,7 @@ function LoginPage() {
       title={isForgot ? t("login.forgotTitle") : t("login.title")}
       subtitle={isForgot ? t("login.forgotSubtitle") : t("login.subtitle")}
     >
-      <form className="space-y-4" onSubmit={isForgot ? handleForgot : handleSignIn} noValidate>
+      <SafeForm className="space-y-4" onSubmit={isForgot ? handleForgot : handleSignIn}>
         <div className="space-y-2">
           <Label htmlFor="email">{t("login.email")}</Label>
           <Input
@@ -180,7 +181,7 @@ function LoginPage() {
         >
           {isForgot ? t("login.backToLogin") : t("login.forgot")}
         </Button>
-      </form>
+      </SafeForm>
     </AuthLayout>
   );
 }

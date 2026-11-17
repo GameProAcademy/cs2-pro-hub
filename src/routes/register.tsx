@@ -26,6 +26,7 @@ import {
   LEVEL_CODES,
   levelLabelKey,
 } from "@/lib/profile/taxonomy";
+import { SafeForm } from "@/components/common/SafeForm";
 
 export const Route = createFileRoute("/register")({
   head: () => ({
@@ -142,7 +143,7 @@ function RegisterPage() {
         </span>
       }
     >
-      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <SafeForm className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <Label htmlFor="name">{t("register.name")}</Label>
           <Input
@@ -276,7 +277,7 @@ function RegisterPage() {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? t("register.submitting") : t("register.submit")}
         </Button>
-      </form>
+      </SafeForm>
     </AuthLayout>
   );
 }

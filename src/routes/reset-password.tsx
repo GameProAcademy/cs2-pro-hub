@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useT } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import { SafeForm } from "@/components/common/SafeForm";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
@@ -102,7 +103,7 @@ function ResetPasswordPage() {
           </Button>
         </div>
       ) : (
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+        <SafeForm className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="new-password">{t("reset.newPassword")}</Label>
             <PasswordInput
@@ -141,7 +142,7 @@ function ResetPasswordPage() {
           <Button asChild type="button" variant="ghost" className="w-full">
             <Link to="/login">{t("login.backToLogin")}</Link>
           </Button>
-        </form>
+        </SafeForm>
       )}
     </AuthLayout>
   );
