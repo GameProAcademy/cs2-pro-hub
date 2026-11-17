@@ -16,6 +16,7 @@ import { profilePtBR } from "./profile/pt-BR";
 import { spatialPtBR } from "./spatial/pt-BR";
 import { diagnosisPtBR } from "./diagnosis/pt-BR";
 import { combatPtBR } from "./combat/pt-BR";
+import { nadePtBR } from "./nade/pt-BR";
 import { replayPtBR } from "./replay/pt-BR";
 
 export const ptBR = {
@@ -23,6 +24,7 @@ export const ptBR = {
   ...spatialPtBR,
   ...diagnosisPtBR,
   ...combatPtBR,
+  ...nadePtBR,
   ...replayPtBR,
   ...catalogPtBR,
   ...demoFlowPtBR,

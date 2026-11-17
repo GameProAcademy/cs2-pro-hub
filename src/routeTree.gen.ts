@@ -31,6 +31,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedReplayRouteImport } from './routes/_authenticated/replay'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
+import { Route as AuthenticatedUtilityRouteImport } from './routes/_authenticated/utility'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin/catalog'
@@ -164,6 +165,11 @@ const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
 const AuthenticatedUploadRoute = AuthenticatedUploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedUtilityRoute = AuthenticatedUtilityRouteImport.update({
+  id: '/utility',
+  path: '/utility',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
@@ -317,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/replay': typeof AuthenticatedReplayRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
+  '/utility': typeof AuthenticatedUtilityRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -361,6 +368,7 @@ export interface FileRoutesByTo {
   '/replay': typeof AuthenticatedReplayRoute
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
+  '/utility': typeof AuthenticatedUtilityRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -408,6 +416,7 @@ export interface FileRoutesById {
   '/_authenticated/replay': typeof AuthenticatedReplayRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
+  '/_authenticated/utility': typeof AuthenticatedUtilityRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -455,6 +464,7 @@ export interface FileRouteTypes {
     | '/replay'
     | '/training'
     | '/upload'
+    | '/utility'
     | '/admin/audit'
     | '/admin/catalog'
     | '/admin/demo-e2e'
@@ -499,6 +509,7 @@ export interface FileRouteTypes {
     | '/replay'
     | '/training'
     | '/upload'
+    | '/utility'
     | '/admin/audit'
     | '/admin/catalog'
     | '/admin/demo-e2e'
@@ -545,6 +556,7 @@ export interface FileRouteTypes {
     | '/_authenticated/replay'
     | '/_authenticated/training'
     | '/_authenticated/upload'
+    | '/_authenticated/utility'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/demo-e2e'
@@ -744,6 +756,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof AuthenticatedUploadRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/utility': {
+      id: '/_authenticated/utility'
+      path: '/utility'
+      fullPath: '/utility'
+      preLoaderRoute: typeof AuthenticatedUtilityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/': {
@@ -951,6 +970,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReplayRoute: typeof AuthenticatedReplayRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
+  AuthenticatedUtilityRoute: typeof AuthenticatedUtilityRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -971,6 +991,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReplayRoute: AuthenticatedReplayRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
+  AuthenticatedUtilityRoute: AuthenticatedUtilityRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
