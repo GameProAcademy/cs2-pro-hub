@@ -21,6 +21,7 @@ import { roundsPtBR } from "./rounds/pt-BR";
 import { evolutionPtBR } from "./evolution/pt-BR";
 import { momentsPtBR } from "./moments/pt-BR";
 import { adaptivePtBR } from "./adaptive/pt-BR";
+import { benchmarksPtBR } from "./benchmarks/pt-BR";
 import { replayPtBR } from "./replay/pt-BR";
 
 export const ptBR = {
@@ -33,6 +34,7 @@ export const ptBR = {
   ...evolutionPtBR,
   ...momentsPtBR,
   ...adaptivePtBR,
+  ...benchmarksPtBR,
   ...replayPtBR,
   ...catalogPtBR,
   ...demoFlowPtBR,
