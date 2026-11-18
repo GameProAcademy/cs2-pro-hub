@@ -126,6 +126,23 @@ export interface SteamCallbackExpectations {
   realm?: string;
   /** Provider endpoint we asked to authenticate against. */
   opEndpoint?: string;
+  /** Clock for the nonce freshness check (tests). */
+  now?: number;
+}
+
+/** Oldest acceptable nonce: the link attempt TTL plus clock skew. */
+export const STEAM_NONCE_MAX_AGE_MS = 15 * 60 * 1000;
+/** Tolerated forward clock skew between Steam and us. */
+export const STEAM_NONCE_MAX_SKEW_MS = 5 * 60 * 1000;
+
+/** `2026-11-18T12:00:00Z<unique>` (OpenID 2.0 §10.1), fresh and not from the future. */
+export function isFreshResponseNonce(nonce: string | undefined, now: number): boolean {
+  if (!nonce || nonce.length > 255) return false;
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)[\x21-\x7e]*$/.exec(nonce);
+  if (!match) return false;
+  const issued = Date.parse(match[1]!);
+  if (!Number.isFinite(issued)) return false;
+  return issued <= now + STEAM_NONCE_MAX_SKEW_MS && now - issued <= STEAM_NONCE_MAX_AGE_MS;
 }
 
 export function parseSteamCallback(
@@ -145,11 +162,21 @@ export function parseSteamCallback(
     if (!params[key]) throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
   }
 
-  // The signature must actually cover the fields that carry identity and the
-  // round-trip binding; otherwise a valid-looking assertion proves nothing.
+  // The signature must actually cover the fields that carry identity, the provider, the
+  // round-trip binding and the one-time nonce; otherwise a valid-looking assertion proves
+  // nothing. Steam signs exactly `signed,op_endpoint,claimed_id,identity,return_to,
+  // response_nonce,assoc_handle` (observed in real callbacks).
   const signed = (params["openid.signed"] ?? "").split(",").map((field) => field.trim());
-  for (const field of ["claimed_id", "identity", "return_to"]) {
+  for (const field of ["op_endpoint", "claimed_id", "identity", "return_to", "response_nonce"]) {
     if (!signed.includes(field)) throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
+  }
+
+  // STEAM — OpenID 2.0 §10.1: the nonce is `<UTC timestamp>Z<unique>`. A stale or
+  // malformed nonce is refused before any network call. Replay is ALSO impossible
+  // because our single-use state rides inside the signed `return_to`, and Steam's own
+  // `check_authentication` refuses a nonce it already verified.
+  if (!isFreshResponseNonce(params["openid.response_nonce"], expected.now ?? Date.now())) {
+    throw new SteamError("STEAM_OPENID_INVALID_RESPONSE");
   }
 
   const returnTo = params["openid.return_to"]!;
@@ -180,11 +207,18 @@ export function parseSteamCallback(
     throw new SteamError("STEAM_OPENID_INVALID_ENDPOINT");
   }
 
-  const realm = params["openid.realm"];
+  // Realm binding. Steam does NOT echo `openid.realm` in its id_res response (real
+  // callbacks carry ns, mode, op_endpoint, claimed_id, identity, return_to,
+  // response_nonce, assoc_handle, signed and sig). Requiring it rejected every genuine
+  // sign-in. The binding that matters is enforced instead: the signed `return_to` must be
+  // inside OUR realm (checked here) and byte-equal to our configured return URL (above).
+  // If a provider does send `openid.realm`, it must still be ours.
   if (expected.realm !== undefined) {
-    if (!realm) throw new SteamError("STEAM_OPENID_INVALID_REALM");
-    if (!sameOrigin(realm, expected.realm)) throw new SteamError("STEAM_OPENID_INVALID_REALM");
     if (!sameOrigin(returnTo, expected.realm)) {
+      throw new SteamError("STEAM_OPENID_INVALID_REALM");
+    }
+    const realm = params["openid.realm"];
+    if (realm !== undefined && !sameOrigin(realm, expected.realm)) {
       throw new SteamError("STEAM_OPENID_INVALID_REALM");
     }
   }

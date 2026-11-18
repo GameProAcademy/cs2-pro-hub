@@ -42,6 +42,7 @@ export const Route = createFileRoute("/api/public/integrations/steam/callback")(
         const throttle = await import("@/lib/steam/steam.throttle.server");
 
         let clientHash: string | null = null;
+        let stage: "payload" | "throttle" | "validate" | "link" = "payload";
 
         try {
           // FASE 2.5.1 — reject oversized / over-wide payloads before touching
@@ -49,6 +50,7 @@ export const Route = createFileRoute("/api/public/integrations/steam/callback")(
           const { assertCallbackPayloadWithinLimits } = await import("@/lib/steam/steam.limits");
           assertCallbackPayloadWithinLimits(url);
 
+          stage = "throttle";
           clientHash = await throttle.callbackClientHash(request);
           await throttle.assertCallbackAllowed(clientHash);
           await throttle.recordCallbackOutcome(clientHash, "received");
@@ -58,7 +60,9 @@ export const Route = createFileRoute("/api/public/integrations/steam/callback")(
           const { validateSteamCallback } = await import("@/lib/steam/steam.openid.server");
           const { finalizeSteamConnection } = await import("@/lib/steam/steam.connect.server");
 
+          stage = "validate";
           const assertion = await validateSteamCallback(record);
+          stage = "link";
           await finalizeSteamConnection(assertion.userId, assertion.steamId64);
           await throttle.recordCallbackOutcome(clientHash, "success");
           return redirectTo(request, SUCCESS_PATH);
@@ -66,7 +70,9 @@ export const Route = createFileRoute("/api/public/integrations/steam/callback")(
           const steamError = toSteamError(error);
           const publicCode = publicSteamErrorCode(steamError.code);
           // Code only: no SteamID64, no signature, no upstream body.
-          console.warn(`[steam] steam_link_failure code=${publicCode}`);
+          console.warn(`[steam] steam_link_failure stage=${stage} code=${publicCode}`);
+          const { recordSteamLinkFailure } = await import("@/lib/steam/steam.diagnostics.server");
+          await recordSteamLinkFailure(stage, steamError);
           if (clientHash && publicCode !== "STEAM_CALLBACK_RATE_LIMITED") {
             const invalidState =
               publicCode === "STEAM_OPENID_STATE_INVALID" ||
