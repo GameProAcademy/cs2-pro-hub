@@ -21,6 +21,7 @@ import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDeathsRouteImport } from './routes/_authenticated/deaths'
 import { Route as AuthenticatedDuelsRouteImport } from './routes/_authenticated/duels'
+import { Route as AuthenticatedEvolutionRouteImport } from './routes/_authenticated/evolution'
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedMapsRouteImport } from './routes/_authenticated/maps'
 import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
@@ -114,6 +115,11 @@ const AuthenticatedDeathsRoute = AuthenticatedDeathsRouteImport.update({
 const AuthenticatedDuelsRoute = AuthenticatedDuelsRouteImport.update({
   id: '/duels',
   path: '/duels',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEvolutionRoute = AuthenticatedEvolutionRouteImport.update({
+  id: '/evolution',
+  path: '/evolution',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedGoalsRoute = AuthenticatedGoalsRouteImport.update({
@@ -319,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deaths': typeof AuthenticatedDeathsRoute
   '/duels': typeof AuthenticatedDuelsRoute
+  '/evolution': typeof AuthenticatedEvolutionRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deaths': typeof AuthenticatedDeathsRoute
   '/duels': typeof AuthenticatedDuelsRoute
+  '/evolution': typeof AuthenticatedEvolutionRoute
   '/goals': typeof AuthenticatedGoalsRoute
   '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
@@ -414,6 +422,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deaths': typeof AuthenticatedDeathsRoute
   '/_authenticated/duels': typeof AuthenticatedDuelsRoute
+  '/_authenticated/evolution': typeof AuthenticatedEvolutionRoute
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/maps': typeof AuthenticatedMapsRoute
   '/_authenticated/matches': typeof AuthenticatedMatchesRoute
@@ -463,6 +472,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deaths'
     | '/duels'
+    | '/evolution'
     | '/goals'
     | '/maps'
     | '/matches'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deaths'
     | '/duels'
+    | '/evolution'
     | '/goals'
     | '/maps'
     | '/matches'
@@ -557,6 +568,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/deaths'
     | '/_authenticated/duels'
+    | '/_authenticated/evolution'
     | '/_authenticated/goals'
     | '/_authenticated/maps'
     | '/_authenticated/matches'
@@ -698,6 +710,13 @@ declare module '@tanstack/react-router' {
       path: '/duels'
       fullPath: '/duels'
       preLoaderRoute: typeof AuthenticatedDuelsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/evolution': {
+      id: '/_authenticated/evolution'
+      path: '/evolution'
+      fullPath: '/evolution'
+      preLoaderRoute: typeof AuthenticatedEvolutionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/goals': {
@@ -979,6 +998,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeathsRoute: typeof AuthenticatedDeathsRoute
   AuthenticatedDuelsRoute: typeof AuthenticatedDuelsRoute
+  AuthenticatedEvolutionRoute: typeof AuthenticatedEvolutionRoute
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedMapsRoute: typeof AuthenticatedMapsRoute
   AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
@@ -1001,6 +1021,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeathsRoute: AuthenticatedDeathsRoute,
   AuthenticatedDuelsRoute: AuthenticatedDuelsRoute,
+  AuthenticatedEvolutionRoute: AuthenticatedEvolutionRoute,
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedMapsRoute: AuthenticatedMapsRoute,
   AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,

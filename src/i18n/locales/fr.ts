@@ -14,6 +14,7 @@ import { diagnosisFr } from "./diagnosis/fr";
 import { combatFr } from "./combat/fr";
 import { nadeFr } from "./nade/fr";
 import { roundsFr } from "./rounds/fr";
+import { evolutionFr } from "./evolution/fr";
 import { replayFr } from "./replay/fr";
 
 export const fr: Dictionary = {
@@ -23,6 +24,7 @@ export const fr: Dictionary = {
   ...combatFr,
   ...nadeFr,
   ...roundsFr,
+  ...evolutionFr,
   ...replayFr,
   ...catalogFr,
   ...demoFlowFr,

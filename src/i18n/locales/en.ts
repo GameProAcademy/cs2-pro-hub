@@ -14,6 +14,7 @@ import { diagnosisEn } from "./diagnosis/en";
 import { combatEn } from "./combat/en";
 import { nadeEn } from "./nade/en";
 import { roundsEn } from "./rounds/en";
+import { evolutionEn } from "./evolution/en";
 import { replayEn } from "./replay/en";
 
 export const en: Dictionary = {
@@ -23,6 +24,7 @@ export const en: Dictionary = {
   ...combatEn,
   ...nadeEn,
   ...roundsEn,
+  ...evolutionEn,
   ...replayEn,
   ...catalogEn,
   ...demoFlowEn,
