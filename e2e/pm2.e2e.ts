@@ -11,6 +11,7 @@
  * Then cross-user isolation in BOTH directions (A→B and B→A):
  *   /deaths, /replay, /duels and /utility by id, deep links, the feedback server function replayed with the other user's
  *   session and the victim's event ref, an injected owner field, direct REST reads/writes under RLS, and
+ *   STEAM: one derived link state per platform on the identities card, no alias/diagnostics access,
  *   client cache isolation after logout/login in the same browser context, and (PM5) the victim's
  *   bookmark and training plan unreadable/unwritable through REST and absent from /moments.
  *
@@ -423,6 +424,48 @@ async function ownFlow(browser: Browser, who: "A" | "B", c: Creds) {
   });
   expect(forged.status).toBeGreaterThanOrEqual(400);
   steps["pm5_training"] = `PASS ${evidence}; browser plan write refused (http ${forged.status})`;
+
+  // STEAM — the identities card renders ONE derived link state per platform (the same rule as the
+  // FACEIT and Steam cards), no SteamID64 reaches the DOM, and the browser can neither write Steam
+  // aliases, nor call the alias RPC, nor read the Steam failure diagnostics.
+  await page.goto("/profile");
+  const linkStates = page.locator('[data-testid="identities-card"] [data-link-state]');
+  await expect(linkStates.first()).toBeAttached({ timeout: 30_000 });
+  const states = await linkStates.evaluateAll((els) =>
+    els.map((el) => el.getAttribute("data-link-state") ?? ""),
+  );
+  const validStates = [
+    "NOT_LINKED",
+    "PENDING",
+    "VERIFIED",
+    "SYNCED",
+    "SYNC_PENDING",
+    "ERROR",
+    "UNAVAILABLE",
+  ];
+  expect(states.length).toBeGreaterThanOrEqual(2);
+  expect(
+    states.every((s) => validStates.includes(s)),
+    states.join(","),
+  ).toBe(true);
+  expect(/7656119\d{10}/.test(await page.content())).toBe(false);
+  const aliasRpc = await rest(page, base, token, "POST", "rpc/record_steam_alias", {
+    _player_id: crypto.randomUUID(),
+    _nickname: "e2e",
+    _steam_id: "76561198000000001",
+  });
+  expect(aliasRpc.status).toBeGreaterThanOrEqual(400);
+  const aliasInsert = await rest(page, base, token, "POST", "player_nickname_history", {
+    player_id: crypto.randomUUID(),
+    nickname: "e2e",
+    normalized_nickname: "e2e",
+    source: "steam_profile",
+  });
+  expect(aliasInsert.status).toBeGreaterThanOrEqual(400);
+  const failures = await rest(page, base, token, "GET", "steam_link_failures?select=id");
+  expect(failures.status >= 400 || failures.rows <= 0).toBe(true);
+  steps["steam_identities"] =
+    `PASS states=${states.join(",")}; alias rpc ${aliasRpc.status}, alias insert ${aliasInsert.status}, diagnostics ${failures.status}`;
 
   if (!sink.feedback) throw new Error("feedback request was not observed");
   own[who] = {

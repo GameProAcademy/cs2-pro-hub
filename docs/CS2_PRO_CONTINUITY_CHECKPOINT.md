@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 ENCERRADO (C6, #342 `10da2e7f`); integração Steam autorizada · por: sessão Claude
+Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 ENCERRADO (C6, #342 `10da2e7f`); integração Steam publicada (#344, #345); teste manual pendente · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,23 +12,23 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                                     |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Nenhuma fase 4.2 ativa — **PM5 encerrado (C6)**. Missão seguinte autorizada: integração Steam/Valve                                                                                                                                       |
-| Etapa atual                        | PM5 encerrado; pendências documentadas como limitações (não reabrem o PM5)                                                                                                                                                                |
-| Última etapa concluída             | #342 (`10da2e7f`): relatório final e checkpoints do PM5                                                                                                                                                                                   |
-| Operações em andamento             | Nenhuma                                                                                                                                                                                                                                   |
-| Processos em execução              | Nenhum                                                                                                                                                                                                                                    |
-| Branch ativa                       | nenhuma além de `main`                                                                                                                                                                                                                    |
-| Último commit confirmado em `main` | `10da2e7f` (merge do #342)                                                                                                                                                                                                                |
-| Build validado em produção         | App publicado de `eeffaa2e` (#341, código idêntico ao `10da2e7f` fora de docs); validação completa em `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 12/12 44249188759. Worker inalterado: Railway `584ea563` (R5.8.31) |
-| Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                                                                        |
-| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                                        |
-| **Próxima ação exata**             | Integração Steam/Valve (ver o checkpoint da missão Steam quando criado)                                                                                                                                                                   |
-| Ações que NÃO devem ser repetidas  | PM1–PM5; PRs #326–#342; migrations `20261118120000/140000/160000/180000`                                                                                                                                                                  |
-| Ações manuais necessárias          | Nenhuma para o PM5. Limitações: conta FACEIT com partidas (importação real), "Continuar com FACEIT", fonte de benchmark licenciada, consentimento para envio da revisão mensal                                                            |
+| Item                               | Valor                                                                                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | Nenhuma fase 4.2 ativa — PM5 encerrado (C6). **Missão ativa: integração Steam/Valve** — `docs/steam/STEAM_CHECKPOINT.md`                                                           |
+| Etapa atual                        | Steam publicada em produção (`462929e7`); aguardando teste manual do dono e E2E                                                                                                    |
+| Última etapa concluída             | #345 (`462929e7`) mergeado, migrações `20261119000000`/`20261119010000` aplicadas e registradas, publicação conferida em gamepro.network                                           |
+| Operações em andamento             | Gates do `main` em `462929e7`                                                                                                                                                      |
+| Processos em execução              | Nenhum                                                                                                                                                                             |
+| Branch ativa                       | `docs/steam-integration` (docs + E2E Steam)                                                                                                                                        |
+| Último commit confirmado em `main` | `462929e7` (merge do #345)                                                                                                                                                         |
+| Build validado em produção         | App publicado de `462929e7` (bundle `index-DdHe30Q3.js`). Worker inalterado: Railway `584ea563` (R5.8.31); a mudança de identificação roda no app, não no worker                   |
+| Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                 |
+| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
+| **Próxima ação exata**             | Seguir a "Próxima ação exata" de `docs/steam/STEAM_CHECKPOINT.md`                                                                                                                  |
+| Ações que NÃO devem ser repetidas  | PM1–PM5; PRs #326–#345; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`; pesquisa Steam                                                       |
+| Ações manuais necessárias          | Steam: teste manual de conectar/sincronizar/desconectar/reconectar e envio de uma demo após o vínculo (instruções no checkpoint Steam). Limitações do PM5 inalteradas              |
 
-Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
+Missão ativa: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
 
 ## 1. Identificação
 
@@ -50,7 +50,7 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 
 ## 3. Objetivo da missão vigente
 
-**Missão vigente: integração Steam/Valve (autorizada em 2026-11-18).** PM5 encerrado (#342). HISTÓRICO — PM4: Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
+**Missão vigente: integração Steam/Valve (autorizada em 2026-11-18)** — checkpoint `docs/steam/STEAM_CHECKPOINT.md`, documentação `docs/steam/STEAM_INTEGRATION.md`. PM5 encerrado (#342). HISTÓRICO — PM4: Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
 módulo G, com a parte histórico/DNA do módulo J), até produção, nos 5 idiomas, com métricas só quando a telemetria as
 sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece). Comparativos Pro/coortes ficam no PM5. Limites:
 
@@ -310,10 +310,10 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase 4.2: PM1, PM6, PM2, PM3, PM4 e **PM5 concluídos**; missão seguinte: integração Steam/Valve
+- Fase 4.2: PM1, PM6, PM2, PM3, PM4 e **PM5 concluídos**; missão ativa: integração Steam/Valve (`docs/steam/STEAM_CHECKPOINT.md`)
 - Produção: app de `eeffaa2e` (validação completa em `98d10f9c`); worker R5.8.31 (`584ea563`, `0c646583`)
 - Última etapa: PM5 C6 (relatório `docs/pm5/PM5_REPORT.md`, #342 `10da2e7f`)
-- Commit: `main` `10da2e7f`
+- Commit: `main` `462929e7` (#345)
 - Bloqueios: nenhum. Limitações do PM5: importação FACEIT real e login por FACEIT não validados; benchmark indisponível; revisão mensal sem envio
 - Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`, `docs/pm4/PM4_REPORT.md`, `docs/pm5/PM5_REPORT.md`
 - Não repetir: ver a tabela de retomada
