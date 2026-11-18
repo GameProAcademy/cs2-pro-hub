@@ -9,11 +9,13 @@ import { z } from "zod";
 
 import { FaceitError } from "./faceit.errors";
 
+// FACEIT returns "" for absent text fields (e.g. avatar, steam_id_64, membership_type, a
+// game's region). An empty string is a missing value: it becomes null, never a parse failure
+// of the whole payload (PM5: production `GET /players/{id}` was rejected as malformed).
 const nullableString = z
   .string()
-  .min(1)
   .nullish()
-  .transform((v) => v ?? null);
+  .transform((v) => (v === null || v === undefined || v.trim() === "" ? null : v));
 const nullableNumber = z
   .union([z.number(), z.string()])
   .nullish()
@@ -197,7 +199,20 @@ export type FaceitMatchStats = z.infer<typeof faceitMatchStatsSchema>;
 export const faceitLifetimeStatsSchema = z.object({
   player_id: nullableString,
   game_id: nullableString,
-  lifetime: statsRecord.nullish(),
+  // `lifetime` mixes scalars with arrays (e.g. recent results); only scalar entries are kept,
+  // so a list never makes the whole (optional) payload malformed.
+  lifetime: z
+    .record(z.string(), z.unknown())
+    .nullish()
+    .transform((v): Record<string, string | number | boolean | null> | null => {
+      if (!v) return null;
+      const out: Record<string, string | number | boolean | null> = {};
+      for (const [k, raw] of Object.entries(v)) {
+        if (raw === null || ["string", "number", "boolean"].includes(typeof raw))
+          out[k] = raw as string | number | boolean | null;
+      }
+      return out;
+    }),
 });
 
 export const faceitTokenResponseSchema = z.object({
