@@ -54,6 +54,14 @@ import { loadDeathPatterns } from "@/lib/diagnosis.functions";
 import { buildCombatReport } from "@/lib/combat/duels";
 import { loadCombatInput } from "@/lib/combat.functions";
 import { buildLatestMatchPlay, type LatestMatchPlay } from "@/lib/coach/latestMatchPlay";
+import {
+  compactEvolution,
+  compactRounds,
+  type CoachLatestRounds,
+} from "@/lib/coach/roundsEvolution";
+import { buildEvolution } from "@/lib/evolution/evolution";
+import { loadRoundsInput } from "@/lib/rounds.functions";
+import { buildRoundReports, summarizeRounds } from "@/lib/rounds/roundImpact";
 import type { PlayerOverview } from "@/lib/playerOverview";
 import { buildUtilityReport } from "@/lib/utility/utility";
 import { loadUtilityInput } from "@/lib/utility.functions";
@@ -388,14 +396,17 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           );
           // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
           const coachMatchIds = overview.matches.map((m) => m.matchId);
-          const [sides, roundContext, deathPatterns, latestMatchPlay] = await Promise.all([
-            loadSideRounds(db, [playerId], coachMatchIds),
-            loadRoundContext(db, [playerId], coachMatchIds),
-            // PM2: same numbers as the death review page; a read failure only drops the block.
-            loadDeathPatterns(db, context.userId, overview.matches).catch(() => null),
-            // PM3: same reports as /duels and /utility, for the most recent match only.
-            loadLatestMatchPlay(db, context.userId, overview).catch(() => null),
-          ]);
+          const [sides, roundContext, deathPatterns, latestMatchPlay, latestMatchRounds] =
+            await Promise.all([
+              loadSideRounds(db, [playerId], coachMatchIds),
+              loadRoundContext(db, [playerId], coachMatchIds),
+              // PM2: same numbers as the death review page; a read failure only drops the block.
+              loadDeathPatterns(db, context.userId, overview.matches).catch(() => null),
+              // PM3: same reports as /duels and /utility, for the most recent match only.
+              loadLatestMatchPlay(db, context.userId, overview).catch(() => null),
+              // PM4: same report as /rounds, for the most recent match only.
+              loadLatestMatchRounds(db, context.userId, overview).catch(() => null),
+            ]);
           const facts = buildCoachFacts(overview, dna, input.locale, {
             message: input.message,
             xray: buildXRay({ overview, dna, sides, roundContext }),
@@ -404,6 +415,13 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             proScore: buildProScore(dnaRows),
             deathPatterns,
             latestMatchPlay,
+            latestMatchRounds,
+            // PM4: same pure report as /evolution (last 10 eligible matches, all maps).
+            evolution: overview.matches.length
+              ? compactEvolution(
+                  buildEvolution(overview.matches, { window: 10, map: null, side: "ALL" }),
+                )
+              : null,
           });
           // Catalog: a few items relevant to THIS message (never the catalog itself). A
           // catalog read failure only means no suggestions; the Coach still answers.
@@ -568,6 +586,20 @@ function coachProvenance(
  * with the player's own session exactly like the /duels and /utility pages. Either half is null when
  * the player is not identified in that match.
  */
+/** PM4: rounds/economy report of the caller's most recent match (same as /rounds). */
+export async function loadLatestMatchRounds(
+  db: SupabaseClient<Database>,
+  userId: string,
+  overview: PlayerOverview,
+): Promise<CoachLatestRounds | null> {
+  const latest = [...overview.matches].sort((a, b) => b.playedAt.localeCompare(a.playedAt))[0];
+  if (!latest) return null;
+  const loaded = await loadRoundsInput(db, userId, latest.matchId);
+  if (!loaded) return null;
+  const summary = summarizeRounds(buildRoundReports(loaded.input, loaded.participantKey));
+  return compactRounds(latest, summary, loaded.spendRecorded);
+}
+
 export async function loadLatestMatchPlay(
   db: SupabaseClient<Database>,
   userId: string,
