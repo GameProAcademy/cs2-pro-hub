@@ -13,8 +13,10 @@ a integração FACEIT (vínculo de conta já existente habilitado com o App Stud
 e "Continuar com FACEIT" para entrar/criar conta), o Coach com plano/momentos/benchmark (regras 29–31) e a
 estrutura de revisão mensal (prévia na página, **sem envio**: não há consentimento armazenado).
 
-Validação real da FACEIT (OAuth completo, sync e matriz preenchida com respostas reais) é **MANUAL_REQUIRED**:
-depende do dono autorizar a própria conta (a página de autorização da FACEIT tem verificação anti-bot, que não é contornada).
+FACEIT **validada em produção** pelo dono com uma conta de teste: conectar, desconectar e reconectar funcionam;
+sync inicial e incremental `completed`. A conta é nova e não tem partidas nem bloco CS2 na FACEIT, então
+nível/ELO/região aparecem como "—" e 0 partidas — o dado real. **Importação de partidas reais** e o
+**login "Continuar com FACEIT"** (inclusive `email_verified`) seguem **MANUAL_REQUIRED**: não há conta FACEIT com partidas para teste.
 
 ## 2. Baseline
 
@@ -113,14 +115,18 @@ e método comparável. Registro vazio; `BENCHMARK_UNAVAILABLE` na UI, no Coach e
 | #337 | exercícios de revisão → momentos                        | `1ea80708` |
 | #333 | checkpoint C3 e matriz FACEIT                           | `98d10f9c` |
 | #338 | FACEIT `redirect_popup=true`                            | `95022018` |
+| #339 | diagnóstico da etapa que falha no callback FACEIT       | `c189bd76` |
+| #340 | strings vazias da FACEIT = ausente; lifetime tolerante  | `72290d77` |
+| #341 | link do perfil `{lang}` e identidade verificada         | `eeffaa2e` |
 
 ## 14. Migrations
 
-| Versão           | Conteúdo                                    | Dry-run                              | Aplicada / registrada         |
-| ---------------- | ------------------------------------------- | ------------------------------------ | ----------------------------- |
-| `20261118120000` | momentos (3 tabelas, 9 policies)            | `PM5_MOMENTS_DRY_RUN_OK`             | sim, `direct-main-7c0a3a4c-…` |
-| `20261118140000` | treino adaptativo (3 tabelas, SELECT-own)   | `PM5_TRAINING_DRY_RUN_OK`            | sim, `direct-main-7b506f4f-…` |
-| `20261118160000` | estado de login FACEIT (`purpose`, binding) | `PM5_FACEIT_LOGIN_DRY_RUN_OK rows=0` | sim, `direct-main-3fe6cf36-…` |
+| Versão           | Conteúdo                                         | Dry-run                              | Aplicada / registrada         |
+| ---------------- | ------------------------------------------------ | ------------------------------------ | ----------------------------- |
+| `20261118120000` | momentos (3 tabelas, 9 policies)                 | `PM5_MOMENTS_DRY_RUN_OK`             | sim, `direct-main-7c0a3a4c-…` |
+| `20261118140000` | treino adaptativo (3 tabelas, SELECT-own)        | `PM5_TRAINING_DRY_RUN_OK`            | sim, `direct-main-7b506f4f-…` |
+| `20261118160000` | estado de login FACEIT (`purpose`, binding)      | `PM5_FACEIT_LOGIN_DRY_RUN_OK rows=0` | sim, `direct-main-3fe6cf36-…` |
+| `20261118180000` | diagnóstico de falhas OAuth FACEIT (só servidor) | `PM5_FACEIT_DIAG_DRY_RUN_OK`         | sim, `direct-main-c189bd76-…` |
 
 ## 15. Workflows e testes
 
@@ -158,7 +164,8 @@ Publicações do Lovable: `8a16af3b`, `b3159b35`, `2ad34504`, `98d10f9c` e `9502
 - `/faceit/callback` sem estado → redireciona com `reason=invalid_request` (handler ativo).
 - `/training` → `data-evidence-state=NO_EVIDENCE` na conta do navegador (sem partidas), sem plano inventado.
 - `/evolution` → `BENCHMARK_UNAVAILABLE` com 5 fontes auditadas.
-- `/profile` → cartão FACEIT "Não conectada" com botão; o clique gera a URL oficial (client id, redirect `gamepro.network/faceit/callback`, S256, `openid profile email`) e para na verificação anti-bot da FACEIT.
+- `/profile` → cartão FACEIT; URL oficial de autorização (redirect `gamepro.network/faceit/callback`, S256, `openid profile email`, `redirect_popup=true`).
+- Teste real do dono (conta de teste nova): conectar → **Conectada** + sync `completed` (0 encontradas); desconectar; reconectar → **Conectada** + sync incremental `completed`. `faceit_oauth_failures` sem falhas após #340.
 
 ## 21. Falhas encontradas e causa raiz
 
@@ -167,18 +174,24 @@ Publicações do Lovable: `8a16af3b`, `b3159b35`, `2ad34504`, `98d10f9c` e `9502
 3. Lint do #331: traduções novas sem formatação → formatadas.
 4. Cancelamentos de gates em `main` por merges seguidos (concorrência esperada); avaliação final só no SHA final.
 5. Validação real do dono: a FACEIT parou em "Você deve especificar o parâmetro redirect_popup…" — `accounts.faceit.com` exige `redirect_popup=true` em redirecionamento de página (não documentado). Corrigido no #338 (`95022018`), publicado e conferido na URL de autorização em produção.
+6. Callback terminava com motivo genérico `error`, sem log acessível → #339 grava etapa + código (sem identificadores). Registro real: `stage=link, FACEIT_MALFORMED_RESPONSE`.
+7. Causa: o validador comum exigia texto não vazio e a FACEIT envia `""` em campos ausentes → `""` vira `null` (#340); `lifetime` com listas não invalida mais o payload.
+8. "Ver perfil" abria 404: `faceit_url` vem com `{lang}` literal → preenchido (#341).
+9. Identidades mostravam FACEIT "não vinculada" após o vínculo: só `is_verified` era gravado → estado de confiança OAuth completo; desconectar volta para `unlinked` (#341).
 
 ## 22. Limitações e riscos residuais
 
-- FACEIT real não validado (MANUAL_REQUIRED); `email_verified` pode não existir no userinfo → contas novas não seriam criadas (comportamento conservador).
+- Importação de partidas FACEIT reais não validada (nenhuma conta de teste com partidas): MANUAL_REQUIRED.
+- "Continuar com FACEIT" não testado em produção; `email_verified` pode não existir no userinfo → contas novas não seriam criadas (comportamento conservador).
 - Amostra de produção pequena: planos de treino reais exigem ≥ 3 partidas com DNA/evolução.
 - Revisão mensal sem envio (sem consentimento/notificações).
 - Diferencial 4 sem motor contrafactual (alternativas só como hipóteses do Coach).
 
 ## 23. Ações manuais
 
-1. Dono: Perfil → Conta FACEIT → Conectar FACEIT → autorizar (validação real do OAuth e da sync).
-2. Opcional: sair e testar "Continuar com FACEIT" em `/login` com a mesma conta FACEIT já conectada.
+1. Dono: após #341, desconectar e reconectar a FACEIT uma vez (identidade passa a "verificada").
+2. Quando houver conta FACEIT com partidas de CS2: conectar e conferir a importação (e preencher a matriz de campos com respostas reais).
+3. Opcional: sair e testar "Continuar com FACEIT" em `/login` com a conta já conectada.
 
 ## 24. Rollback
 
@@ -190,23 +203,23 @@ Nenhum prompt, mensagem ou instrução foi enviado ao agente Lovable. Uso restri
 
 ## 26. Itens não concluídos
 
-Validação FACEIT real (MANUAL_REQUIRED), envio da revisão mensal (sem consentimento), benchmarks (sem fonte licenciada), motor contrafactual.
+Importação de partidas FACEIT reais e login com FACEIT (MANUAL_REQUIRED), envio da revisão mensal (sem consentimento), benchmarks (sem fonte licenciada), motor contrafactual.
 
 ## 27. Recomendação pós-Fase 4.2
 
-Concluir a validação FACEIT com a conta do dono e atualizar a matriz; avaliar consentimento + notificações para a revisão mensal;
+Validar a importação com uma conta FACEIT que tenha partidas de CS2 e atualizar a matriz; avaliar consentimento + notificações para a revisão mensal;
 buscar acordo de dados profissionais com licença explícita antes de qualquer comparativo.
 
 ## Matriz final
 
-| Módulo         | Fase   | Requisito                                            | Status                                | Evidência                      | PR         | Deploy     | Limitação                     |
-| -------------- | ------ | ---------------------------------------------------- | ------------------------------------- | ------------------------------ | ---------- | ---------- | ----------------------------- |
-| H              | 4.2.9  | planos 7/30/90 com evidência                         | VALIDADO EM TESTE; página em produção | adaptive.test, trainingRls, UI | #328       | `98d10f9c` | plano real precisa de amostra |
-| H              | 4.2.9  | adesão explícita, versões, histórico                 | VALIDADO EM TESTE                     | harness 26 checks              | #328       | `98d10f9c` | —                             |
-| H              | 4.2.9  | Coach explica plano                                  | VALIDADO EM TESTE                     | coachPm5Context                | #330       | `98d10f9c` | sem conversa real observada   |
-| I              | 4.2.10 | CRUD, coleções, tags, filtros                        | VALIDADO EM PRODUÇÃO                  | harness 28 checks, E2E PM5     | #326       | `98d10f9c` | —                             |
-| I              | 4.2.10 | criar de replay/rounds/mortes/duelos/utility/heatmap | VALIDADO EM TESTE                     | momentsEntryPoints             | #326, #336 | `98d10f9c` | —                             |
-| J              | 4.2.10 | fonte/licença/equivalência                           | BENCHMARK_UNAVAILABLE                 | benchmarks.test                | #329       | `98d10f9c` | sem dataset                   |
-| FACEIT         | PM5    | vínculo OAuth + sync                                 | MANUAL_REQUIRED                       | URL de autorização verificada  | #327, #332 | `98d10f9c` | anti-bot / conta do dono      |
-| FACEIT         | PM5    | login/cadastro                                       | VALIDADO EM TESTE                     | faceit.login.test, harness 13  | #331       | `98d10f9c` | `email_verified` a confirmar  |
-| Revisão mensal | PM5    | estrutura sem envio                                  | VALIDADO EM TESTE                     | monthlyReview.test             | #334       | `98d10f9c` | envio MANUAL_REQUIRED         |
+| Módulo         | Fase   | Requisito                                            | Status                                    | Evidência                       | PR                    | Deploy     | Limitação                             |
+| -------------- | ------ | ---------------------------------------------------- | ----------------------------------------- | ------------------------------- | --------------------- | ---------- | ------------------------------------- |
+| H              | 4.2.9  | planos 7/30/90 com evidência                         | VALIDADO EM TESTE; página em produção     | adaptive.test, trainingRls, UI  | #328                  | `98d10f9c` | plano real precisa de amostra         |
+| H              | 4.2.9  | adesão explícita, versões, histórico                 | VALIDADO EM TESTE                         | harness 26 checks               | #328                  | `98d10f9c` | —                                     |
+| H              | 4.2.9  | Coach explica plano                                  | VALIDADO EM TESTE                         | coachPm5Context                 | #330                  | `98d10f9c` | sem conversa real observada           |
+| I              | 4.2.10 | CRUD, coleções, tags, filtros                        | VALIDADO EM PRODUÇÃO                      | harness 28 checks, E2E PM5      | #326                  | `98d10f9c` | —                                     |
+| I              | 4.2.10 | criar de replay/rounds/mortes/duelos/utility/heatmap | VALIDADO EM TESTE                         | momentsEntryPoints              | #326, #336            | `98d10f9c` | —                                     |
+| J              | 4.2.10 | fonte/licença/equivalência                           | BENCHMARK_UNAVAILABLE                     | benchmarks.test                 | #329                  | `98d10f9c` | sem dataset                           |
+| FACEIT         | PM5    | vínculo OAuth + sync                                 | VALIDADO EM PRODUÇÃO (conta sem partidas) | teste do dono; jobs `completed` | #327, #332, #338–#341 | `eeffaa2e` | importação de partidas não exercitada |
+| FACEIT         | PM5    | login/cadastro                                       | VALIDADO EM TESTE                         | faceit.login.test, harness 13   | #331                  | `98d10f9c` | `email_verified` a confirmar          |
+| Revisão mensal | PM5    | estrutura sem envio                                  | VALIDADO EM TESTE                         | monthlyReview.test              | #334                  | `98d10f9c` | envio MANUAL_REQUIRED                 |

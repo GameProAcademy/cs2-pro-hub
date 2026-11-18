@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 EM EXECUÇÃO (C3) · por: sessão Claude
+Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 FECHADO (C6) com pendências MANUAL_REQUIRED · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -14,19 +14,19 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 | Item                               | Valor                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM5 (4.2.9, 4.2.10, FACEIT, Coach): EM EXECUÇÃO** desde 2026-11-18, autorizado pelo dono. Checkpoint: `docs/pm5/PM5_CHECKPOINT.md`                                               |
-| Etapa atual                        | C3 Implementação (I e FACEIT vínculo já em produção; H, J, Coach, login FACEIT em PR)                                                                                              |
-| Última etapa concluída             | #326 (módulo I) e #327 (FACEIT) mergeados; migration `20261118120000` aplicada; app publicado de `8a16af3b`                                                                        |
-| Operações em andamento             | CI dos PRs #328–#332                                                                                                                                                               |
-| Processos em execução              | Nenhum além do CI                                                                                                                                                                  |
-| Branch ativa                       | `docs/pm5-checkpoint` (este PR) e as branches de #328–#332                                                                                                                         |
-| Último commit confirmado em `main` | `8a16af3b` (merge do #327)                                                                                                                                                         |
-| Build validado em produção         | App: publicação de `8a16af3b`. Worker inalterado: Railway `584ea563`, `0c646583` (R5.8.31)                                                                                         |
+| Fase atual                         | **PM5 fechado (C6)** — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`                                                                                                     |
+| Etapa atual                        | C6 concluída; pendências MANUAL_REQUIRED (FACEIT com partidas reais, login com FACEIT)                                                                                             |
+| Última etapa concluída             | #341 mergeado (`eeffaa2e`) e publicado; FACEIT conectada/desconectada/reconectada em produção                                                                                      |
+| Operações em andamento             | Nenhuma                                                                                                                                                                            |
+| Processos em execução              | Nenhum                                                                                                                                                                             |
+| Branch ativa                       | nenhuma além de `main`                                                                                                                                                             |
+| Último commit confirmado em `main` | `eeffaa2e` (merge do #341)                                                                                                                                                         |
+| Build validado em produção         | App `98d10f9c`: H.3-E PASS, E2E 12/12; publicação `eeffaa2e`. Worker inalterado: Railway `584ea563` (R5.8.31)                                                                      |
 | Gates mais recentes                | `f1cb9e8e`: Quality Gates 44214683915, Queue Semantics 44214683954, H.3-E PASS 44218097807, E2E 44215050582 12/12. `1b4bd82f`: attestation 44207611056, H.3-E PASS 44210630121     |
 | Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
-| **Próxima ação exata**             | Mergear #332 e publicar; pedir ao dono para conectar a FACEIT em `/profile`; mergear #328→#329→#330 e #331 aplicando as migrations `20261118140000` e `20261118160000`             |
-| Ações que NÃO devem ser repetidas  | Tudo do PM1–PM4; #326, #327; migration `20261118120000`                                                                                                                            |
-| Ações manuais necessárias          | Dono: conectar a conta FACEIT em `/profile` depois da publicação do #332                                                                                                           |
+| **Próxima ação exata**             | Quando houver conta FACEIT com partidas de CS2: conectar, validar importação e atualizar `docs/pm5/FACEIT_FIELD_MATRIX.md`                                                         |
+| Ações que NÃO devem ser repetidas  | PM1–PM5; PRs #326–#341; migrations `20261118120000/140000/160000/180000`                                                                                                           |
+| Ações manuais necessárias          | Conta FACEIT com partidas para teste; opcional: testar "Continuar com FACEIT"                                                                                                      |
 
 Checkpoint da fase ativa: `docs/pm5/PM5_CHECKPOINT.md`. Última fase concluída: `docs/pm4/PM4_CHECKPOINT.md` e `docs/pm4/PM4_REPORT.md`.
 

@@ -3,7 +3,8 @@
 > Fonte: documentação oficial (docs.faceit.com, Data API v4) e a descoberta OpenID
 > `https://api.faceit.com/auth/v1/openid_configuration`, consultadas em 2026-11-18.
 > Nada aqui vem de scraping. A coluna **Validação real** só muda para CONFIRMADO depois de uma
-> sincronização real em produção (pendente: exige que o dono conecte a conta FACEIT).
+> sincronização real em produção. Em 2026-11-18 o dono conectou uma conta FACEIT de teste **sem partidas**:
+> OAuth, userinfo, `GET /players/{id}` e o sync rodaram de verdade; partidas/estatísticas por partida seguem A VALIDAR.
 
 Status: **OBTIDO** (o código lê e grava) · **ARMAZENADO BRUTO** (guardado sem uso em métrica) ·
 **NÃO USADO** (disponível, sem uso) · **NÃO_EXPOSTO** (não há endpoint oficial) · **A VALIDAR**.
@@ -41,6 +42,12 @@ Status: **OBTIDO** (o código lê e grava) · **ARMAZENADO BRUTO** (guardado sem
 | FACEIT Rating / "Swing" e métricas próprias de impacto do site | **NÃO_EXPOSTO** — não aparecem na Data API documentada; não são estimados nem copiados     |
 | Rankings, percentis e comparações com outros jogadores         | NÃO_EXPOSTO / não usados (ver módulo J: sem benchmark licenciado)                          |
 | Estatísticas de utilitários, entradas e clutches do site       | NÃO_EXPOSTO na Data API documentada; no CS2 PRO vêm **só das demos** enviadas pelo jogador |
+
+## Achados da resposta real (`GET /players/{id}`)
+
+- Campos de texto ausentes vêm como `""` (não `null`): tratados como ausentes (#340).
+- `faceit_url` vem com o marcador literal `{lang}`: preenchido antes de exibir (#341).
+- Conta sem CS2: sem bloco `games.cs2` → nível/ELO/região exibidos como "—", nunca zero.
 
 ## Reconciliação API × demo
 
