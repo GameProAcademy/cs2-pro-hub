@@ -144,6 +144,44 @@ export function suggestParticipantFromHistory(
   return candidates.length === 1 ? candidates[0]! : null;
 }
 
+export interface ParticipantSuggestion {
+  participant: DemoParticipant;
+  /** `steam_id`: the demo player carries the player's PROVEN SteamID64. */
+  basis: "steam_id" | "nickname_history";
+}
+
+/**
+ * STEAM — "is this you?" for one demo, using the PROVEN SteamID64 first.
+ *
+ *  1. exactly one demo player carries the verified SteamID64 → suggested (basis steam_id);
+ *     two players with it is contradictory evidence → no suggestion;
+ *  2. otherwise the nickname history (including Steam persona aliases) may suggest a player,
+ *     but never one whose own SteamID64 contradicts the verified one.
+ * A suggestion never attaches anything: the player still confirms it.
+ */
+export function suggestParticipantForPlayer(
+  participants: readonly DemoParticipant[],
+  evidence: { verifiedSteamId: string | null; historyNicknames: readonly string[] },
+): ParticipantSuggestion | null {
+  const { verifiedSteamId, historyNicknames } = evidence;
+  if (verifiedSteamId) {
+    const bySteam = participants.filter((p) => p.steamId === verifiedSteamId);
+    if (bySteam.length > 1) return null;
+    if (bySteam.length === 1) return { participant: bySteam[0]!, basis: "steam_id" };
+  }
+  const eligible = verifiedSteamId
+    ? participants.filter((p) => !p.steamId || p.steamId === verifiedSteamId)
+    : participants;
+  const byName = suggestParticipantFromHistory(eligible, historyNicknames);
+  if (!byName) return null;
+  // The name must be unique in the WHOLE demo, not only among the eligible players.
+  const loose = normalizeNickname(byName.nickname ?? "");
+  const sameName = participants.filter(
+    (p) => p.nickname !== null && normalizeNickname(p.nickname) === loose,
+  );
+  return sameName.length === 1 ? { participant: byName, basis: "nickname_history" } : null;
+}
+
 function unattached(reason: AttachmentReason): AttachmentOutcome {
   return {
     state: "unattached",

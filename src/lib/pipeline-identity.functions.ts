@@ -16,11 +16,12 @@ import {
   confidenceScore,
   resolvePlayerAttachment,
   storedAttachmentMethod,
-  suggestParticipantFromHistory,
+  suggestParticipantForPlayer,
   type AttachmentOutcome,
   type DemoParticipant,
   type PlayerDeclaration,
 } from "@/lib/pipeline/attachment";
+import { readVerifiedSteamId64 } from "@/lib/identity/verifiedSteam";
 import { identityActionFor } from "@/lib/pipeline/identityRecovery";
 
 export interface DemoParticipantView {
@@ -46,10 +47,11 @@ export interface DemoIdentityView {
   latestDecisionEventKey: string | null;
   participants: DemoParticipantView[];
   /**
-   * The one demo player whose nickname the user already confirmed in an earlier demo
-   * ("is this you?"). Only a prompt: nothing is attached until the user confirms.
+   * "Is this you?": the one demo player carrying the user's PROVEN SteamID64, or else the one
+   * whose nickname is in the user's history. Only a prompt: nothing is attached until the
+   * user confirms.
    */
-  suggestion: DemoParticipantView | null;
+  suggestion: (DemoParticipantView & { basis: "steam_id" | "nickname_history" }) | null;
 }
 
 const jobSchema = z.object({ jobId: z.string().uuid() });
@@ -84,10 +86,9 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
     if (!job) return null;
 
     const participants = job.match_id ? await readParticipants(supabase, job.match_id) : [];
-    const suggestion = suggestParticipantFromHistory(
-      participants,
-      await readOwnNicknameHistory(supabase, context.userId),
-    );
+    const own = await readOwnIdentityEvidence(supabase, context.userId);
+    const suggested = suggestParticipantForPlayer(participants, own);
+    const suggestion = suggested?.participant ?? null;
     const { data: latestDecision } = await supabase
       .from("demo_identity_decisions")
       .select("status, event_key")
@@ -121,6 +122,7 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
             participantKey: suggestion.participantKey,
             nickname: suggestion.nickname,
             team: suggestion.team,
+            basis: suggested!.basis,
           }
         : null,
     };
@@ -209,7 +211,9 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
     const outcome = resolvePlayerAttachment({
       participants,
       hasProfile: Boolean(profile),
-      profileSteamId: profile?.steam_id ?? null,
+      profileSteamId: profile
+        ? ((await readVerifiedSteamId64(supabase, profile.id)) ?? profile.steam_id ?? null)
+        : null,
       declaration,
     });
 
@@ -339,21 +343,27 @@ interface NicknameHistoryReader {
  * the RLS policy also lets staff read every player's history, which must never
  * become a suggestion for a staff member's own demo.
  */
-async function readOwnNicknameHistory(supabase: unknown, userId: string): Promise<string[]> {
+async function readOwnIdentityEvidence(
+  supabase: unknown,
+  userId: string,
+): Promise<{ verifiedSteamId: string | null; historyNicknames: string[] }> {
   const reader = supabase as NicknameHistoryReader;
   const { data: profiles } = await reader
     .from("player_profiles")
     .select("id")
     .eq("user_id", userId);
   const playerId = profiles?.[0]?.["id"];
-  if (!playerId) return [];
+  if (!playerId) return { verifiedSteamId: null, historyNicknames: [] };
   const { data } = await reader
     .from("player_nickname_history")
     .select("nickname")
     .eq("player_id", playerId)
     .order("last_seen_at", { ascending: false })
     .limit(50);
-  return (data ?? []).flatMap((row) => (row["nickname"] ? [row["nickname"]] : []));
+  return {
+    verifiedSteamId: await readVerifiedSteamId64(supabase, playerId),
+    historyNicknames: (data ?? []).flatMap((row) => (row["nickname"] ? [row["nickname"]] : [])),
+  };
 }
 
 /** Demo players of a canonical match, read under the owner's RLS. */
