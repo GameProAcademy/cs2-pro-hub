@@ -14,6 +14,7 @@ import { diagnosisEs } from "./diagnosis/es";
 import { combatEs } from "./combat/es";
 import { nadeEs } from "./nade/es";
 import { roundsEs } from "./rounds/es";
+import { evolutionEs } from "./evolution/es";
 import { replayEs } from "./replay/es";
 
 export const es: Dictionary = {
@@ -23,6 +24,7 @@ export const es: Dictionary = {
   ...combatEs,
   ...nadeEs,
   ...roundsEs,
+  ...evolutionEs,
   ...replayEs,
   ...catalogEs,
   ...demoFlowEs,

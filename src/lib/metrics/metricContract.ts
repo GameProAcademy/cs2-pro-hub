@@ -412,9 +412,34 @@ export const RELEASE_MATRIX: readonly ReleaseEntry[] = [
   {
     metric_key: "evolution.trend",
     delivery: "4.2.8",
-    release: "INSUFFICIENT_SAMPLE",
+    release: "PARTIAL",
     blockers: ["SAMPLE_VOLUME"],
-    evidence: "≤ 3 matches per player in production",
+    evidence:
+      "cs2.evolution.v1 (src/lib/evolution/evolution.ts, /evolution): windows 5/10/20/50 with the real N, rates pooled Σnum/Σden, comparison recent vs previous window only with ≥ 3 matches per side and one method; production holds ≤ 5 matches per player (2026-11-17), so most windows are PARTIAL",
+  },
+  {
+    metric_key: "evolution.consistency",
+    delivery: "4.2.8",
+    release: "PARTIAL",
+    blockers: ["SAMPLE_VOLUME"],
+    evidence:
+      "cs2.evolution.v1: median, IQR, SD and CV per match, descriptive only, ≥ 5 matches; no consistent/inconsistent label (no validated threshold)",
+  },
+  {
+    metric_key: "evolution.by_side",
+    delivery: "4.2.8",
+    release: "PARTIAL",
+    blockers: ["NOT_IMPLEMENTED"],
+    evidence:
+      "only the rating is stored per side (match_metrics.ct_rating / t_rating); other metrics have no per-match side split",
+  },
+  {
+    metric_key: "evolution.by_weapon",
+    delivery: "4.2.8",
+    release: "NOT_MEASURED",
+    blockers: ["NOT_IMPLEMENTED"],
+    evidence:
+      "match_metrics carries no weapon split; per-match weapon duels live in cs2.duels.v1 (/duels)",
   },
   {
     metric_key: "pro.benchmark",
