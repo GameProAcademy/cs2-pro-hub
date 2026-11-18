@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-17 (America/Sao_Paulo) — PM4 CONCLUÍDO (C6) · por: sessão Claude
+Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 EM EXECUÇÃO (C3) · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,23 +12,23 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                    |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM4 (Fases 4.2.7 e 4.2.8, módulos E, F, G e histórico/DNA de J): CONCLUÍDO** em 2026-11-17 (`docs/pm4/PM4_REPORT.md` C6). PM1, PM6, PM2, PM3 e PM4 concluídos. PM5 **não iniciado**: exige autorização |
-| Etapa atual                        | Nenhuma em execução. Aguardando instrução do dono                                                                                                                                                        |
-| Última etapa concluída             | PM4 C6: E/F (`/rounds`), G (`/evolution`) e Coach (regras 27/28) em produção; H.3-E PASS; E2E 12/12; demo nova da conta A com paridade exata de gasto e desconexões                                      |
-| Operações em andamento             | Nenhuma (este PR de docs)                                                                                                                                                                                |
-| Processos em execução              | Nenhum                                                                                                                                                                                                   |
-| Branch ativa                       | `docs/pm4-c6` (este PR)                                                                                                                                                                                  |
-| Último commit confirmado em `main` | `f1cb9e8e` (merge do #323)                                                                                                                                                                               |
-| Build validado em produção         | App: publicação de `f1cb9e8e`. Worker: Railway `584ea563`, `0c646583` (R5.8.31), Source persistente `0c646583`; `/version` `git:0c646583…`, `declared_revision_matches` true                             |
-| Gates mais recentes                | `f1cb9e8e`: Quality Gates 44214683915, Queue Semantics 44214683954, H.3-E PASS 44218097807, E2E 44215050582 12/12. `1b4bd82f`: attestation 44207611056, H.3-E PASS 44210630121                           |
-| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                       |
-| **Próxima ação exata**             | Nenhuma no PM4. PM5 só com autorização explícita do dono                                                                                                                                                 |
-| Ações que NÃO devem ser repetidas  | Tudo do PM1–PM4 (#278–#324); releases R5.8.25–R5.8.31; migrations `20261117120000` e `20261117235000`; troca dos secrets R5.8.31; demo nova da conta A                                                   |
-| Ações manuais necessárias          | Nenhuma obrigatória (opcional: pergunta ao Coach sobre economia/evolução na conta A)                                                                                                                     |
+| Item                               | Valor                                                                                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | **PM5 (4.2.9, 4.2.10, FACEIT, Coach): EM EXECUÇÃO** desde 2026-11-18, autorizado pelo dono. Checkpoint: `docs/pm5/PM5_CHECKPOINT.md`                                               |
+| Etapa atual                        | C3 Implementação (I e FACEIT vínculo já em produção; H, J, Coach, login FACEIT em PR)                                                                                              |
+| Última etapa concluída             | #326 (módulo I) e #327 (FACEIT) mergeados; migration `20261118120000` aplicada; app publicado de `8a16af3b`                                                                        |
+| Operações em andamento             | CI dos PRs #328–#332                                                                                                                                                               |
+| Processos em execução              | Nenhum além do CI                                                                                                                                                                  |
+| Branch ativa                       | `docs/pm5-checkpoint` (este PR) e as branches de #328–#332                                                                                                                         |
+| Último commit confirmado em `main` | `8a16af3b` (merge do #327)                                                                                                                                                         |
+| Build validado em produção         | App: publicação de `8a16af3b`. Worker inalterado: Railway `584ea563`, `0c646583` (R5.8.31)                                                                                         |
+| Gates mais recentes                | `f1cb9e8e`: Quality Gates 44214683915, Queue Semantics 44214683954, H.3-E PASS 44218097807, E2E 44215050582 12/12. `1b4bd82f`: attestation 44207611056, H.3-E PASS 44210630121     |
+| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
+| **Próxima ação exata**             | Mergear #332 e publicar; pedir ao dono para conectar a FACEIT em `/profile`; mergear #328→#329→#330 e #331 aplicando as migrations `20261118140000` e `20261118160000`             |
+| Ações que NÃO devem ser repetidas  | Tudo do PM1–PM4; #326, #327; migration `20261118120000`                                                                                                                            |
+| Ações manuais necessárias          | Dono: conectar a conta FACEIT em `/profile` depois da publicação do #332                                                                                                           |
 
-Checkpoint e relatório da última fase: `docs/pm4/PM4_CHECKPOINT.md` e `docs/pm4/PM4_REPORT.md` (PM3: `docs/pm3/`).
+Checkpoint da fase ativa: `docs/pm5/PM5_CHECKPOINT.md`. Última fase concluída: `docs/pm4/PM4_CHECKPOINT.md` e `docs/pm4/PM4_REPORT.md`.
 
 ## 1. Identificação
 
