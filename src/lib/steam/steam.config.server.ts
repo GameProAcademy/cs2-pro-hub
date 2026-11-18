@@ -4,8 +4,8 @@
  * Four environment variables, all server-side, none of them ever returned to a
  * browser:
  *
- *   STEAM_OPENID_REALM      e.g. https://app.example.com
- *   STEAM_OPENID_RETURN_URL e.g. https://app.example.com/api/public/integrations/steam/callback
+ *   STEAM_OPENID_REALM      default https://gamepro.network (production origin)
+ *   STEAM_OPENID_RETURN_URL default https://gamepro.network/api/public/integrations/steam/callback
  *   STEAM_OPENID_ENDPOINT   optional override of the official provider endpoint
  *   STEAM_WEB_API_KEY       optional; only enables PUBLIC profile enrichment
  *
@@ -16,7 +16,11 @@
  * the environment is empty the integration reports `not_configured` and the UI
  * renders an honest "unavailable" state instead of a button that cannot work.
  */
-import { STEAM_OPENID_DEFAULT_ENDPOINT } from "./steam.constants";
+import {
+  STEAM_OPENID_DEFAULT_ENDPOINT,
+  STEAM_PRODUCTION_REALM,
+  STEAM_PRODUCTION_RETURN_URL,
+} from "./steam.constants";
 import { SteamError } from "./steam.errors";
 import type { SteamIntegrationState } from "./steam.types";
 
@@ -76,9 +80,23 @@ export interface SteamConfigStatus {
   state: SteamIntegrationState;
 }
 
+/**
+ * STEAM — realm and return URL are PUBLIC, non-secret values. When the environment does
+ * not set them, the production origin is used (an explicit value always wins). The
+ * operator switch `STEAM_INTEGRATION_ENABLED` is still required; nothing here enables the
+ * integration on its own.
+ */
+function realmSetting(): string {
+  return env("STEAM_OPENID_REALM") ?? STEAM_PRODUCTION_REALM;
+}
+
+function returnUrlSetting(): string {
+  return env("STEAM_OPENID_RETURN_URL") ?? STEAM_PRODUCTION_RETURN_URL;
+}
+
 export function steamConfigStatus(): SteamConfigStatus {
-  const realm = env("STEAM_OPENID_REALM");
-  const returnUrl = env("STEAM_OPENID_RETURN_URL");
+  const realm = realmSetting();
+  const returnUrl = returnUrlSetting();
   const endpoint = env("STEAM_OPENID_ENDPOINT") ?? STEAM_OPENID_DEFAULT_ENDPOINT;
   const webApiKey = env("STEAM_WEB_API_KEY");
 
@@ -137,8 +155,8 @@ export function requireSteamOpenIdConfig(): SteamOpenIdConfig {
   const status = steamConfigStatus();
   if (!status.openidReady) throw new SteamError("STEAM_CONFIGURATION_MISSING");
   return {
-    realm: env("STEAM_OPENID_REALM")!,
-    returnUrl: env("STEAM_OPENID_RETURN_URL")!,
+    realm: realmSetting(),
+    returnUrl: returnUrlSetting(),
     endpoint: env("STEAM_OPENID_ENDPOINT") ?? STEAM_OPENID_DEFAULT_ENDPOINT,
   };
 }

@@ -29,6 +29,7 @@ function callbackParams(overrides: Record<string, string | undefined> = {}) {
     "openid.mode": "id_res",
     "openid.op_endpoint": STEAM_OPENID_DEFAULT_ENDPOINT,
     "openid.realm": REALM,
+    "openid.response_nonce": `${new Date().toISOString().replace(/\.\d+Z$/, "Z")}a1b2c3`,
     "openid.signed": "signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle",
     "openid.sig": "signature",
     "openid.claimed_id": `https://steamcommunity.com/openid/id/${STEAM_ID}`,
@@ -72,8 +73,13 @@ describe("steam callback — mandatory assertion fields", () => {
     );
   });
 
-  it("rejects a missing realm", () => {
-    expectRejection(callbackParams({ "openid.realm": undefined }), "STEAM_OPENID_INVALID_REALM");
+  // Steam never echoes `openid.realm` (real id_res responses do not carry it); the realm
+  // binding is the signed return_to, which must stay inside our realm.
+  it("accepts the real Steam shape without openid.realm", () => {
+    expect(
+      parseSteamCallback(callbackParams({ "openid.realm": undefined }), RETURN_URL, EXPECTED)
+        .steamId64,
+    ).toMatch(/^7656119/);
   });
 
   it("rejects a cross-realm assertion", () => {

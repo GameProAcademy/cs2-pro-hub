@@ -39,6 +39,7 @@ function validParams(state: string, overrides: Record<string, string> = {}) {
     "openid.claimed_id": CLAIMED,
     "openid.identity": CLAIMED,
     "openid.return_to": buildReturnTo(RETURN_URL, state),
+    "openid.response_nonce": `${new Date().toISOString().replace(/\.\d+Z$/, "Z")}a1b2c3`,
     "openid.signed": "signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle",
     "openid.sig": "Zm9vYmFy",
     ...overrides,
