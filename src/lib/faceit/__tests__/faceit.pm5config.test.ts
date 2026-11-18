@@ -147,3 +147,16 @@ describe("PM5 — FACEIT empty strings are missing values", () => {
     expect(() => parseFaceit(faceitPlayerSchema, { player_id: "", nickname: "x" })).toThrow();
   });
 });
+
+describe("PM5 — FACEIT lifetime stats with list entries", () => {
+  it("keeps scalar entries and drops lists instead of rejecting the payload", async () => {
+    const { faceitLifetimeStatsSchema, parseFaceit } = await import("../faceit.types");
+    const s = parseFaceit(faceitLifetimeStatsSchema, {
+      player_id: "p",
+      game_id: "cs2",
+      lifetime: { Matches: "120", "Average K/D Ratio": "1.05", "Recent Results": ["1", "0", "1"] },
+      segments: [{ label: "Mirage" }],
+    });
+    expect(s.lifetime).toEqual({ Matches: "120", "Average K/D Ratio": "1.05" });
+  });
+});

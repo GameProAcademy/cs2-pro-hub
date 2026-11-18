@@ -199,7 +199,20 @@ export type FaceitMatchStats = z.infer<typeof faceitMatchStatsSchema>;
 export const faceitLifetimeStatsSchema = z.object({
   player_id: nullableString,
   game_id: nullableString,
-  lifetime: statsRecord.nullish(),
+  // `lifetime` mixes scalars with arrays (e.g. recent results); only scalar entries are kept,
+  // so a list never makes the whole (optional) payload malformed.
+  lifetime: z
+    .record(z.string(), z.unknown())
+    .nullish()
+    .transform((v) => {
+      if (!v) return v;
+      const out: Record<string, string | number | boolean | null> = {};
+      for (const [k, raw] of Object.entries(v)) {
+        if (raw === null || ["string", "number", "boolean"].includes(typeof raw))
+          out[k] = raw as string | number | boolean | null;
+      }
+      return out;
+    }),
 });
 
 export const faceitTokenResponseSchema = z.object({
