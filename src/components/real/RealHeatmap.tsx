@@ -5,11 +5,13 @@
  * nothing. The background is a neutral grid in the radar's coordinate space (radar art is
  * Valve's; not embedded pending an owner decision).
  */
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CircleDashed, MapPinned } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -554,6 +556,7 @@ export function DrillDown({
                   <th className="py-1 pr-3">{t("spatial.drill.side")}</th>
                   <th className="py-1 pr-3">{t("spatial.drill.weapon")}</th>
                   <th className="py-1">{t("spatial.drill.headshot")}</th>
+                  <th className="py-1" />
                 </tr>
               </thead>
               <tbody>
@@ -568,6 +571,29 @@ export function DrillDown({
                       {e.headshot === null
                         ? NOT_AVAILABLE_MARK
                         : t(e.headshot ? "spatial.drill.yes" : "spatial.drill.no")}
+                    </td>
+                    <td className="py-1 text-right">
+                      {e.tick !== null ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Link
+                            to="/replay"
+                            search={{ matchId: e.matchId, round: e.round, tick: e.tick }}
+                            className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                            data-replay-link
+                          >
+                            {t("combat.openReplay")}
+                          </Link>
+                          <SaveMomentButton
+                            compact
+                            matchId={e.matchId}
+                            round={e.round}
+                            tick={e.tick}
+                            kind={h.layer === "DEATHS" ? "DEATH" : "KILL"}
+                            source="MAPS"
+                            defaultTitle={`${fill(t("rounds.roundN"), { n: e.round })} · ${h.map}`}
+                          />
+                        </span>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

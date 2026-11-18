@@ -8,6 +8,7 @@ import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info, UserX } from "lucide-react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -429,6 +430,15 @@ function DuelRow({ d, matchId, intlTag }: { d: Duel; matchId: string; intlTag: s
         >
           {t("combat.openReplay")}
         </Link>
+        <SaveMomentButton
+          compact
+          matchId={matchId}
+          round={d.ref.round}
+          tick={d.ref.tick}
+          kind={d.opening ? "OPENING" : d.outcome === "WON" ? "KILL" : "DEATH"}
+          source="DUELS"
+          defaultTitle={`${fill(t("rounds.roundN"), { n: d.ref.round })} · ${t(`combat.outcome.${d.outcome}` as TranslationKey)}`}
+        />
       </td>
     </tr>
   );

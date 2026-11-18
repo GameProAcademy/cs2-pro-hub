@@ -10,6 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { CircleDashed, Crosshair, MapPinned, UserX } from "lucide-react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -240,6 +241,18 @@ export function DeathSheet({
             >
               {t("replay.link")}
             </Link>
+          ) : null}
+          {c.ref.roundNumber !== null && c.ref.tick !== null ? (
+            <SaveMomentButton
+              compact
+              matchId={matchId}
+              round={c.ref.roundNumber}
+              tick={c.ref.tick}
+              kind="DEATH"
+              eventRef={c.ref.eventId}
+              source="DEATHS"
+              defaultTitle={heading}
+            />
           ) : null}
         </div>
       }
