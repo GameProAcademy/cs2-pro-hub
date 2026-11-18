@@ -18,6 +18,7 @@ import { evolutionEn } from "./evolution/en";
 import { momentsEn } from "./moments/en";
 import { adaptiveEn } from "./adaptive/en";
 import { benchmarksEn } from "./benchmarks/en";
+import { reviewEn } from "./review/en";
 import { replayEn } from "./replay/en";
 
 export const en: Dictionary = {
@@ -31,6 +32,7 @@ export const en: Dictionary = {
   ...momentsEn,
   ...adaptiveEn,
   ...benchmarksEn,
+  ...reviewEn,
   ...replayEn,
   ...catalogEn,
   ...demoFlowEn,
