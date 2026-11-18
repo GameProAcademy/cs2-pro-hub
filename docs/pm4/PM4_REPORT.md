@@ -66,13 +66,14 @@
 
 ## C3 — Implementação
 
-| PR   | Conteúdo                                                                                                         | Situação                       |
-| ---- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| #319 | Parser R5.8.31: `money_spent` e `disconnected` no `round_end`; `raw_evidence.py`; catálogo de campos; normalizer | merged `0c646583`              |
-| #321 | Re-pin R5.8.31 (migration `20261117235000`, spec, rollback, testes, probes, paridade, rastreabilidade)           | merged `00977821`              |
-| #320 | Módulos E/F: motores, leitura `getMatchRounds`, página `/rounds`, i18n ×5, matriz 4.2.7                          | merged `1b4bd82f`              |
-| #322 | Módulo G: motor, leitura `getEvolution`, página `/evolution`, card DNA (leitura pura), i18n ×5, matriz 4.2.8     | aberto (CI)                    |
-| #323 | Coach (regras 27/28, `latestMatchRounds`, `evolution`) + E2E `/rounds` e `/evolution`                            | branch pronta (abre após #322) |
+| PR   | Conteúdo                                                                                                         | Situação          |
+| ---- | ---------------------------------------------------------------------------------------------------------------- | ----------------- |
+| #319 | Parser R5.8.31: `money_spent` e `disconnected` no `round_end`; `raw_evidence.py`; catálogo de campos; normalizer | merged `0c646583` |
+| #323 | Docs PM4 intermediário (checkpoint, C0–C5 parcial)                                                               | merged `f1cb9e8e` |
+| #321 | Re-pin R5.8.31 (migration `20261117235000`, spec, rollback, testes, probes, paridade, rastreabilidade)           | merged `00977821` |
+| #320 | Módulos E/F: motores, leitura `getMatchRounds`, página `/rounds`, i18n ×5, matriz 4.2.7                          | merged `1b4bd82f` |
+| #322 | Módulo G: motor, leitura `getEvolution`, página `/evolution`, card DNA (leitura pura), i18n ×5, matriz 4.2.8     | merged `44a128d4` |
+| #324 | Coach (regras 27/28, `latestMatchRounds`, `evolution`) + E2E `/rounds` e `/evolution`                            | merged `0ed38db7` |
 
 ## C4 — Validação
 
@@ -84,7 +85,7 @@
 - **Performance (local, Node 22):** `buildRoundReports + summarizeRounds` 0,98 ms (Nuke, 181 abates) e 0,70 ms (FURIA); payload `/rounds` ≈ 55 KB; `buildEvolution` 100 partidas/janela 50 = 0,31 ms, payload ≈ 53 KB. Leitura `/rounds`: 6 consultas paralelas, paginadas (1000), teto de 20 000 linhas.
 - **i18n:** 78 chaves de rounds e 67 de evolução nos 5 idiomas (mesmas chaves, tipadas).
 
-## C5 — Release e produção (em andamento)
+## C5 — Release e produção
 
 ### Worker R5.8.31 — VALIDADO EM PRODUÇÃO
 
@@ -93,21 +94,158 @@
 3. `PARSER_REVISION` / `PARSER_BUILD_REVISION` = `git:0c646583…` com deploys pulados.
 4. `connect-service-source` para `0c646583`: o deployment `90e6a5d5` criado pela troca ficou **SKIPPED** (freeze).
 5. Exatamente um deployment disparado pelo agente Railway: `584ea563`, **SUCCESS** (23:48:09Z). Único build da release.
-6. `/version` nos dois hosts (`parser.gamepro.network` e `cs2-demo-parser-production.up.railway.app`, 23:58Z): demoparser2 0.42.2; revision = semantic = build = `git:0c646583…`; `build.commit` `0c646583…`; `embedded` true; `source` railway; `declared_revision_matches` true.
+6. `/version` nos dois hosts (23:58Z): demoparser2 0.42.2; revision = semantic = build = `git:0c646583…`; `build.commit` `0c646583…`; `embedded` true; `source` railway; `declared_revision_matches` true.
 
 ### Banco — VALIDADO EM PRODUÇÃO
 
-- Dry run da migration `20261117235000` em produção: `R5_8_31_DRY_RUN_OK_ROLLED_BACK` (todas as checagens passaram, nada persistido).
+- Dry run da migration `20261117235000`: `R5_8_31_DRY_RUN_OK_ROLLED_BACK`.
 - Aplicada após o merge do #321 (`00977821`): recorder `b46f6701…` → `515f433f…`; assertion `95dc9e5f…` → `e35c5ff8…`; workflow boundary `f74d8af9…` inalterado (md5 conferidos por SELECT).
 - Registrada em `supabase_migrations.schema_migrations` (`20261117235000`, `direct-main-00977821-20261117235000`, md5 do arquivo `43f237b0…`).
 - Nenhuma migration de schema no PM4.
 
-### App
+### Secrets do app — VALIDADO EM PRODUÇÃO
 
-- Publicação de `1b4bd82f` (E/F + re-pin) pelo deploy do Lovable (`f4296545`); `/rounds` servido em https://gamepro.network (estado EMPTY renderizado para a sessão do navegador usado, que não tem partidas). VALIDADO EM PRODUÇÃO (rota e estado vazio).
-- Attestation do runtime: run 44207480424 **falhou** antes da publicação (o servidor publicado ainda tinha os pins R5.8.30: `PINNED_IDENTITY_MISMATCH`, `CRITICAL_HASH_MISMATCH` em `parser.py` e `raw_evidence.py`) — esperado; após a publicação, run 44207611056 **success**.
+- O dono alterou `DEMO_PARSER_EXPECTED_REVISION`, `DEMO_PARSER_EXPECTED_BUILD_REVISION` e `H3E91_EXPECTED_WORKER_BUILD_COMMIT` para `0c646583…` (21:26 BRT). Nenhum valor de secret foi lido, copiado ou registrado.
 
-### Pendente
+### App — VALIDADO EM PRODUÇÃO
 
-- **MANUAL_REQUIRED (dono):** atualizar os 3 secrets do app para `0c646583…` (`DEMO_PARSER_EXPECTED_REVISION`, `DEMO_PARSER_EXPECTED_BUILD_REVISION`, `H3E91_EXPECTED_WORKER_BUILD_COMMIT`). Até lá, a verificação de identidade do parser falha fechada para uploads novos.
-- H.3-E e E2E após os secrets; publicação de G e do Coach; demo nova da conta A para provar `money_spent`/`disconnected` em produção.
+| Publicação (deploy Lovable) | Commit     | Conteúdo                         |
+| --------------------------- | ---------- | -------------------------------- |
+| `f4296545`                  | `1b4bd82f` | E/F (`/rounds`) + pins R5.8.31   |
+| `e5d595c2`                  | `1b4bd82f` | republicação após os secrets     |
+| `63f65f71`                  | `f1cb9e8e` | + G (`/evolution`) + Coach + E2E |
+
+- `/rounds` e `/evolution` servidos em https://gamepro.network (navegador embutido; a sessão usada não tem partidas, estado `EMPTY` renderizado).
+
+### Gates
+
+| Gate                                     | Commit     | Run                                     | Resultado                                                                                      |
+| ---------------------------------------- | ---------- | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Parser runtime attestation               | `1b4bd82f` | 44207480424 → 44207611056               | falhou antes da publicação (servidor ainda com pins R5.8.30); **success** após a publicação    |
+| H.3-E                                    | `1b4bd82f` | 44210630121                             | **PASS** (todas as etapas; tentativas anteriores falharam enquanto os gates da `main` rodavam) |
+| Quality Gates / Queue Semantics / R5.8.3 | `f1cb9e8e` | 44214683915 / 44214683954 / 44214684067 | success                                                                                        |
+| H.3-E                                    | `f1cb9e8e` | 44218097807                             | **PASS** (44214769998 e 44216786821 falharam enquanto F553/Quality Gates estavam em curso)     |
+| E2E de produção                          | `f1cb9e8e` | 44215050582                             | **12/12** (contas A e B com `/rounds` e `/evolution`; isolamento A→B e B→A; formulários)       |
+
+O resumo por etapa do E2E fica no artefato do run (download bloqueado neste ambiente); o run só passa se todas as asserções passarem, incluindo `NOT_FOUND` para partida aleatória e para a partida da outra conta em `/rounds`, ausência da partida da outra conta na listagem e nos drill-downs de `/evolution`, e ausência de SteamID no DOM. O teste aceita `/rounds` em `OK` ou `NO_PARTICIPANT`; qual dos dois ocorreu não está no log público.
+
+### Demo nova (conta A) — VALIDADO EM PRODUÇÃO
+
+- Job `ffb11205`, parser `git:0c646583…`, partida `daef42da`: FACEIT de Nuke, 24 rounds válidos, 181 abates, `MATCH_COMPLETED`.
+- `round_end`: 24/24 com `money_spent`, 240 entradas jogador-round, total 676 050; `disconnected` nos rounds 5, 8 e 17.
+- **Paridade exata com o parse local** do mesmo arquivo (mesmo SHA-256): total, gasto por round nos 24 rounds, rounds com desconexão e número de abates. Diferença registrada: `round_players` 240 em produção × 238 no despejo local de validação (o despejo descarta linhas sem lado; não é diferença do banco — hipótese, não verificada linha a linha).
+- Pelo motor `cs2.rounds.v1` sobre os mesmos dados (local): round 1 `KILL_DATA`, round 9 sem lado do jogador, 3 rounds com vantagem `NOT_MEASURED` — a página mostra essas exclusões.
+
+## C6 — Fechamento
+
+### 1. Resumo executivo
+
+Fases 4.2.7 e 4.2.8 entregues em produção: economia classificada só com gasto registrado (parser R5.8.31), impacto por round com regras versionadas, separação equipe × jogador, timeline com replay; evolução em janelas com N real, taxas por numerador/denominador, consistência descritiva, comparação só entre métodos compatíveis, card do DNA pelo snapshot; Coach com o mesmo contexto e regras contra causalidade e falsa evolução. Worker, banco, app, attestation, H.3-E e E2E verdes no SHA exato.
+
+### 2. Baseline e prompts anteriores
+
+Ver C0. PM1, PM6, PM2 e PM3 preservados; regressão coberta pela suíte web (2698), worker (992), scripts (406) e E2E 12/12.
+
+### 3. Fase 4.2.7 — liberadas e bloqueadas
+
+| Métrica                                          | Estado                                                                                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Compra da equipe / do jogador (`cs2.economy.v1`) | VALIDADO EM PRODUÇÃO para partidas R5.8.31+; partidas antigas: compra NOT_MEASURED (sem backfill)             |
+| Equipamento antes da compra                      | VALIDADO EM PRODUÇÃO (oculto no pistol)                                                                       |
+| Abertura (equipe e jogador)                      | VALIDADO EM TESTE / publicado                                                                                 |
+| Trocas (feitas e sofridas)                       | VALIDADO EM TESTE / publicado (janela 5 s reutilizada)                                                        |
+| Vantagem numérica / desvantagem                  | VALIDADO EM TESTE / publicado; NOT_MEASURED em round com desconexão; partidas antigas não detectam desconexão |
+| Clutch 1vN                                       | VALIDADO EM TESTE / publicado                                                                                 |
+| Pós-plant / retake                               | VALIDADO EM TESTE / publicado                                                                                 |
+| Plant / defuse com autoria                       | VALIDADO EM TESTE / publicado                                                                                 |
+| Sobrevivência                                    | VALIDADO EM TESTE / publicado                                                                                 |
+| Armadura, capacete, kit, granadas compradas      | NOT_MEASURED (não necessários para a regra; props existem no parser)                                          |
+| Score composto de impacto                        | NÃO APLICÁVEL (não criado de propósito; métricas base transparentes)                                          |
+
+### 4. Fase 4.2.8 — liberadas e bloqueadas
+
+| Item                                | Estado                                                                                                               |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Janelas 5/10/20/50 com N real       | VALIDADO EM TESTE / publicado; PARTIAL em produção (≤ 5 partidas por jogador)                                        |
+| Agregação por numerador/denominador | VALIDADO EM TESTE / publicado                                                                                        |
+| Consistência (mediana, IQR, DP, CV) | VALIDADO EM TESTE / publicado; exige 5 partidas                                                                      |
+| Comparação recente × anterior       | VALIDADO EM TESTE / publicado; exige 3 + 3 partidas e mesmo método                                                   |
+| Filtro de mapa                      | VALIDADO EM TESTE / publicado                                                                                        |
+| Filtro de lado                      | PARTIAL: só o rating                                                                                                 |
+| Filtro de arma                      | NOT_MEASURED (sem split por arma no histórico)                                                                       |
+| Snapshots                           | reuso: `match_metrics` imutável por partida + `player_dna_snapshots` (idempotente, versionado); nenhum pipeline novo |
+| Player DNA integrado                | VALIDADO EM TESTE / publicado (estado READY/INSUFFICIENT_SAMPLE pela leitura pura)                                   |
+
+### 5. Módulos
+
+- **E (economia):** inventário (C1), classificação, timeline econômica por round, jogador × equipe.
+- **F (impacto):** abertura, trocas, vantagem, clutch, retake, plant/defuse, sobrevivência, timeline com replay.
+- **G (evolução):** janelas, comparação, compatibilidade, consistência, DNA.
+- **J (parte histórico/DNA):** integrada a G; comparativos Pro ficam no PM5.
+
+### 6. Oito funcionalidades competitivas (parte deste pacote)
+
+1. **Onde estou perdendo rounds?** — taxas da equipe por compra e por situação com N, separadas da contribuição individual; sem causa. Entregue.
+2. **Posicionamento × profissionais** — só preparação: filtros por mapa/lado; nenhum benchmark importado. PM5.
+3. **Pior hábito** — dados de recorrência (abertura, trocas, clutch, sobrevivência por partida e janela); nenhum "hábito" afirmado com uma ocorrência. Parcial (base pronta).
+4. **Como eu deveria ter jogado?** — contexto econômico e de round por round; nenhuma recomendação de compra. Parcial.
+5. **Comparação entre versões de mim** — janelas e comparação com método compatível. Entregue.
+6. **Mapa de oportunidades perdidas** — drill-down round → replay 2D e evolução → rounds. Parcial.
+7. **AI Coach com evidências** — `latestMatchRounds` + `evolution` com versão, N e cobertura; regras 27/28. Entregue (sem conversa real validada).
+8. **Revisão mensal** — base: relatório puro de evolução recalculável por janela; nenhum scheduler. Preparado.
+
+### 7. Regras, fórmulas e versões
+
+`cs2.economy.v1`, `cs2.rounds.v1`, `cs2.evolution.v1`, `coach-rounds-evolution-v1` (C2). Matriz de release atualizada (`src/lib/metrics/metricContract.ts`).
+
+### 8. Campos reais utilizados
+
+`match_rounds` (limites, vencedor, motivo); `round_players` (lado, `money_start`, `equipment_value`); `round_events` (`kill`, `damage`, `bomb_plant`, `bomb_defuse`, `bomb_explode`, `round_end.data.money_spent`, `round_end.data.disconnected`); `match_metrics`; `match_flash_assist_provenance`; `player_dna_snapshots`.
+
+### 9. Não suportadas e motivo
+
+Armadura/kit/granadas compradas (não persistidos; desnecessários à regra); split por arma e por lado no histórico (não persistido por partida); desconexão em partidas pré-R5.8.31 (não registrada); compra em partidas pré-R5.8.31 (sem gasto; sem backfill autorizado); crosshair/counter-strafe/recoil (PM3, NOT_MEASURED).
+
+### 10–12. PRs, banco, workflows
+
+PRs #319, #321, #320, #322, #323, #324 (C3). Migration `20261117235000` (C5). Gates e E2E com run ids em C5.
+
+### 13. RLS e ownership
+
+Todas as leituras novas usam a sessão do jogador (`requireSupabaseAuth`) e as policies existentes (`round_events_select_own`, `match_metrics_select_own`, `round_players`, `match_rounds`); nenhuma service role; IDOR → `NOT_FOUND`; schemas de entrada estritos; E2E A↔B verde; nenhuma identidade de terceiro no payload, DOM ou Coach.
+
+### 14. Performance e custo
+
+Motor de rounds < 1 ms por partida; evolução 0,31 ms para 100 partidas; payloads ≈ 55 KB e ≈ 53 KB; `/rounds` faz 6 leituras paralelas paginadas (teto 20 000 linhas); evolução sem leitura nova (reusa o overview). Armazenamento: `round_end` ganhou ≈ 10 números por round. Sem backfill, sem custo de reprocessamento.
+
+### 15–16. Deploy e identidade
+
+Ver C5: worker `584ea563` / `0c646583`; app publicado em `f1cb9e8e`; attestation e H.3-E PASS.
+
+### 17. Problemas e causas raiz
+
+- Attestation 44207480424 falhou: o servidor publicado ainda carregava os pins R5.8.30 → publicação antes da attestation (procedimento correto: publicar, depois atestar).
+- H.3-E falha na primeira avaliação de cada commit enquanto Quality Gates/F553 ainda rodam (padrão conhecido) → reavaliação automática PASS.
+- O card de DNA da evolução usava a leitura que pode atualizar snapshot; a regra arquitetural do Fase 2.1 bloqueou no teste → trocado pela leitura pura `getDnaSummary`.
+
+### 18. Ações manuais
+
+Concluídas: troca dos 3 secrets; demo nova da conta A. Opcional: fazer uma pergunta ao Coach sobre economia e evolução na conta A para observar as regras 27/28 em uma conversa real (não validado por mim, pois não faço login com senha).
+
+### 19. Riscos residuais e rollback
+
+- Amostra pequena em produção: evolução quase sempre PARTIAL até haver ≥ 10 partidas por jogador.
+- Partidas anteriores ao R5.8.31 sem compra classificada (explicado na UI); reprocessar exigiria autorização específica.
+- Faixas de compra calibradas em CS:GO profissional (Xenopoulos et al.); valores de CS2 iguais em preço-base, mas a calibração não foi revalidada em CS2 — declarado como fonte.
+- Rollback: reverter #324/#322/#320 (leituras puras); worker → `3335c88d` + `docs/reference/r5_8_31/rollback.sql` + secrets R5.8.30.
+
+### 20. Lovable
+
+Nenhum prompt, mensagem ou instrução foi enviado ao agente Lovable. O Lovable foi usado apenas para consulta (`get_project`, `list_edits`, `query_database`) e publicação (`deploy_project`).
+
+### 21. Recomendação para o PM5
+
+- Comparativos Pro (4.2.10) só com dataset licenciado e coorte declarada; reaproveitar `cs2.evolution.v1` (mesmas fórmulas e chaves de método) para garantir comparabilidade.
+- Treino adaptativo (4.2.9): usar as janelas e as comparações com status OK como baseline/meta; nunca afirmar causalidade do treino.
+- Biblioteca de momentos: partir da timeline `cs2.rounds.v1` (round/tick) e dos deep links de replay já existentes.
+- Persistir snapshots mensais de evolução só se a revisão mensal for implementada, com `input_digest` no mesmo padrão do DNA.

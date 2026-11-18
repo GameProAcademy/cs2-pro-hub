@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-17 (America/Sao_Paulo) — PM4 ATIVO (C5) · por: sessão Claude
+Atualizado em: 2026-11-17 (America/Sao_Paulo) — PM4 CONCLUÍDO (C6) · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,22 +12,23 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                        |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM4 (Fases 4.2.7 e 4.2.8, módulos E, F, G e a parte histórico/DNA de J): ATIVA** desde 2026-11-17. PM1, PM6, PM2 e PM3 concluídos. PM5 não iniciado                        |
-| Etapa atual                        | C5 (release) em andamento                                                                                                                                                    |
-| Última etapa concluída             | Worker R5.8.31 (`584ea563`, `0c646583`) em produção; migration `20261117235000` aplicada; app publicado em `1b4bd82f` com `/rounds`; attestation 44207611056 success         |
-| Operações em andamento             | CI do #322 (módulo G)                                                                                                                                                        |
-| Branch ativa                       | `feat/pm4-module-g-evolution` (#322), `feat/pm4-coach-rounds-evolution`, `docs/pm4-checkpoint`                                                                               |
-| Último commit confirmado em `main` | `1b4bd82f` (merge do #320)                                                                                                                                                   |
-| Build validado em produção         | App: publicação de `1b4bd82f`. Worker: Railway `584ea563`, `0c646583` (R5.8.31), Source persistente `0c646583`; `/version` `git:0c646583…`, `declared_revision_matches` true |
-| Gates mais recentes                | #319, #320, #321: todos os checks obrigatórios verdes no SHA exato; attestation 44207611056 success; H.3-E pendente dos secrets                                              |
-| Problemas abertos                  | Secrets do app ainda em R5.8.30 (MANUAL_REQUIRED); amostra de produção ≤ 5 partidas por jogador                                                                              |
-| **Próxima ação exata**             | Dono troca os 3 secrets → H.3-E → merge #322 e PR Coach/E2E → publicar → E2E → demo nova da conta A → C6                                                                     |
-| Ações que NÃO devem ser repetidas  | Tudo do PM1–PM3; release R5.8.31 (`584ea563`) e migration `20261117235000`                                                                                                   |
-| Ações manuais necessárias          | `DEMO_PARSER_EXPECTED_REVISION`, `DEMO_PARSER_EXPECTED_BUILD_REVISION`, `H3E91_EXPECTED_WORKER_BUILD_COMMIT` → `0c646583…`                                                   |
+| Item                               | Valor                                                                                                                                                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | **PM4 (Fases 4.2.7 e 4.2.8, módulos E, F, G e histórico/DNA de J): CONCLUÍDO** em 2026-11-17 (`docs/pm4/PM4_REPORT.md` C6). PM1, PM6, PM2, PM3 e PM4 concluídos. PM5 **não iniciado**: exige autorização |
+| Etapa atual                        | Nenhuma em execução. Aguardando instrução do dono                                                                                                                                                        |
+| Última etapa concluída             | PM4 C6: E/F (`/rounds`), G (`/evolution`) e Coach (regras 27/28) em produção; H.3-E PASS; E2E 12/12; demo nova da conta A com paridade exata de gasto e desconexões                                      |
+| Operações em andamento             | Nenhuma (este PR de docs)                                                                                                                                                                                |
+| Processos em execução              | Nenhum                                                                                                                                                                                                   |
+| Branch ativa                       | `docs/pm4-c6` (este PR)                                                                                                                                                                                  |
+| Último commit confirmado em `main` | `f1cb9e8e` (merge do #323)                                                                                                                                                                               |
+| Build validado em produção         | App: publicação de `f1cb9e8e`. Worker: Railway `584ea563`, `0c646583` (R5.8.31), Source persistente `0c646583`; `/version` `git:0c646583…`, `declared_revision_matches` true                             |
+| Gates mais recentes                | `f1cb9e8e`: Quality Gates 44214683915, Queue Semantics 44214683954, H.3-E PASS 44218097807, E2E 44215050582 12/12. `1b4bd82f`: attestation 44207611056, H.3-E PASS 44210630121                           |
+| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                       |
+| **Próxima ação exata**             | Nenhuma no PM4. PM5 só com autorização explícita do dono                                                                                                                                                 |
+| Ações que NÃO devem ser repetidas  | Tudo do PM1–PM4 (#278–#324); releases R5.8.25–R5.8.31; migrations `20261117120000` e `20261117235000`; troca dos secrets R5.8.31; demo nova da conta A                                                   |
+| Ações manuais necessárias          | Nenhuma obrigatória (opcional: pergunta ao Coach sobre economia/evolução na conta A)                                                                                                                     |
 
-Checkpoint e relatório vivo da fase ativa: `docs/pm4/PM4_CHECKPOINT.md` e `docs/pm4/PM4_REPORT.md` (PM3 concluído: `docs/pm3/`).
+Checkpoint e relatório da última fase: `docs/pm4/PM4_CHECKPOINT.md` e `docs/pm4/PM4_REPORT.md` (PM3: `docs/pm3/`).
 
 ## 1. Identificação
 
@@ -37,18 +38,18 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 
 ## 2. Estado atual do projeto
 
-- `main` = `1b4bd82f` (2026-11-17). HISTÓRICO: `ad7b73b2` era o último funcional do PM3; `10e90693` (#318) foi o fechamento documental.
+- `main` = `f1cb9e8e` (2026-11-17). HISTÓRICO: `ad7b73b2` era o último funcional do PM3; `10e90693` (#318) foi o fechamento documental.
 - Fundação publicada: Score `pro-score-v1` e DNA `dna-weighted-v2`.
 - **PM1** (4.2.1–4.2.2): concluído e validado em produção (`docs/pm1/PM1_EXECUTION_REPORT.md`).
 - **PM6** (compatibilidade de demos, integridade de partida, nicks, segurança): **concluído** em 2026-11-14 (#290 `66d4af1d`; `docs/pm6/PM6_FINAL_REPORT.md` §11, "pronto para o PM2, com ressalvas classificadas").
 - **PM2** (4.2.3–4.2.4, módulos B e I): **COMPLETE** em 2026-11-17 (`docs/pm2/PM2_FINAL_REPORT.md` §30).
 - Parser em produção: R5.8.31 (`0c646583`, demoparser2 0.42.2; Railway `584ea563`). HISTÓRICO: R5.8.30 `768646ea` / `3335c88d`.
 - **PM3** (4.2.5–4.2.6, módulos C e D): **concluído** em 2026-11-17 (`docs/pm3/PM3_REPORT.md` C6, #318 `10e90693`).
-- **PM4** (4.2.7–4.2.8, módulos E, F, G e histórico/DNA de J): **ativo** desde 2026-11-17 (`docs/pm4/`).
+- **PM4** (4.2.7–4.2.8, módulos E, F, G e histórico/DNA de J): **concluído** em 2026-11-17 (`docs/pm4/PM4_REPORT.md` C6).
 
 ## 3. Objetivo da missão vigente
 
-**Missão vigente: PM4**, Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
+**Missão vigente: nenhuma (PM4 concluído; PM5 aguarda autorização).** Última: PM4, Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
 módulo G, com a parte histórico/DNA do módulo J), até produção, nos 5 idiomas, com métricas só quando a telemetria as
 sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece). Comparativos Pro/coortes ficam no PM5. Limites:
 
@@ -58,7 +59,7 @@ sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece).
 - Coach continua em OpenRouter `openai/gpt-oss-20b`, sem fallback.
 
 Missões concluídas: fundação; protocolo de continuidade (#260, #261); metodologia (2026-11-11); mapeamento 4.2 (#263);
-PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318).
+PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318); PM4 (#319–#324).
 
 ## 4–5. Fase 4.2: entregas, módulos, Prompts Mestres e fases do protocolo
 
@@ -82,7 +83,7 @@ PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318).
 | PM6     | Compatibilidade de demos         | CONCLUÍDA (2026-11-14, #290)         | `pm6/PM6_FINAL_REPORT.md`           |
 | 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | COMPLETE (2026-11-17; relatório §30) | `pm2/PM2_FINAL_REPORT.md`           |
 | 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | CONCLUÍDA (2026-11-17, #318)         | `pm3/PM3_CHECKPOINT.md`             |
-| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | ATIVA (autorizada em 2026-11-17)     | `pm4/PM4_CHECKPOINT.md`             |
+| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | CONCLUÍDA (2026-11-17)               | `pm4/PM4_CHECKPOINT.md`             |
 | 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | PENDENTE                             | `checkpoints/PHASE_5_CHECKPOINT.md` |
 
 ## 6–8. Fase em execução, última etapa, próxima ação
@@ -308,11 +309,11 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: nenhuma ativa. PM1, PM6, PM2 e **PM3 concluídos**; PM4/PM5 aguardam autorização
-- Produção: app de `ad7b73b2`; worker R5.8.30 (`3335c88d`, `768646ea`)
-- Última etapa: PM3 C6 (relatório `docs/pm3/PM3_REPORT.md`)
+- Fase atual: nenhuma ativa. PM1, PM6, PM2, PM3 e **PM4 concluídos**; PM5 aguarda autorização
+- Produção: app de `f1cb9e8e`; worker R5.8.31 (`584ea563`, `0c646583`)
+- Última etapa: PM4 C6 (relatório `docs/pm4/PM4_REPORT.md`)
 - Próxima ação: aguardar instrução do dono
-- Commit: `main` `ad7b73b2`
+- Commit: `main` `f1cb9e8e`
 - Bloqueios: nenhum
-- Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`
+- Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`, `docs/pm4/PM4_REPORT.md`
 - Não repetir: ver a tabela de retomada
