@@ -59,6 +59,8 @@ import {
   compactRounds,
   type CoachLatestRounds,
 } from "@/lib/coach/roundsEvolution";
+import { loadOpenTrainingPlan } from "@/lib/adaptiveTraining.functions";
+import { compactTrainingPlan, loadCoachMoments } from "@/lib/coach/pm5Context";
 import { buildEvolution } from "@/lib/evolution/evolution";
 import { loadRoundsInput } from "@/lib/rounds.functions";
 import { buildRoundReports, summarizeRounds } from "@/lib/rounds/roundImpact";
@@ -396,17 +398,29 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
           );
           // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
           const coachMatchIds = overview.matches.map((m) => m.matchId);
-          const [sides, roundContext, deathPatterns, latestMatchPlay, latestMatchRounds] =
-            await Promise.all([
-              loadSideRounds(db, [playerId], coachMatchIds),
-              loadRoundContext(db, [playerId], coachMatchIds),
-              // PM2: same numbers as the death review page; a read failure only drops the block.
-              loadDeathPatterns(db, context.userId, overview.matches).catch(() => null),
-              // PM3: same reports as /duels and /utility, for the most recent match only.
-              loadLatestMatchPlay(db, context.userId, overview).catch(() => null),
-              // PM4: same report as /rounds, for the most recent match only.
-              loadLatestMatchRounds(db, context.userId, overview).catch(() => null),
-            ]);
+          const [
+            sides,
+            roundContext,
+            deathPatterns,
+            latestMatchPlay,
+            latestMatchRounds,
+            trainingPlan,
+            savedMoments,
+          ] = await Promise.all([
+            loadSideRounds(db, [playerId], coachMatchIds),
+            loadRoundContext(db, [playerId], coachMatchIds),
+            // PM2: same numbers as the death review page; a read failure only drops the block.
+            loadDeathPatterns(db, context.userId, overview.matches).catch(() => null),
+            // PM3: same reports as /duels and /utility, for the most recent match only.
+            loadLatestMatchPlay(db, context.userId, overview).catch(() => null),
+            // PM4: same report as /rounds, for the most recent match only.
+            loadLatestMatchRounds(db, context.userId, overview).catch(() => null),
+            // PM5: own open training plan and saved moments (RLS); a read failure drops the block.
+            loadOpenTrainingPlan(db as never)
+              .then((p) => compactTrainingPlan(p, input.locale))
+              .catch(() => null),
+            loadCoachMoments(db as never).catch(() => null),
+          ]);
           const facts = buildCoachFacts(overview, dna, input.locale, {
             message: input.message,
             xray: buildXRay({ overview, dna, sides, roundContext }),
@@ -416,6 +430,8 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             deathPatterns,
             latestMatchPlay,
             latestMatchRounds,
+            trainingPlan,
+            savedMoments,
             // PM4: same pure report as /evolution (last 10 eligible matches, all maps).
             evolution: overview.matches.length
               ? compactEvolution(

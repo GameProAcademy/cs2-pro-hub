@@ -199,6 +199,18 @@ async function readPlan(db: AnyDb, row: Record<string, unknown>): Promise<PlanVi
   };
 }
 
+/** The caller's open plan (ACTIVE or PAUSED), read with the caller's session (RLS). */
+export async function loadOpenTrainingPlan(db: AnyDb): Promise<PlanView | null> {
+  const r = await db
+    .from("adaptive_training_plans")
+    .select("id, horizon, status, active_version, start_date, pause_reason, closed_at")
+    .in("status", ["ACTIVE", "PAUSED"])
+    .limit(1)
+    .maybeSingle();
+  if (r.error) fail("PLANS_READ", r.error);
+  return r.data ? readPlan(db, r.data as Record<string, unknown>) : null;
+}
+
 export const getAdaptiveTraining = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<TrainingView> => {
