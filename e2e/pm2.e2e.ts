@@ -6,10 +6,13 @@
  *   time navigation → play/pause → feedback (persisted, then restored) → empty/unavailable states →
  *   PM3 /duels and /utility on the same match (provenance, NOT_MEASURED aim limits, replay deep link).
  *   PM4 /rounds on the same match (team vs player, replay links) and /evolution (real N).
+ *   PM5 /moments (a bookmark on the own match, created under RLS, listed with its replay deep link),
+ *   /training (adaptive plan state; no browser write to plan tables) and the BENCHMARK_UNAVAILABLE card.
  * Then cross-user isolation in BOTH directions (A→B and B→A):
  *   /deaths, /replay, /duels and /utility by id, deep links, the feedback server function replayed with the other user's
  *   session and the victim's event ref, an injected owner field, direct REST reads/writes under RLS, and
- *   client cache isolation after logout/login in the same browser context.
+ *   client cache isolation after logout/login in the same browser context, and (PM5) the victim's
+ *   bookmark and training plan unreadable/unwritable through REST and absent from /moments.
  *
  * Credentials come only from E2E_A_EMAIL/E2E_A_PASSWORD/E2E_B_EMAIL/E2E_B_PASSWORD. Nothing secret, no
  * token and no account data is printed: the summary (E2E_SUMMARY_PATH) holds statuses and counts only.
@@ -27,6 +30,7 @@ type OwnData = {
   feedback: Recorded | null;
   supabaseUrl: string | null;
   apikey: string | null;
+  momentId: string | null;
 };
 
 const RANDOM_MATCH = "00000000-0000-4000-8000-000000000000";
@@ -45,6 +49,54 @@ test.describe.configure({ mode: "serial" });
 test.skip(!A || !B, "MANUAL_REQUIRED: E2E_A_* and E2E_B_* credentials are not configured");
 
 const own: Partial<Record<"A" | "B", OwnData>> = {};
+
+/** The signed-in user's access token, read inside the page (never printed). */
+async function sessionToken(page: Page): Promise<string> {
+  const token = await page.evaluate(() => {
+    const k = Object.keys(localStorage).find((x) => /^sb-.*-auth-token$/.test(x));
+    return k
+      ? ((JSON.parse(localStorage.getItem(k) ?? "{}") as { access_token?: string }).access_token ??
+          null)
+      : null;
+  });
+  if (!token) throw new Error("session token not found in the page");
+  return token;
+}
+
+/** One PostgREST call with the page's own session; returns status and row count only. */
+async function rest(
+  page: Page,
+  base: { url: string; key: string },
+  token: string,
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<{ status: number; rows: number; first: Record<string, unknown> | null }> {
+  return page.evaluate(
+    async ({ base, token, method, path, body }) => {
+      const res = await fetch(`${base.url}/rest/v1/${path}`, {
+        method,
+        headers: {
+          apikey: base.key,
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+          prefer: "return=representation",
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const json = (await res.json().catch(() => null)) as unknown;
+      const rows = Array.isArray(json) ? json : [];
+      return {
+        status: res.status,
+        rows: Array.isArray(json) ? rows.length : -1,
+        first: (rows[0] as Record<string, unknown> | undefined) ?? null,
+      };
+    },
+    { base, token, method, path, body },
+  );
+}
+
+const e2eTitle = (who: "A" | "B") => `E2E PM5 ${who}`;
 
 /** Record the Supabase origin/apikey (public publishable key) and the feedback server-fn request. */
 function watch(
@@ -328,6 +380,50 @@ async function ownFlow(browser: Browser, who: "A" | "B", c: Creds) {
   expect(/7656119\d{10}/.test(await page.content())).toBe(false);
   steps["pm4_evolution"] = `PASS ${windowStatus}`;
 
+  // PM5 module J — no licensed benchmark: the card states it, without any number.
+  await expect(page.locator('[data-benchmark-state="BENCHMARK_UNAVAILABLE"]')).toHaveCount(1);
+  steps["pm5_benchmark"] = "PASS BENCHMARK_UNAVAILABLE";
+
+  // PM5 module I — a bookmark on the OWN match, written under RLS with the own session (the same
+  // policy the save dialog uses), listed on /moments with a replay deep link to that match.
+  let momentId: string | null = null;
+  if (!sink.apikey || !sink.supabaseUrl) throw new Error("supabase apikey not observed");
+  const base = { url: sink.supabaseUrl, key: sink.apikey };
+  const token = await sessionToken(page);
+  const title = encodeURIComponent(e2eTitle(who));
+  await rest(page, base, token, "DELETE", `moment_bookmarks?title=eq.${title}`);
+  const created = await rest(page, base, token, "POST", "moment_bookmarks", {
+    match_id: matchId,
+    round_number: round,
+    tick_start: Math.max(0, tick - 320),
+    tick_end: tick + 192,
+    kind: "DEATH",
+    title: e2eTitle(who),
+    source: "REPLAY",
+  });
+  expect(created.status).toBe(201);
+  momentId = (created.first?.["id"] as string | undefined) ?? null;
+  expect(momentId).toBeTruthy();
+  await page.goto("/moments");
+  await expect(page.locator("[data-moments-status]")).toHaveAttribute("data-moments-status", "OK");
+  const momentLink = await page.locator("[data-moment-replay]").first().getAttribute("href");
+  expect(momentLink ?? "").toContain(matchId);
+  expect(/7656119\d{10}/.test(await page.content())).toBe(false);
+  steps["pm5_moments"] = "PASS own bookmark listed with replay link";
+
+  // PM5 module H — the training page renders its evidence state; the browser cannot write plans.
+  await page.goto("/training");
+  const evidence = await page
+    .locator("[data-adaptive-training]")
+    .getAttribute("data-evidence-state", { timeout: 30_000 });
+  expect(["READY", "NO_EVIDENCE", "INSUFFICIENT_SAMPLE"]).toContain(evidence);
+  const forged = await rest(page, base, token, "POST", "adaptive_training_plans", {
+    horizon: 7,
+    status: "COMPLETED",
+  });
+  expect(forged.status).toBeGreaterThanOrEqual(400);
+  steps["pm5_training"] = `PASS ${evidence}; browser plan write refused (http ${forged.status})`;
+
   if (!sink.feedback) throw new Error("feedback request was not observed");
   own[who] = {
     matchId,
@@ -336,6 +432,7 @@ async function ownFlow(browser: Browser, who: "A" | "B", c: Creds) {
     feedback: sink.feedback,
     supabaseUrl: sink.supabaseUrl,
     apikey: sink.apikey,
+    momentId,
   };
   assertNoCredentialInUrl(page, `flow_${who}`);
   steps["credential_guard"] = "PASS 0 requests with credentials in the URL";
@@ -440,8 +537,9 @@ async function isolation(browser: Browser, attacker: "A" | "B", victim: "A" | "B
       : `FAIL unexpected (http ${replay.status})`;
 
   // 7. Direct REST reads/writes under RLS with the attacker's session.
-  const rest = sink.apikey && sink.supabaseUrl ? { url: sink.supabaseUrl, key: sink.apikey } : null;
-  if (rest) {
+  const rest0 =
+    sink.apikey && sink.supabaseUrl ? { url: sink.supabaseUrl, key: sink.apikey } : null;
+  if (rest0) {
     const out = await page.evaluate(
       async ({ rest, token, v }) => {
         const h = {
@@ -485,7 +583,7 @@ async function isolation(browser: Browser, attacker: "A" | "B", victim: "A" | "B
           update: { status: upd.status, rows: Array.isArray(updBody) ? updBody.length : -1 },
         };
       },
-      { rest, token, v: { matchId: v.matchId, round: v.round, tick: v.tick } },
+      { rest: rest0, token, v: { matchId: v.matchId, round: v.round, tick: v.tick } },
     );
     const leaked = Object.entries(out.reads)
       .filter(([, x]) => x.rows > 0)
@@ -499,6 +597,65 @@ async function isolation(browser: Browser, attacker: "A" | "B", victim: "A" | "B
       out.update.rows <= 0 ? `PASS 0 rows (http ${out.update.status})` : "FAIL rows updated";
   } else {
     r["7_rest"] = "NOT_RUN supabase apikey not observed";
+  }
+
+  // PM5 — the victim's bookmark and training plan through REST with the attacker's session, and
+  // the attacker's /moments page.
+  if (rest0) {
+    const m = v.momentId!;
+    const readMoment = await rest(
+      page,
+      rest0,
+      token,
+      "GET",
+      `moment_bookmarks?select=id&id=eq.${m}`,
+    );
+    const readByMatch = await rest(
+      page,
+      rest0,
+      token,
+      "GET",
+      `moment_bookmarks?select=id&match_id=eq.${v.matchId}`,
+    );
+    const insertOnVictim = await rest(page, rest0, token, "POST", "moment_bookmarks", {
+      match_id: v.matchId,
+      tick_start: 0,
+      tick_end: 64,
+      kind: "TICK_RANGE",
+      title: "x",
+    });
+    const patch = await rest(page, rest0, token, "PATCH", `moment_bookmarks?id=eq.${m}`, {
+      title: "hijacked",
+    });
+    const del = await rest(page, rest0, token, "DELETE", `moment_bookmarks?id=eq.${m}`);
+    const sub = JSON.parse(atob(token.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/"))) as {
+      sub: string;
+    };
+    const plans = await rest(page, rest0, token, "GET", "adaptive_training_plans?select=user_id");
+    const foreignPlans = await rest(
+      page,
+      rest0,
+      token,
+      "GET",
+      `adaptive_training_plans?select=id&user_id=neq.${sub.sub}`,
+    );
+    r["pm5_rest_moment_read"] =
+      readMoment.rows === 0 && readByMatch.rows === 0 ? "PASS 0 rows" : "FAIL victim bookmark read";
+    r["pm5_rest_moment_insert_on_victim_match"] =
+      insertOnVictim.status >= 400
+        ? `PASS refused (http ${insertOnVictim.status})`
+        : "FAIL inserted";
+    r["pm5_rest_moment_update"] = patch.rows <= 0 ? "PASS 0 rows" : "FAIL updated";
+    r["pm5_rest_moment_delete"] = del.rows <= 0 ? "PASS 0 rows" : "FAIL deleted";
+    r["pm5_rest_training_plans"] =
+      plans.status < 400 && foreignPlans.rows === 0
+        ? "PASS own rows only"
+        : "FAIL foreign plan read";
+    await page.goto("/moments");
+    await page.locator("[data-moments-status]").waitFor({ timeout: 30_000 });
+    const html = await page.content();
+    r["pm5_moments_page"] =
+      html.includes(m) || html.includes(e2eTitle(victim)) ? "FAIL victim moment shown" : "PASS";
   }
 
   // 10. Client cache isolation inside ONE single-page session: the victim signs in and opens their replay
