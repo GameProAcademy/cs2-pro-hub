@@ -14,6 +14,7 @@ import {
   Film,
   Crosshair,
   Bomb,
+  Coins,
 } from "lucide-react";
 
 import type { TranslationKey } from "@/i18n/config";
@@ -37,6 +38,7 @@ export const navItems: NavItem[] = [
   { labelKey: "nav.replay", to: "/replay", icon: Film },
   { labelKey: "nav.combat", to: "/duels", icon: Crosshair },
   { labelKey: "nav.utility", to: "/utility", icon: Bomb },
+  { labelKey: "nav.rounds", to: "/rounds", icon: Coins },
   { labelKey: "nav.analysis", to: "/analysis", icon: Stethoscope, primary: true },
   { labelKey: "nav.training", to: "/training", icon: Target, primary: true },
   { labelKey: "nav.goals", to: "/goals", icon: Flag },

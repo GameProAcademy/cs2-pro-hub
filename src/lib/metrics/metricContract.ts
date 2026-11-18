@@ -342,22 +342,72 @@ export const RELEASE_MATRIX: readonly ReleaseEntry[] = [
     metric_key: "economy.equipment_value",
     delivery: "4.2.7",
     release: "PARTIAL",
-    blockers: ["NO_BUY_CLASSIFIER"],
-    evidence: "round_players.money_start/equipment_value 969/970 rows; buy_context empty",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence:
+      "cs2.economy.v1 (src/lib/rounds/economy.ts, /rounds): round_players.money_start + equipment_value (equipment held before buying); hidden on pistol rounds (warmup gear); spend per player only from parser R5.8.31",
+  },
+  {
+    metric_key: "economy.buy_classification",
+    delivery: "4.2.7",
+    release: "PARTIAL",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence:
+      "cs2.economy.v1: team equipment + spend bands from Xenopoulos et al. 2021 (arXiv 2109.12990, Table 1); pistol = economy reset; cash_spent_this_round at round end (= value at buytime_ended in 679/679 player-rounds); matches before R5.8.31 → UNKNOWN, never eco",
+  },
+  {
+    metric_key: "impact.opening",
+    delivery: "4.2.7",
+    release: "SUPPORTED",
+    blockers: [],
+    evidence:
+      "cs2.rounds.v1 (src/lib/rounds/roundImpact.ts): first death of the round by unique earliest tick; same-tick ties AMBIGUOUS; world/self first deaths kept without an opening kill",
   },
   {
     metric_key: "impact.trade",
     delivery: "4.2.7",
     release: "SUPPORTED",
     blockers: [],
-    evidence: "TRADE_WINDOW_SECONDS = 5 (src/config/pipeline.ts)",
+    evidence:
+      "TRADE_WINDOW_SECONDS = 5 (src/config/pipeline.ts), reused by cs2.rounds.v1 for trade kills and deaths traded",
   },
   {
     metric_key: "impact.numerical_advantage",
     delivery: "4.2.7",
     release: "PARTIAL",
-    blockers: ["NOT_IMPLEMENTED"],
-    evidence: "kills × round_players.side; round winner side validated",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence:
+      "cs2.rounds.v1: alive counts from round_players.side and kills, same-tick deaths applied together; rounds with a disconnect (player_disconnect, R5.8.31+) or a victim outside the roster are NOT_MEASURED; older matches cannot detect disconnects",
+  },
+  {
+    metric_key: "impact.clutch",
+    delivery: "4.2.7",
+    release: "PARTIAL",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence:
+      "cs2.rounds.v1: last alive vs N ≥ 1 opponents, won = round won and survived; split 1v1/1v2/…; same disconnect limit as impact.numerical_advantage",
+  },
+  {
+    metric_key: "impact.retake_post_plant",
+    delivery: "4.2.7",
+    release: "SUPPORTED",
+    blockers: [],
+    evidence:
+      "cs2.rounds.v1: bomb_plant event with planter, alive counts at the plant tick, bomb_defuse/bomb_explode; team rates only",
+  },
+  {
+    metric_key: "impact.objective",
+    delivery: "4.2.7",
+    release: "SUPPORTED",
+    blockers: [],
+    evidence: "cs2.rounds.v1: bomb_plant / bomb_defuse authorship (actor of the event)",
+  },
+  {
+    metric_key: "impact.survival",
+    delivery: "4.2.7",
+    release: "PARTIAL",
+    blockers: ["LEGACY_MATCHES_WITHOUT_TELEMETRY"],
+    evidence:
+      "cs2.rounds.v1: denominator = valid rounds with the player's side known and no disconnect of the player; disconnect only observable from R5.8.31",
   },
   {
     metric_key: "evolution.trend",
