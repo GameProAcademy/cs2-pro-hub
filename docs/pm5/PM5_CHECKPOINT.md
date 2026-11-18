@@ -3,7 +3,7 @@
 > Leia este arquivo depois de `docs/CS2_PRO_CONTINUITY_CHECKPOINT.md`.
 > Conciso de propósito. Antes de agir, confira o estado real no GitHub, no Lovable e no Railway.
 
-Atualizado em: 2026-11-18 (C3 em andamento) · sessão `session_012aG79D5h8yCsYxNjWpDaHG`
+Atualizado em: 2026-11-18 (C6) · sessão `session_012aG79D5h8yCsYxNjWpDaHG`
 
 ## Escopo e limites
 
@@ -12,13 +12,13 @@ Atualizado em: 2026-11-18 (C3 em andamento) · sessão `session_012aG79D5h8yCsYx
 
 ## Estado
 
-| Item            | Valor                                                                               |
-| --------------- | ----------------------------------------------------------------------------------- |
-| Marco atual     | **C3 Implementação** (C4/C5 parciais para I e FACEIT link)                          |
-| `main`          | `8a16af3b` (merge do #327)                                                          |
-| App em produção | publicação de `8a16af3b` (momentos `/moments`; rota `/faceit/callback` respondendo) |
-| Banco           | migration `20261118120000` (momentos) **aplicada e registrada**                     |
-| Worker          | inalterado: Railway `584ea563`, R5.8.31                                             |
+| Item            | Valor                                                           |
+| --------------- | --------------------------------------------------------------- |
+| Marco atual     | **C3 Implementação** (C4/C5 parciais para I e FACEIT link)      |
+| `main`          | `8a16af3b` (merge do #327)                                      |
+| App em produção | publicação de `eeffaa2e`; `98d10f9c` com H.3-E PASS e E2E 12/12 |
+| Banco           | migration `20261118120000` (momentos) **aplicada e registrada** |
+| Worker          | inalterado: Railway `584ea563`, R5.8.31                         |
 
 ## PRs
 
@@ -32,6 +32,8 @@ Atualizado em: 2026-11-18 (C3 em andamento) · sessão `session_012aG79D5h8yCsYx
 | #331 | "Continuar com FACEIT" (migration `20261118160000`, dry-run OK)       | aberto, CI                            |
 | #332 | Cartão FACEIT em `/profile` (faltava no modo de dados reais)          | aberto, CI                            |
 
+Relatório final: `docs/pm5/PM5_REPORT.md` (PRs #326–#341).
+
 ## Decisões
 
 - Treino: tabelas novas `adaptive_training_*`; as legadas `training_plans`/`training_plan_items` (0 linhas) ficam intactas. Escrita só pelo servidor; revisão só com aceite (nova versão imutável).
@@ -41,10 +43,9 @@ Atualizado em: 2026-11-18 (C3 em andamento) · sessão `session_012aG79D5h8yCsYx
 
 ## Pendências
 
-- **Ação manual do dono:** depois da publicação do #332, abrir `/profile` → cartão FACEIT → "Conectar FACEIT" e autorizar; isso valida OAuth real, sync e a matriz de campos.
-- Merge + aplicação das migrations de #328 e #331; publicação; H.3-E; E2E estendido.
-- Revisão mensal (estrutura), E2E de `/moments` e `/training`, auditoria A–J, relatório final.
+- MANUAL_REQUIRED: conta FACEIT com partidas de CS2 para validar a importação; teste de "Continuar com FACEIT" (`email_verified`).
+- Dono: desconectar/reconectar a FACEIT uma vez após #341 para a identidade aparecer verificada.
 
 ## Não repetir
 
-- PM1–PM4 inteiros; migration `20261118120000`; merges #326/#327.
+- PM1–PM4 inteiros; PRs #326–#341; migrations `20261118120000`, `20261118140000`, `20261118160000`, `20261118180000`.
