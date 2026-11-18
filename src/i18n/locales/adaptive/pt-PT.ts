@@ -98,6 +98,7 @@ export const adaptivePtPT: Record<keyof typeof adaptivePtBR, string> = {
   "training.adaptive.done": "Concluído quando:",
   "training.adaptive.tracks": "Métrica revista na revisão: {m}",
   "training.adaptive.openPage": "Abrir no CS2 PRO",
+  "training.adaptive.openMoments": "Abrir os meus momentos guardados",
   "training.adaptive.reference": "Referência externa",
   "training.adaptive.referenceNote": "Conteúdo de terceiros; a disponibilidade pode mudar.",
   "training.adaptive.durationDone": "Duração (min)",

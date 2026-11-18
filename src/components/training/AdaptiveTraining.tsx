@@ -568,6 +568,15 @@ function SessionItem({
               {t("training.adaptive.openPage")}
             </Link>
           ) : null}
+          {ex.equipment === "CS2PRO_REVIEW" ? (
+            <Link
+              to="/moments"
+              className="ml-3 text-xs text-primary underline-offset-2 hover:underline"
+              data-session-moments
+            >
+              {t("training.adaptive.openMoments")}
+            </Link>
+          ) : null}
           {ex.reference ? (
             <a
               href={ex.reference}

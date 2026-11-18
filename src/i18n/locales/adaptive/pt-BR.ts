@@ -97,6 +97,7 @@ export const adaptivePtBR = {
   "training.adaptive.done": "Concluído quando:",
   "training.adaptive.tracks": "Métrica revista na revisão: {m}",
   "training.adaptive.openPage": "Abrir no CS2 PRO",
+  "training.adaptive.openMoments": "Abrir meus momentos salvos",
   "training.adaptive.reference": "Referência externa",
   "training.adaptive.referenceNote": "Conteúdo de terceiros; a disponibilidade pode mudar.",
   "training.adaptive.durationDone": "Duração (min)",
