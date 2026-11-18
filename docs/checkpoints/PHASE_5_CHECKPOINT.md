@@ -1,3 +1,5 @@
+> **HISTÓRICO.** A Fase 5 (PM5) foi executada e encerrada em 2026-11-18 (#342 `10da2e7f`). Estado atual: `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
+
 # Fase 5 — checkpoint
 
 Situação: **PENDENTE (não iniciada)** · Atualizado em: 2026-11-11

@@ -4,6 +4,8 @@
 > BENCHMARK_UNAVAILABLE · NÃO APLICÁVEL. Nenhum PASS sem evidência. Sem e-mails, SteamIDs, segredos ou demos.
 > Sessão `session_012aG79D5h8yCsYxNjWpDaHG`.
 
+> **PM5 encerrado (C6)** pelo PR #342, commit `10da2e7f637adfe42fb1ab2a506ca5534a6a5776`.
+
 ## 1. Resumo executivo
 
 O PM5 entregou o módulo H (treino adaptativo 7/30/90 com evidências, sessões explícitas e versões),
@@ -100,24 +102,25 @@ e método comparável. Registro vazio; `BENCHMARK_UNAVAILABLE` na UI, no Coach e
 
 ## 13. PRs e merges
 
-| PR   | Conteúdo                                                | Merge      |
-| ---- | ------------------------------------------------------- | ---------- |
-| #326 | módulo I                                                | `7c0a3a4c` |
-| #327 | FACEIT habilitado (aliases, OpenID, `/faceit/callback`) | `8a16af3b` |
-| #328 | módulo H                                                | `7b506f4f` |
-| #329 | módulo J                                                | `78219ea5` |
-| #330 | Coach (regras 29–31)                                    | `b3159b35` |
-| #332 | cartão FACEIT em `/profile`                             | `2ad34504` |
-| #331 | "Continuar com FACEIT"                                  | `3fe6cf36` |
-| #334 | revisão mensal (prévia)                                 | `b7e6015c` |
-| #335 | E2E PM5                                                 | `07cf8e64` |
-| #336 | momentos a partir de mapas/mortes/duelos/utilitários    | `bda6c8d7` |
-| #337 | exercícios de revisão → momentos                        | `1ea80708` |
-| #333 | checkpoint C3 e matriz FACEIT                           | `98d10f9c` |
-| #338 | FACEIT `redirect_popup=true`                            | `95022018` |
-| #339 | diagnóstico da etapa que falha no callback FACEIT       | `c189bd76` |
-| #340 | strings vazias da FACEIT = ausente; lifetime tolerante  | `72290d77` |
-| #341 | link do perfil `{lang}` e identidade verificada         | `eeffaa2e` |
+| PR   | Conteúdo                                                 | Merge      |
+| ---- | -------------------------------------------------------- | ---------- |
+| #326 | módulo I                                                 | `7c0a3a4c` |
+| #327 | FACEIT habilitado (aliases, OpenID, `/faceit/callback`)  | `8a16af3b` |
+| #328 | módulo H                                                 | `7b506f4f` |
+| #329 | módulo J                                                 | `78219ea5` |
+| #330 | Coach (regras 29–31)                                     | `b3159b35` |
+| #332 | cartão FACEIT em `/profile`                              | `2ad34504` |
+| #331 | "Continuar com FACEIT"                                   | `3fe6cf36` |
+| #334 | revisão mensal (prévia)                                  | `b7e6015c` |
+| #335 | E2E PM5                                                  | `07cf8e64` |
+| #336 | momentos a partir de mapas/mortes/duelos/utilitários     | `bda6c8d7` |
+| #337 | exercícios de revisão → momentos                         | `1ea80708` |
+| #333 | checkpoint intermediário (C3, histórico) e matriz FACEIT | `98d10f9c` |
+| #338 | FACEIT `redirect_popup=true`                             | `95022018` |
+| #339 | diagnóstico da etapa que falha no callback FACEIT        | `c189bd76` |
+| #340 | strings vazias da FACEIT = ausente; lifetime tolerante   | `72290d77` |
+| #341 | link do perfil `{lang}` e identidade verificada          | `eeffaa2e` |
+| #342 | relatório final e checkpoints (fechamento C6)            | `10da2e7f` |
 
 ## 14. Migrations
 

@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 FECHADO (C6) com pendências MANUAL_REQUIRED · por: sessão Claude
+Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 ENCERRADO (C6, #342 `10da2e7f`); integração Steam autorizada · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,23 +12,23 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **PM5 fechado (C6)** — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`                                                                                                     |
-| Etapa atual                        | C6 concluída; pendências MANUAL_REQUIRED (FACEIT com partidas reais, login com FACEIT)                                                                                             |
-| Última etapa concluída             | #341 mergeado (`eeffaa2e`) e publicado; FACEIT conectada/desconectada/reconectada em produção                                                                                      |
-| Operações em andamento             | Nenhuma                                                                                                                                                                            |
-| Processos em execução              | Nenhum                                                                                                                                                                             |
-| Branch ativa                       | nenhuma além de `main`                                                                                                                                                             |
-| Último commit confirmado em `main` | `eeffaa2e` (merge do #341)                                                                                                                                                         |
-| Build validado em produção         | App `98d10f9c`: H.3-E PASS, E2E 12/12; publicação `eeffaa2e`. Worker inalterado: Railway `584ea563` (R5.8.31)                                                                      |
-| Gates mais recentes                | `f1cb9e8e`: Quality Gates 44214683915, Queue Semantics 44214683954, H.3-E PASS 44218097807, E2E 44215050582 12/12. `1b4bd82f`: attestation 44207611056, H.3-E PASS 44210630121     |
-| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
-| **Próxima ação exata**             | Quando houver conta FACEIT com partidas de CS2: conectar, validar importação e atualizar `docs/pm5/FACEIT_FIELD_MATRIX.md`                                                         |
-| Ações que NÃO devem ser repetidas  | PM1–PM5; PRs #326–#341; migrations `20261118120000/140000/160000/180000`                                                                                                           |
-| Ações manuais necessárias          | Conta FACEIT com partidas para teste; opcional: testar "Continuar com FACEIT"                                                                                                      |
+| Item                               | Valor                                                                                                                                                                                                                                     |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | Nenhuma fase 4.2 ativa — **PM5 encerrado (C6)**. Missão seguinte autorizada: integração Steam/Valve                                                                                                                                       |
+| Etapa atual                        | PM5 encerrado; pendências documentadas como limitações (não reabrem o PM5)                                                                                                                                                                |
+| Última etapa concluída             | #342 (`10da2e7f`): relatório final e checkpoints do PM5                                                                                                                                                                                   |
+| Operações em andamento             | Nenhuma                                                                                                                                                                                                                                   |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                                    |
+| Branch ativa                       | nenhuma além de `main`                                                                                                                                                                                                                    |
+| Último commit confirmado em `main` | `10da2e7f` (merge do #342)                                                                                                                                                                                                                |
+| Build validado em produção         | App publicado de `eeffaa2e` (#341, código idêntico ao `10da2e7f` fora de docs); validação completa em `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 12/12 44249188759. Worker inalterado: Railway `584ea563` (R5.8.31) |
+| Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                                                                        |
+| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                                        |
+| **Próxima ação exata**             | Integração Steam/Valve (ver o checkpoint da missão Steam quando criado)                                                                                                                                                                   |
+| Ações que NÃO devem ser repetidas  | PM1–PM5; PRs #326–#342; migrations `20261118120000/140000/160000/180000`                                                                                                                                                                  |
+| Ações manuais necessárias          | Nenhuma para o PM5. Limitações: conta FACEIT com partidas (importação real), "Continuar com FACEIT", fonte de benchmark licenciada, consentimento para envio da revisão mensal                                                            |
 
-Checkpoint da fase ativa: `docs/pm5/PM5_CHECKPOINT.md`. Última fase concluída: `docs/pm4/PM4_CHECKPOINT.md` e `docs/pm4/PM4_REPORT.md`.
+Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
 
 ## 1. Identificação
 
@@ -38,7 +38,7 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 
 ## 2. Estado atual do projeto
 
-- `main` = `f1cb9e8e` (2026-11-17). HISTÓRICO: `ad7b73b2` era o último funcional do PM3; `10e90693` (#318) foi o fechamento documental.
+- `main` = `10da2e7f` (2026-11-18, fechamento do PM5). HISTÓRICO: `f1cb9e8e` fechou o PM4; `ad7b73b2` era o último funcional do PM3; `10e90693` (#318) foi o fechamento documental.
 - Fundação publicada: Score `pro-score-v1` e DNA `dna-weighted-v2`.
 - **PM1** (4.2.1–4.2.2): concluído e validado em produção (`docs/pm1/PM1_EXECUTION_REPORT.md`).
 - **PM6** (compatibilidade de demos, integridade de partida, nicks, segurança): **concluído** em 2026-11-14 (#290 `66d4af1d`; `docs/pm6/PM6_FINAL_REPORT.md` §11, "pronto para o PM2, com ressalvas classificadas").
@@ -46,10 +46,11 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 - Parser em produção: R5.8.31 (`0c646583`, demoparser2 0.42.2; Railway `584ea563`). HISTÓRICO: R5.8.30 `768646ea` / `3335c88d`.
 - **PM3** (4.2.5–4.2.6, módulos C e D): **concluído** em 2026-11-17 (`docs/pm3/PM3_REPORT.md` C6, #318 `10e90693`).
 - **PM4** (4.2.7–4.2.8, módulos E, F, G e histórico/DNA de J): **concluído** em 2026-11-17 (`docs/pm4/PM4_REPORT.md` C6).
+- **PM5** (4.2.9–4.2.10, módulos H, I e J; FACEIT; Coach; revisão mensal): **encerrado** em 2026-11-18 (`docs/pm5/PM5_REPORT.md` C6, #342 `10da2e7f`). FACEIT: conectar/desconectar/reconectar validados pelo usuário; importação de partidas reais e login novo por FACEIT não validados; benchmark profissional indisponível; revisão mensal só como prévia, sem envio.
 
 ## 3. Objetivo da missão vigente
 
-**Missão vigente: nenhuma (PM4 concluído; PM5 aguarda autorização).** Última: PM4, Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
+**Missão vigente: integração Steam/Valve (autorizada em 2026-11-18).** PM5 encerrado (#342). HISTÓRICO — PM4: Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
 módulo G, com a parte histórico/DNA do módulo J), até produção, nos 5 idiomas, com métricas só quando a telemetria as
 sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece). Comparativos Pro/coortes ficam no PM5. Limites:
 
@@ -59,7 +60,7 @@ sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece).
 - Coach continua em OpenRouter `openai/gpt-oss-20b`, sem fallback.
 
 Missões concluídas: fundação; protocolo de continuidade (#260, #261); metodologia (2026-11-11); mapeamento 4.2 (#263);
-PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318); PM4 (#319–#324).
+PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318); PM4 (#319–#325); PM5 (#326–#342).
 
 ## 4–5. Fase 4.2: entregas, módulos, Prompts Mestres e fases do protocolo
 
@@ -75,16 +76,16 @@ PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318); PM4 
 - **PM6** (2026-11-13) é uma missão transversal de compatibilidade de demos, executada antes do PM2.
 - As "Fases 1–5" originais deste protocolo correspondem aos PM1–PM5.
 - Os arquivos `checkpoints/PHASE_*` ficam como histórico. O estado por PM vive em
-  `docs/pm1/`, `docs/pm6/`, `docs/pm2/` e `docs/pm3/`.
+  `docs/pm1/`, `docs/pm6/`, `docs/pm2/`, `docs/pm3/`, `docs/pm4/` e `docs/pm5/`.
 
-| Fase    | Nome / escopo                    | Situação                             | Checkpoint                          |
-| ------- | -------------------------------- | ------------------------------------ | ----------------------------------- |
-| 1 (PM1) | 4.2.1–4.2.2, módulos A e B       | CONCLUÍDA, validada em produção      | `pm1/PM1_EXECUTION_REPORT.md`       |
-| PM6     | Compatibilidade de demos         | CONCLUÍDA (2026-11-14, #290)         | `pm6/PM6_FINAL_REPORT.md`           |
-| 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | COMPLETE (2026-11-17; relatório §30) | `pm2/PM2_FINAL_REPORT.md`           |
-| 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | CONCLUÍDA (2026-11-17, #318)         | `pm3/PM3_CHECKPOINT.md`             |
-| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | CONCLUÍDA (2026-11-17)               | `pm4/PM4_CHECKPOINT.md`             |
-| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | PENDENTE                             | `checkpoints/PHASE_5_CHECKPOINT.md` |
+| Fase    | Nome / escopo                    | Situação                                | Checkpoint                    |
+| ------- | -------------------------------- | --------------------------------------- | ----------------------------- |
+| 1 (PM1) | 4.2.1–4.2.2, módulos A e B       | CONCLUÍDA, validada em produção         | `pm1/PM1_EXECUTION_REPORT.md` |
+| PM6     | Compatibilidade de demos         | CONCLUÍDA (2026-11-14, #290)            | `pm6/PM6_FINAL_REPORT.md`     |
+| 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | COMPLETE (2026-11-17; relatório §30)    | `pm2/PM2_FINAL_REPORT.md`     |
+| 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | CONCLUÍDA (2026-11-17, #318)            | `pm3/PM3_CHECKPOINT.md`       |
+| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | CONCLUÍDA (2026-11-17)                  | `pm4/PM4_CHECKPOINT.md`       |
+| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | ENCERRADA (2026-11-18, #342 `10da2e7f`) | `pm5/PM5_CHECKPOINT.md`       |
 
 ## 6–8. Fase em execução, última etapa, próxima ação
 
@@ -309,11 +310,10 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase atual: nenhuma ativa. PM1, PM6, PM2, PM3 e **PM4 concluídos**; PM5 aguarda autorização
-- Produção: app de `f1cb9e8e`; worker R5.8.31 (`584ea563`, `0c646583`)
-- Última etapa: PM4 C6 (relatório `docs/pm4/PM4_REPORT.md`)
-- Próxima ação: aguardar instrução do dono
-- Commit: `main` `f1cb9e8e`
-- Bloqueios: nenhum
-- Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`, `docs/pm4/PM4_REPORT.md`
+- Fase 4.2: PM1, PM6, PM2, PM3, PM4 e **PM5 concluídos**; missão seguinte: integração Steam/Valve
+- Produção: app de `eeffaa2e` (validação completa em `98d10f9c`); worker R5.8.31 (`584ea563`, `0c646583`)
+- Última etapa: PM5 C6 (relatório `docs/pm5/PM5_REPORT.md`, #342 `10da2e7f`)
+- Commit: `main` `10da2e7f`
+- Bloqueios: nenhum. Limitações do PM5: importação FACEIT real e login por FACEIT não validados; benchmark indisponível; revisão mensal sem envio
+- Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`, `docs/pm4/PM4_REPORT.md`, `docs/pm5/PM5_REPORT.md`
 - Não repetir: ver a tabela de retomada
