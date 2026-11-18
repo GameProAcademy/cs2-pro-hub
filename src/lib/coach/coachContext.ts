@@ -30,6 +30,7 @@ import type { PlayerOverview } from "@/lib/playerOverview";
 import type { DeathPatternsResponse } from "@/lib/diagnosis.functions";
 import { PATTERN_POLICY } from "@/lib/diagnosis/deathRules";
 import type { LatestMatchPlay } from "@/lib/coach/latestMatchPlay";
+import type { CoachEvolution, CoachLatestRounds } from "@/lib/coach/roundsEvolution";
 
 export const COACH_VERSION = "ai-coach-v3";
 export const COACH_MAX_MESSAGE_CHARS = 1000;
@@ -267,6 +268,13 @@ export interface CoachFacts {
    * the /duels and /utility pages show them. null = not available.
    */
   latestMatchPlay: LatestMatchPlay | null;
+  /**
+   * PM4: rounds and economy (cs2.rounds.v1 + cs2.economy.v1) of the MOST RECENT match only, as
+   * the /rounds page shows them. null = not available.
+   */
+  latestMatchRounds: CoachLatestRounds | null;
+  /** PM4: evolution over the last 10 eligible matches (cs2.evolution.v1), as /evolution shows it. */
+  evolution: CoachEvolution | null;
   /** Per-match rows relevant to THIS message (maps it names, else the most recent ones). */
   matchesIncluded: number;
   matches: Array<{
@@ -507,6 +515,10 @@ export function buildCoachFacts(
     deathPatterns?: DeathPatternsResponse | null;
     /** PM3: most recent match's duels and utility, as /duels and /utility show them. */
     latestMatchPlay?: LatestMatchPlay | null;
+    /** PM4: most recent match's rounds and economy, as /rounds shows them. */
+    latestMatchRounds?: CoachLatestRounds | null;
+    /** PM4: last-10-matches evolution, as /evolution shows it. */
+    evolution?: CoachEvolution | null;
   } = {},
 ): CoachFacts {
   const dict = dictionaries[locale];
@@ -677,6 +689,8 @@ export function buildCoachFacts(
         }
       : null,
     latestMatchPlay: options.latestMatchPlay ?? null,
+    latestMatchRounds: options.latestMatchRounds ?? null,
+    evolution: options.evolution ?? null,
     matchesIncluded: matches.length,
     matches,
     totals: coachTotals(allRows),
@@ -842,6 +856,8 @@ export function coachSystemPrompt(locale: Locale): string {
     "24. Match end: matches[].matchEnd.endedBy SURRENDER means the match ended early by an official surrender after matchEnd.validRounds played rounds. Treat it as a shorter sample: never count, estimate or project the rounds that were not played, never penalise the player for them, and never present a surrendered match as a full-length one. matchEnd null means the end was not recorded for that match; say nothing about how it ended.",
     "25. Deaths: deathPatterns holds the death review's rule counts (version in deathPatterns.rulesVersion). Present a rule as a recurring pattern ONLY when its status is RECURRENT, always with its numbers (occurrences of evaluatedDeaths, over matches) and the period; with INSUFFICIENT_SAMPLE say the sample is too small and draw no tendency; NOT_SUPPORTED rules (exposure, isolation, re-peek, rotation timing) are not measured: never claim them. TRADE_NOT_OBSERVED means no teammate killed the killer within the trade window: never blame teammates and never say a trade was possible. Never give a probability or a confidence percentage for a death. deathPatterns null means the death review is not available: say nothing about death patterns.",
     "26. Duels, aim and utility: latestMatchPlay holds ONLY the most recent match (map and dateBasis given): combat (cs2.duels.v1) and utility (cs2.utility.v1), exactly as the Duels and Utility pages show them. Every metric there has status, value, unit, sample and method: quote value and sample only for OBSERVED, DERIVED or INFERRED (say INFERRED is an attribution); INSUFFICIENT_SAMPLE means too few duels/shots/flashes to give a number; NOT_OBSERVED means that demo did not record it (e.g. throwsRecorded or blindsRecorded false), never zero. A value in percent is already a percentage. One match is one observation: never call it a tendency (rule 4). A duel is the damage traded with ONE opponent closed by a kill between the two; losing duels does not by itself prove bad aim. Crosshair placement, counter-strafe and recoil control (combat.notMeasured) are NOT MEASURED: never claim or estimate them. A flash with no enemy blinded had no MEASURED effect, which is not proof it was useless. latestMatchPlay null means not available: say nothing about duels or utility of the latest match.",
+    "27. Rounds and economy: latestMatchRounds holds ONLY the most recent match (versions given), exactly as the Rounds page shows it. team.* are TEAM results (rounds the player's team won in that situation, as n of `of`); never present them as the player's own performance and never attribute a round win or loss to one player. me.* are the player's own numbers. A buy category (pistol, eco, low_buy, half_buy, hero_low_buy, hero_half_buy, full_buy) comes from team equipment plus spend with published bands; when spendRecorded is false the buy was NOT MEASURED for that match: never call any round eco, force or full buy then, and never guess a buy from weapons or kills. unknownBuyRounds are rounds whose buy was not measured. percent null means no eligible round: say so, never 0%. A clutch is the player last alive against N opponents; one clutch is one observation, never a clutch-player label. disconnectRounds had a disconnect: numbers advantage was not measured there. Rates are descriptive, never causes (rule 4). latestMatchRounds null means not available: say nothing about rounds or economy.",
+    "28. Evolution: evolution holds the last-10-eligible-matches window (window.n is the REAL number of matches; status PARTIAL means fewer than 10, INSUFFICIENT_SAMPLE means too few to use). For each metric: value is pooled from numerators and denominators (aggregation POOLED_RATIO) or a mean per match (MEAN_PER_MATCH, rating); measuredIn of windowMatches is its coverage; NO_SAMPLE or INCOMPATIBLE_METHODS means no value: never invent one. consistency (median, IQR q1–q3, sd, cv) is descriptive: never label the player consistent or inconsistent, and never confuse consistency with a high average. comparison: only with status OK may you say a metric went up or down between the previous and the recent window, always with both match counts; otherwise say the comparison is not available and why (INSUFFICIENT_SAMPLE, INCOMPATIBLE_METHODS, NO_PREVIOUS_PERIOD). Never claim improvement or decline without an OK comparison, never attribute a change to training, a map or any cause, and never compare across different methods. evolution null means not available.",
     ...coachPersonaRules(),
   ].join("\n");
 }
