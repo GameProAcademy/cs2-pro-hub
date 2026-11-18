@@ -25,6 +25,7 @@ import { Route as AuthenticatedEvolutionRouteImport } from './routes/_authentica
 import { Route as AuthenticatedGoalsRouteImport } from './routes/_authenticated/goals'
 import { Route as AuthenticatedMapsRouteImport } from './routes/_authenticated/maps'
 import { Route as AuthenticatedMatchesRouteImport } from './routes/_authenticated/matches'
+import { Route as AuthenticatedMomentsRouteImport } from './routes/_authenticated/moments'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedPerformanceRouteImport } from './routes/_authenticated/performance'
 import { Route as AuthenticatedPlayerDnaRouteImport } from './routes/_authenticated/player-dna'
@@ -135,6 +136,11 @@ const AuthenticatedMapsRoute = AuthenticatedMapsRouteImport.update({
 const AuthenticatedMatchesRoute = AuthenticatedMatchesRouteImport.update({
   id: '/matches',
   path: '/matches',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMomentsRoute = AuthenticatedMomentsRouteImport.update({
+  id: '/moments',
+  path: '/moments',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNotificationsRoute =
@@ -329,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/goals': typeof AuthenticatedGoalsRoute
   '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
+  '/moments': typeof AuthenticatedMomentsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/performance': typeof AuthenticatedPerformanceRoute
   '/player-dna': typeof AuthenticatedPlayerDnaRoute
@@ -376,6 +383,7 @@ export interface FileRoutesByTo {
   '/goals': typeof AuthenticatedGoalsRoute
   '/maps': typeof AuthenticatedMapsRoute
   '/matches': typeof AuthenticatedMatchesRoute
+  '/moments': typeof AuthenticatedMomentsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/performance': typeof AuthenticatedPerformanceRoute
   '/player-dna': typeof AuthenticatedPlayerDnaRoute
@@ -426,6 +434,7 @@ export interface FileRoutesById {
   '/_authenticated/goals': typeof AuthenticatedGoalsRoute
   '/_authenticated/maps': typeof AuthenticatedMapsRoute
   '/_authenticated/matches': typeof AuthenticatedMatchesRoute
+  '/_authenticated/moments': typeof AuthenticatedMomentsRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/performance': typeof AuthenticatedPerformanceRoute
   '/_authenticated/player-dna': typeof AuthenticatedPlayerDnaRoute
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/goals'
     | '/maps'
     | '/matches'
+    | '/moments'
     | '/notifications'
     | '/performance'
     | '/player-dna'
@@ -523,6 +533,7 @@ export interface FileRouteTypes {
     | '/goals'
     | '/maps'
     | '/matches'
+    | '/moments'
     | '/notifications'
     | '/performance'
     | '/player-dna'
@@ -572,6 +583,7 @@ export interface FileRouteTypes {
     | '/_authenticated/goals'
     | '/_authenticated/maps'
     | '/_authenticated/matches'
+    | '/_authenticated/moments'
     | '/_authenticated/notifications'
     | '/_authenticated/performance'
     | '/_authenticated/player-dna'
@@ -738,6 +750,13 @@ declare module '@tanstack/react-router' {
       path: '/matches'
       fullPath: '/matches'
       preLoaderRoute: typeof AuthenticatedMatchesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/moments': {
+      id: '/_authenticated/moments'
+      path: '/moments'
+      fullPath: '/moments'
+      preLoaderRoute: typeof AuthenticatedMomentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/notifications': {
@@ -1002,6 +1021,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedGoalsRoute: typeof AuthenticatedGoalsRoute
   AuthenticatedMapsRoute: typeof AuthenticatedMapsRoute
   AuthenticatedMatchesRoute: typeof AuthenticatedMatchesRoute
+  AuthenticatedMomentsRoute: typeof AuthenticatedMomentsRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedPerformanceRoute: typeof AuthenticatedPerformanceRoute
   AuthenticatedPlayerDnaRoute: typeof AuthenticatedPlayerDnaRoute
@@ -1025,6 +1045,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGoalsRoute: AuthenticatedGoalsRoute,
   AuthenticatedMapsRoute: AuthenticatedMapsRoute,
   AuthenticatedMatchesRoute: AuthenticatedMatchesRoute,
+  AuthenticatedMomentsRoute: AuthenticatedMomentsRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedPerformanceRoute: AuthenticatedPerformanceRoute,
   AuthenticatedPlayerDnaRoute: AuthenticatedPlayerDnaRoute,

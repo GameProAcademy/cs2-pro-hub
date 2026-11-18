@@ -21,6 +21,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
+import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
@@ -121,6 +122,7 @@ export function RealReplayPage({
             r={query.data}
             initialTick={search.tick}
             onRound={(round) => onSearch({ matchId, round })}
+            matchId={matchId}
           />
         )}
       </div>
@@ -132,10 +134,13 @@ export function ReplayBody({
   r,
   initialTick,
   onRound,
+  matchId,
 }: {
   r: ReplayResponse;
   initialTick?: number | undefined;
   onRound: (round: number) => void;
+  /** PM5: lets the player save the current moment of this match (module I). */
+  matchId?: string | undefined;
 }) {
   const t = useT();
   if (r.status === "NOT_FOUND" || r.status === "NO_PARTICIPANT")
@@ -211,6 +216,7 @@ export function ReplayBody({
           segment={r.segment}
           map={r.map}
           initialTick={initialTick}
+          {...(matchId ? { moment: { matchId, round: r.round } } : {})}
         />
       )}
     </div>
@@ -224,10 +230,12 @@ export function ReplayPlayer({
   segment,
   map,
   initialTick,
+  moment,
 }: {
   segment: ReplaySegment;
   map: string;
   initialTick?: number | undefined;
+  moment?: { matchId: string; round: number };
 }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -443,6 +451,19 @@ export function ReplayPlayer({
             >
               {timeLabel}
             </span>
+            {moment ? (
+              <SaveMomentButton
+                compact
+                matchId={moment.matchId}
+                round={moment.round}
+                tick={tick}
+                source="REPLAY"
+                defaultTitle={fill(t("moments.defaultTitle.replay"), {
+                  n: moment.round,
+                  time: timeLabel,
+                })}
+              />
+            ) : null}
           </div>
           <input
             type="range"

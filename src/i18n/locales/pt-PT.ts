@@ -15,6 +15,7 @@ import { combatPtPT } from "./combat/pt-PT";
 import { nadePtPT } from "./nade/pt-PT";
 import { roundsPtPT } from "./rounds/pt-PT";
 import { evolutionPtPT } from "./evolution/pt-PT";
+import { momentsPtPT } from "./moments/pt-PT";
 import { replayPtPT } from "./replay/pt-PT";
 
 export const ptPT: Dictionary = {
@@ -25,6 +26,7 @@ export const ptPT: Dictionary = {
   ...nadePtPT,
   ...roundsPtPT,
   ...evolutionPtPT,
+  ...momentsPtPT,
   ...replayPtPT,
   ...catalogPtPT,
   ...demoFlowPtPT,

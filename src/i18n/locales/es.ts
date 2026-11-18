@@ -15,6 +15,7 @@ import { combatEs } from "./combat/es";
 import { nadeEs } from "./nade/es";
 import { roundsEs } from "./rounds/es";
 import { evolutionEs } from "./evolution/es";
+import { momentsEs } from "./moments/es";
 import { replayEs } from "./replay/es";
 
 export const es: Dictionary = {
@@ -25,6 +26,7 @@ export const es: Dictionary = {
   ...nadeEs,
   ...roundsEs,
   ...evolutionEs,
+  ...momentsEs,
   ...replayEs,
   ...catalogEs,
   ...demoFlowEs,
