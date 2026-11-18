@@ -18,6 +18,7 @@ import { evolutionPtPT } from "./evolution/pt-PT";
 import { momentsPtPT } from "./moments/pt-PT";
 import { adaptivePtPT } from "./adaptive/pt-PT";
 import { benchmarksPtPT } from "./benchmarks/pt-PT";
+import { reviewPtPT } from "./review/pt-PT";
 import { replayPtPT } from "./replay/pt-PT";
 
 export const ptPT: Dictionary = {
@@ -31,6 +32,7 @@ export const ptPT: Dictionary = {
   ...momentsPtPT,
   ...adaptivePtPT,
   ...benchmarksPtPT,
+  ...reviewPtPT,
   ...replayPtPT,
   ...catalogPtPT,
   ...demoFlowPtPT,

@@ -18,6 +18,7 @@ import { evolutionFr } from "./evolution/fr";
 import { momentsFr } from "./moments/fr";
 import { adaptiveFr } from "./adaptive/fr";
 import { benchmarksFr } from "./benchmarks/fr";
+import { reviewFr } from "./review/fr";
 import { replayFr } from "./replay/fr";
 
 export const fr: Dictionary = {
@@ -31,6 +32,7 @@ export const fr: Dictionary = {
   ...momentsFr,
   ...adaptiveFr,
   ...benchmarksFr,
+  ...reviewFr,
   ...replayFr,
   ...catalogFr,
   ...demoFlowFr,

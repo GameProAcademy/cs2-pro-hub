@@ -11,6 +11,7 @@ import { CircleDashed, Info } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { ProBenchmarkCard } from "@/components/benchmarks/ProBenchmarkCard";
+import { MonthlyReviewCard } from "@/components/review/MonthlyReviewCard";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -78,6 +79,7 @@ export function RealEvolutionPage({
           <EvolutionBody r={query.data} search={clean} onSearch={onSearch} />
         )}
         <DnaCard />
+        <MonthlyReviewCard />
         <ProBenchmarkCard />
       </div>
     </AppShell>

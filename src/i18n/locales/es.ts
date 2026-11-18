@@ -18,6 +18,7 @@ import { evolutionEs } from "./evolution/es";
 import { momentsEs } from "./moments/es";
 import { adaptiveEs } from "./adaptive/es";
 import { benchmarksEs } from "./benchmarks/es";
+import { reviewEs } from "./review/es";
 import { replayEs } from "./replay/es";
 
 export const es: Dictionary = {
@@ -31,6 +32,7 @@ export const es: Dictionary = {
   ...momentsEs,
   ...adaptiveEs,
   ...benchmarksEs,
+  ...reviewEs,
   ...replayEs,
   ...catalogEs,
   ...demoFlowEs,
