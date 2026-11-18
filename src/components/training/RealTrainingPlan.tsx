@@ -3,6 +3,7 @@ import { ExternalLink } from "lucide-react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { PageHeader } from "@/components/common/PageHeader";
+import { AdaptiveTraining } from "@/components/training/AdaptiveTraining";
 import { AppShell } from "@/components/layout/AppShell";
 import { useI18n, useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
@@ -50,6 +51,8 @@ export function RealTrainingPlan() {
           title={t("training.title")}
           description={t("training.description")}
         />
+        <AdaptiveTraining />
+        <h2 className="pt-2 text-lg font-semibold">{t("training.adaptive.catalogHeading")}</h2>
         {query.isLoading ? (
           <LoadingState label={t("common.loading")} />
         ) : query.isError || !query.data ? (
