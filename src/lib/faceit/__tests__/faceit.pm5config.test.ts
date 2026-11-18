@@ -99,3 +99,51 @@ describe("PM5 — FACEIT card placement", () => {
     expect(profile).toMatch(/<FaceitPanel callback=\{faceitCallback\} \/>/);
   });
 });
+
+describe("PM5 — FACEIT empty strings are missing values", () => {
+  it("parses a player whose absent text fields are empty strings", async () => {
+    const { faceitPlayerSchema, parseFaceit } = await import("../faceit.types");
+    const player = parseFaceit(faceitPlayerSchema, {
+      player_id: "11111111-2222-4333-8444-555555555555",
+      nickname: "someone",
+      avatar: "",
+      country: "br",
+      cover_image: "",
+      faceit_url: "https://www.faceit.com/{lang}/players/someone",
+      steam_id_64: "",
+      steam_nickname: "",
+      membership_type: "",
+      memberships: ["free"],
+      activated_at: "2020-01-01T00:00:00Z",
+      verified: false,
+      settings: { language: "en" },
+      friends_ids: [],
+      platforms: { steam: "" },
+      games: {
+        cs2: {
+          region: "SA",
+          game_player_id: "",
+          skill_level: 4,
+          faceit_elo: 1105,
+          game_player_name: "",
+          skill_level_label: "",
+          regions: {},
+          game_profile_id: "",
+        },
+      },
+    });
+    expect(player.avatar).toBeNull();
+    expect(player.steam_id_64).toBeNull();
+    expect(player.membership_type).toBeNull();
+    expect(player.games?.["cs2"]).toMatchObject({
+      skill_level: 4,
+      faceit_elo: 1105,
+      game_player_id: null,
+    });
+  });
+
+  it("still rejects a payload without a player id", async () => {
+    const { faceitPlayerSchema, parseFaceit } = await import("../faceit.types");
+    expect(() => parseFaceit(faceitPlayerSchema, { player_id: "", nickname: "x" })).toThrow();
+  });
+});

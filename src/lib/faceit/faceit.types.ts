@@ -9,11 +9,13 @@ import { z } from "zod";
 
 import { FaceitError } from "./faceit.errors";
 
+// FACEIT returns "" for absent text fields (e.g. avatar, steam_id_64, membership_type, a
+// game's region). An empty string is a missing value: it becomes null, never a parse failure
+// of the whole payload (PM5: production `GET /players/{id}` was rejected as malformed).
 const nullableString = z
   .string()
-  .min(1)
   .nullish()
-  .transform((v) => v ?? null);
+  .transform((v) => (v === null || v === undefined || v.trim() === "" ? null : v));
 const nullableNumber = z
   .union([z.number(), z.string()])
   .nullish()
