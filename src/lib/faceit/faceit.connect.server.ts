@@ -36,6 +36,24 @@ export async function requirePlayerId(userId: string): Promise<string> {
   return data.id;
 }
 
+/** Trust fields of an identity proven by the official FACEIT OAuth flow (PM5). */
+const VERIFIED_BY_OAUTH = (now: string) => ({
+  is_verified: true,
+  identity_status: "verified" as const,
+  confidence_score: 1,
+  verification_method: "oauth",
+  verified_at: now,
+});
+
+/** Trust fields after the player disconnects FACEIT: the link no longer stands. */
+const UNLINKED = {
+  is_verified: false,
+  identity_status: "unlinked" as const,
+  confidence_score: 0,
+  verification_method: null,
+  verified_at: null,
+};
+
 /** Postgres unique-violation code. */
 const UNIQUE_VIOLATION = "23505";
 
@@ -135,7 +153,9 @@ export async function finalizeFaceitConnection(
     throw new FaceitError("FACEIT_INTERNAL_ERROR");
   }
 
-  // 3. Identity: verified only because the official OAuth flow succeeded.
+  // 3. Identity: verified only because the official OAuth flow succeeded. The trust fields
+  //    (status, confidence, method, time) are written by the server only; a browser cannot
+  //    set them (guard_identity_verification).
   const identity = mapFaceitPlayerToIdentity(player, config.gameId);
   try {
     const { data: ownIdentity } = await db
@@ -152,7 +172,7 @@ export async function finalizeFaceitConnection(
           external_id: identity.external_id,
           username: identity.username,
           profile_url: identity.profile_url,
-          is_verified: true,
+          ...VERIFIED_BY_OAUTH(now),
           updated_at: now,
         })
         .eq("id", ownIdentity.id);
@@ -163,7 +183,7 @@ export async function finalizeFaceitConnection(
         external_id: identity.external_id,
         username: identity.username,
         profile_url: identity.profile_url,
-        is_verified: true,
+        ...VERIFIED_BY_OAUTH(now),
       });
     }
   } catch (error) {
@@ -211,6 +231,13 @@ export async function disconnectFaceit(userId: string): Promise<{ disconnected: 
     .eq("source", "faceit")
     .eq("connection_type", "oauth")
     .select("id");
+
+  // The FACEIT identity is no longer linked (history and imported matches are kept).
+  await db
+    .from("player_identities")
+    .update({ ...UNLINKED, updated_at: now })
+    .eq("player_id", playerId)
+    .eq("platform", "FACEIT");
 
   // Cancel pending sync work so nothing keeps running for a disconnected account.
   await db
