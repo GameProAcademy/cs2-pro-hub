@@ -151,6 +151,7 @@ export async function completeFaceitLogin(
     console.warn(`[faceit] faceit_login_failure reason=${reason}`);
     return redirect(new URL(loginErrorPath(reason), origin).toString(), clear);
   };
+  let stage: "token" | "userinfo" | "account" = "token";
   if (oauthError) return fail(oauthError === "FACEIT_OAUTH_ACCESS_DENIED" ? "cancelled" : "failed");
   try {
     const cookie = readCookie(request, FACEIT_LOGIN_COOKIE);
@@ -163,8 +164,11 @@ export async function completeFaceitLogin(
     if (!code) return fail("expired");
 
     const { exchangeFaceitCode, resolveFaceitAccount } = await import("./faceit.oauth.server");
+    stage = "token";
     const token = await exchangeFaceitCode(code, attempt.codeVerifier, attempt.redirectUri);
+    stage = "userinfo";
     const account = await resolveFaceitAccount(token.accessToken);
+    stage = "account";
     const db = await admin();
 
     // 1. An account already connected to this FACEIT account signs in.
@@ -219,6 +223,8 @@ export async function completeFaceitLogin(
     console.info("[faceit] faceit_login_success kind=created");
     return redirect(new URL(sessionPath(hash, true), origin).toString(), clear);
   } catch (error) {
+    const { recordFaceitOAuthFailure } = await import("./faceit.diagnostics.server");
+    await recordFaceitOAuthFailure("login", stage, error);
     return fail(reasonFor(error));
   }
 }

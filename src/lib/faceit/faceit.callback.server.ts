@@ -69,17 +69,27 @@ export async function handleFaceitCallback(request: Request): Promise<Response> 
       return redirectTo(request, errorPath(callbackReason("FACEIT_OAUTH_MISSING_CODE")));
     }
 
-    const token = await exchangeFaceitCode(code, attempt.codeVerifier, attempt.redirectUri);
-    const faceitPlayerId = await resolveFaceitPlayerId(token.accessToken);
-    const result = await finalizeFaceitConnection(attempt.userId, faceitPlayerId);
+    const { recordFaceitOAuthFailure } = await import("@/lib/faceit/faceit.diagnostics.server");
+    let stage: "token" | "userinfo" | "link" | "sync" = "token";
+    try {
+      const token = await exchangeFaceitCode(code, attempt.codeVerifier, attempt.redirectUri);
+      stage = "userinfo";
+      const faceitPlayerId = await resolveFaceitPlayerId(token.accessToken);
+      stage = "link";
+      const result = await finalizeFaceitConnection(attempt.userId, faceitPlayerId);
 
-    // Synchronisation NEVER runs inside this request: we enqueue and
-    // redirect. The cron worker claims and executes the job.
-    await enqueueFaceitSync(
-      result.playerId,
-      result.connectionId,
-      result.reconnected ? "incremental" : "initial",
-    );
+      // Synchronisation NEVER runs inside this request: we enqueue and
+      // redirect. The cron worker claims and executes the job.
+      stage = "sync";
+      await enqueueFaceitSync(
+        result.playerId,
+        result.connectionId,
+        result.reconnected ? "incremental" : "initial",
+      );
+    } catch (error) {
+      await recordFaceitOAuthFailure("link", stage, error);
+      throw error;
+    }
 
     console.info("[faceit] faceit_connection_success");
     return redirectTo(request, SUCCESS_PATH);
