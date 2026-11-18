@@ -71,6 +71,10 @@ export function buildAuthorizeUrl(input: AuthorizeUrlInput): string {
   url.searchParams.set("code_challenge", input.codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
   if (input.scope) url.searchParams.set("scope", input.scope);
+  // FACEIT's hosted login (accounts.faceit.com) only redirects the SAME page back to
+  // redirect_uri when this flag is set; without it the page stops on "You must specify
+  // redirect_popup…". Our flow is a full-page redirect, not a popup.
+  url.searchParams.set("redirect_popup", "true");
   return url.toString();
 }
 

@@ -67,6 +67,8 @@ describe("OAuth PKCE", () => {
     });
     const params = new URL(url).searchParams;
     expect(params.get("code_challenge_method")).toBe("S256");
+    // full-page redirect on accounts.faceit.com (not a popup)
+    expect(params.get("redirect_popup")).toBe("true");
     expect(params.get("code_challenge")).toBe("challenge-value");
     expect(url).not.toContain("code_verifier");
     expect(url).not.toContain("secret");
