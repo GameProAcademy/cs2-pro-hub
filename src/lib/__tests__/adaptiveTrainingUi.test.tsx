@@ -147,4 +147,19 @@ describe("AdaptiveTrainingBody", () => {
     expect(pt).toContain("Salvar e revisar");
     expect(pt).toContain("criação");
   });
+
+  it("points review exercises to the moments library", () => {
+    const plan = planView();
+    plan.sessions = plan.sessions.map((s) => ({ ...s, exerciseId: "death_review" }));
+    plan.content = {
+      ...plan.content,
+      sessions: plan.content.sessions.map((s) => ({ ...s, exerciseId: "death_review" })),
+    };
+    const html = render(<AdaptiveTrainingBody v={{ ...empty(evidence), plan }} />);
+    expect(html).toContain('data-to="/moments"');
+    const drill = planView();
+    drill.sessions = drill.sessions.map((s) => ({ ...s, exerciseId: "spray_wall" }));
+    const aim = render(<AdaptiveTrainingBody v={{ ...empty(evidence), plan: drill }} />);
+    expect(aim).not.toContain('data-to="/moments"');
+  });
 });
