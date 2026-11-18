@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { FaceitIcon } from "@/components/brand/BrandIcons";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -210,6 +211,7 @@ function LoginPage() {
           {/* A full navigation: the server route sets the browser-binding cookie and redirects. */}
           <Button asChild variant="outline" className="w-full">
             <a href="/faceit/login" data-faceit-login-start>
+              <FaceitIcon className="size-4" />
               {t("login.faceit.continue")}
             </a>
           </Button>

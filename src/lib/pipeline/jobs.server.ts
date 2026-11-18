@@ -776,6 +776,11 @@ export async function processJob(
           .eq("source", "manual_selection")
           .limit(100)
       : { data: [] };
+    // STEAM: the SteamID64 proven by OpenID wins; the legacy self-declared column is a
+    // fallback only for players without a verified Steam link.
+    const verifiedSteamId = player
+      ? await (await import("@/lib/identity/verifiedSteam")).readVerifiedSteamId64(db, player.id)
+      : null;
     const attachment = resolvePlayerAttachment({
       participants: match.players.flatMap((demoPlayer) => {
         const participantKey = demoPlayer.participantKey ?? demoPlayer.steamId;
@@ -791,7 +796,7 @@ export async function processJob(
           : [];
       }),
       hasProfile: Boolean(player),
-      profileSteamId: player?.steam_id ?? null,
+      profileSteamId: verifiedSteamId ?? player?.steam_id ?? null,
       declaration,
       automaticMatchRejected: job.attachment_confirmation_status === "user_rejected",
       confirmedNicknames: (confirmedRows ?? []).flatMap((row) =>

@@ -17,15 +17,23 @@ import {
   Link2,
   Link2Off,
   Loader2,
+  RefreshCw,
   ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 
+import { SteamIcon } from "@/components/brand/BrandIcons";
 import { ChartCard } from "@/components/common/ChartCard";
+import { LinkStateBadge } from "@/components/identity/LinkStateBadge";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
-import { getSteamConnection, unlinkSteamConnection } from "@/lib/steam.functions";
+import { invalidateExternalLinks } from "@/lib/identity/useExternalLinks";
+import {
+  getSteamConnection,
+  syncSteamConnection,
+  unlinkSteamConnection,
+} from "@/lib/steam.functions";
 import type { SteamConnectionView } from "@/lib/steam/steam.types";
 import { callbackReason, type SteamErrorCode } from "@/lib/steam/steam.errors";
 
@@ -68,8 +76,31 @@ export function SteamPanel({ callback }: SteamPanelProps) {
     onSuccess: (result) => {
       setReason(result.ok ? null : callbackReason(result.errorCode ?? "STEAM_INTERNAL_ERROR"));
       setRevealed(false);
-      void queryClient.invalidateQueries({ queryKey: ["steam", "connection"] });
-      void queryClient.invalidateQueries({ queryKey: ["player", "profile"] });
+      invalidateExternalLinks(queryClient);
+    },
+    onError: () => setReason("error"),
+  });
+
+  const [syncNote, setSyncNote] = useState<string | null>(null);
+  const sync = useMutation({
+    mutationFn: () => syncSteamConnection(),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        setSyncNote(null);
+        setReason(callbackReason(result.errorCode ?? "STEAM_INTERNAL_ERROR"));
+        return;
+      }
+      setReason(null);
+      setSyncNote(
+        result.status === "THROTTLED"
+          ? "steam.sync.throttled"
+          : result.status === "UNAVAILABLE"
+            ? "steam.sync.unavailable"
+            : result.profilePublic === false
+              ? "steam.sync.private"
+              : "steam.sync.done",
+      );
+      invalidateExternalLinks(queryClient);
     },
     onError: () => setReason("error"),
   });
@@ -77,7 +108,7 @@ export function SteamPanel({ callback }: SteamPanelProps) {
   const view = connection.data;
   const configured = view?.openidReady ?? false;
   const connected = view?.connected ?? false;
-  const busy = link.isPending || unlink.isPending || connection.isLoading;
+  const busy = link.isPending || unlink.isPending || sync.isPending || connection.isLoading;
   const activeReason =
     reason ?? (callback?.status === "error" ? (callback.reason ?? "error") : null);
 
@@ -87,10 +118,19 @@ export function SteamPanel({ callback }: SteamPanelProps) {
         {/* State line */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card/40 px-3 py-2.5">
           <div className="flex min-w-0 items-center gap-2.5">
-            {connected ? (
+            {connected && view?.avatar ? (
+              <img
+                src={view.avatar}
+                alt=""
+                width={32}
+                height={32}
+                referrerPolicy="no-referrer"
+                className="size-8 shrink-0 rounded-md border border-border"
+              />
+            ) : connected ? (
               <ShieldCheck className="size-4 shrink-0 text-success" aria-hidden />
             ) : (
-              <Link2 className="size-4 shrink-0 text-primary" aria-hidden />
+              <SteamIcon className="size-4 shrink-0 text-muted-foreground" />
             )}
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground">
@@ -105,9 +145,7 @@ export function SteamPanel({ callback }: SteamPanelProps) {
               </p>
             </div>
           </div>
-          <span className="rounded-md border border-border bg-secondary px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            {t(`steam.state.${view?.integrationState ?? "not_configured"}` as TranslationKey)}
-          </span>
+          <LinkStateBadge state={view?.linkState ?? "NOT_LINKED"} />
         </div>
 
         {connected ? (
@@ -124,6 +162,12 @@ export function SteamPanel({ callback }: SteamPanelProps) {
                 {view?.profilePublic === null || view?.profilePublic === undefined
                   ? DASH
                   : t(view.profilePublic ? "steam.visibility.public" : "steam.visibility.private")}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">{t("steam.field.lastSync")}</dt>
+              <dd className="font-medium text-foreground">
+                {view?.lastSyncAt ? new Date(view.lastSyncAt).toLocaleString() : DASH}
               </dd>
             </div>
           </dl>
@@ -143,6 +187,10 @@ export function SteamPanel({ callback }: SteamPanelProps) {
           <p className="text-xs text-success">{t("steam.linked")}</p>
         ) : null}
 
+        {syncNote ? (
+          <p className="text-xs text-muted-foreground">{t(syncNote as TranslationKey)}</p>
+        ) : null}
+
         {activeReason ? (
           <p role="alert" className="text-xs text-destructive">
             {t(`steam.reason.${activeReason}` as TranslationKey)}
@@ -155,7 +203,7 @@ export function SteamPanel({ callback }: SteamPanelProps) {
               {link.isPending ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : (
-                <Link2 className="size-4" aria-hidden />
+                <SteamIcon className="size-4" />
               )}
               {t("steam.action.link")}
             </Button>
@@ -163,6 +211,14 @@ export function SteamPanel({ callback }: SteamPanelProps) {
 
           {connected ? (
             <>
+              <Button size="sm" variant="outline" onClick={() => sync.mutate()} disabled={busy}>
+                {sync.isPending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <RefreshCw className="size-4" aria-hidden />
+                )}
+                {t("steam.action.sync")}
+              </Button>
               <Button
                 size="sm"
                 variant="outline"

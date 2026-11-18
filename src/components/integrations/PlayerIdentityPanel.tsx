@@ -7,6 +7,7 @@
  */
 import { Fingerprint } from "lucide-react";
 
+import { LinkStateBadge } from "@/components/identity/LinkStateBadge";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import {
@@ -15,6 +16,8 @@ import {
   type IdentityObservation,
 } from "@/lib/identity/identity.correlation";
 import { EVIDENCE_WEIGHTS } from "@/lib/identity/identity.types";
+import { LINK_SOURCE as SOURCE, observationsFromLinks } from "@/lib/identity/externalLinks";
+import { useExternalLinks } from "@/lib/identity/useExternalLinks";
 import { cn } from "@/lib/utils";
 
 const STATUS_CLASS: Record<string, string> = {
@@ -25,8 +28,11 @@ const STATUS_CLASS: Record<string, string> = {
   unlinked: "border-border bg-secondary text-muted-foreground",
 };
 
-export function PlayerIdentityPanel({ observations }: { observations: IdentityObservation[] }) {
+export function PlayerIdentityPanel() {
   const t = useT();
+  const links = useExternalLinks();
+  const linkViews = links.data ?? [];
+  const observations = observationsFromLinks(linkViews);
   const graph = correlateIdentityGraph(observations);
 
   return (
@@ -48,8 +54,17 @@ export function PlayerIdentityPanel({ observations }: { observations: IdentityOb
             <span className="text-sm text-foreground">
               {t(`identity.source.${observation.source}` as TranslationKey)}
             </span>
-            <span className="truncate font-mono text-[11px] text-muted-foreground">
-              {observation.username ?? observation.externalId ?? t("identity.notConnected")}
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate font-mono text-[11px] text-muted-foreground">
+                {observation.username ?? t("identity.notConnected")}
+              </span>
+              {linkViews.find((link) => SOURCE[link.platform] === observation.source) ? (
+                <LinkStateBadge
+                  state={
+                    linkViews.find((link) => SOURCE[link.platform] === observation.source)!.state
+                  }
+                />
+              ) : null}
             </span>
           </li>
         ))}

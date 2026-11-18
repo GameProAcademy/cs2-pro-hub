@@ -45,6 +45,7 @@ import {
   type AdminSession,
 } from "@/lib/admin.functions";
 import { LOCALE_OPTIONS } from "@/i18n/config";
+import { provenSteamId64 } from "@/lib/identity/verifiedSteam";
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -483,7 +484,18 @@ export function UserDetailDialog({
                         label={t("admin.field.gamersclubId")}
                         value={player?.gamersclub_player_id || dash}
                       />
-                      <Field label={t("admin.field.steam")} value={player?.steam_id || dash} />
+                      {/* STEAM: only an OpenID-proven SteamID64, always masked. The legacy
+                          self-declared column is never shown as if it were proof. */}
+                      <Field
+                        label={t("admin.field.steam")}
+                        value={
+                          maskSteamId64(
+                            provenSteamId64(
+                              identities.find((identity) => identity.platform === "STEAM"),
+                            ),
+                          ) || dash
+                        }
+                      />
                     </div>
                   )}
                 </section>

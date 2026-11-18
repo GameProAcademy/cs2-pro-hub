@@ -196,6 +196,18 @@ export async function finalizeSteamConnection(
       ` correlation_status=${correlationStatus}`,
   );
 
+  // STEAM — public profile + nickname alias. The identity is already proven and
+  // committed; these are best effort and never undo the link.
+  if (enriched) {
+    try {
+      const { applySteamProfile, recordSteamAlias } = await import("./steam.sync.server");
+      await applySteamProfile(playerId, profile, now);
+      await recordSteamAlias(playerId, profile.personaName, steamId64);
+    } catch {
+      console.warn("[steam] steam_post_link_sync_failed");
+    }
+  }
+
   // FASE 2.5.2 — email LAST: identity committed, correlation written, audit
   // written. A delivery failure is logged, never rolled back onto the link.
   await notifySteamLink("steam_linked", userId, steamId64, profile.personaName ?? null, now);
