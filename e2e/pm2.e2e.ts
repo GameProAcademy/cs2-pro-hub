@@ -5,6 +5,7 @@
  *   login → own matches → /deaths → death review → deep link to /replay (round + tick) → round navigation →
  *   time navigation → play/pause → feedback (persisted, then restored) → empty/unavailable states →
  *   PM3 /duels and /utility on the same match (provenance, NOT_MEASURED aim limits, replay deep link).
+ *   PM4 /rounds on the same match (team vs player, replay links) and /evolution (real N).
  * Then cross-user isolation in BOTH directions (A→B and B→A):
  *   /deaths, /replay, /duels and /utility by id, deep links, the feedback server function replayed with the other user's
  *   session and the victim's event ref, an injected owner field, direct REST reads/writes under RLS, and
@@ -142,7 +143,11 @@ async function deathsStatus(page: Page) {
 }
 
 /** PM3: status of the duels (module C) and utility (module D) pages. */
-async function pm3Status(page: Page, attr: "data-combat-status" | "data-utility-status") {
+async function pm3Status(
+  page: Page,
+  attr:
+    "data-combat-status" | "data-utility-status" | "data-rounds-status" | "data-evolution-status",
+) {
   const el = page.locator(`[${attr}]`).first();
   await expect(el).toBeVisible();
   return el.getAttribute(attr);
@@ -294,6 +299,35 @@ async function ownFlow(browser: Browser, who: "A" | "B", c: Creds) {
   expect(await pm3Status(page, "data-utility-status")).toBe("NOT_FOUND");
   steps["pm3_utility"] = `PASS ${utility}`;
 
+  // PM4 modules E/F — round review on the same match: team and player sections apart, round list,
+  // replay deep links per event carry the same match, no SteamID64, unknown match NOT_FOUND.
+  await page.goto(`/rounds?matchId=${matchId}`);
+  const roundsStatus = await pm3Status(page, "data-rounds-status");
+  expect(["OK", "NO_PARTICIPANT"]).toContain(roundsStatus);
+  if (roundsStatus === "OK") {
+    await expect(page.locator('[data-rounds-section="team"]')).toHaveCount(1);
+    await expect(page.locator('[data-rounds-section="me"]')).toHaveCount(1);
+    await expect(page.locator('[data-rounds-note="COVERAGE"]')).toHaveCount(1);
+    expect(await page.locator("[data-round]").count()).toBeGreaterThan(0);
+    const href = await page.locator("[data-replay-link]").first().getAttribute("href");
+    expect(href ?? "").toContain(matchId);
+    expect(/7656119\d{10}/.test(await page.content())).toBe(false);
+  }
+  await page.goto(`/rounds?matchId=${RANDOM_MATCH}`);
+  expect(await pm3Status(page, "data-rounds-status")).toBe("NOT_FOUND");
+  steps["pm4_rounds"] = `PASS ${roundsStatus}`;
+
+  // PM4 module G — evolution: real N, window status, every drill-down is the caller's own match.
+  await page.goto("/evolution?window=5");
+  expect(await pm3Status(page, "data-evolution-status")).toBe("OK");
+  const windowStatus = await page
+    .locator("[data-window-status]")
+    .first()
+    .getAttribute("data-window-status");
+  expect(["COMPLETE", "PARTIAL", "INSUFFICIENT_SAMPLE"]).toContain(windowStatus);
+  expect(/7656119\d{10}/.test(await page.content())).toBe(false);
+  steps["pm4_evolution"] = `PASS ${windowStatus}`;
+
   if (!sink.feedback) throw new Error("feedback request was not observed");
   own[who] = {
     matchId,
@@ -353,6 +387,21 @@ async function isolation(browser: Browser, attacker: "A" | "B", victim: "A" | "B
   r["pm3_utility_by_id"] =
     (await pm3Status(page, "data-utility-status")) === "NOT_FOUND" ? "PASS NOT_FOUND" : "FAIL";
   r["pm3_no_metrics_drawn"] = (await page.locator("[data-metric]").count()) === 0 ? "PASS" : "FAIL";
+
+  // PM4: rounds of the victim's match (listing and by id) and the evolution drill-downs.
+  await page.goto("/rounds");
+  const roundsListed = await page
+    .locator("option")
+    .evaluateAll((opts, id) => opts.some((o) => (o as HTMLOptionElement).value === id), v.matchId);
+  r["pm4_rounds_listing"] = roundsListed ? "FAIL victim match listed" : "PASS";
+  await page.goto(`/rounds?matchId=${v.matchId}`);
+  r["pm4_rounds_by_id"] =
+    (await pm3Status(page, "data-rounds-status")) === "NOT_FOUND" ? "PASS NOT_FOUND" : "FAIL";
+  r["pm4_rounds_nothing_drawn"] =
+    (await page.locator("[data-round]").count()) === 0 ? "PASS" : "FAIL";
+  await page.goto("/evolution?window=50");
+  await pm3Status(page, "data-evolution-status");
+  r["pm4_evolution_no_victim_match"] = (await page.content()).includes(v.matchId) ? "FAIL" : "PASS";
 
   // 6, 8, 9. The victim's feedback request (their event ref) replayed with the ATTACKER's session.
   const token = await page.evaluate(() => {
