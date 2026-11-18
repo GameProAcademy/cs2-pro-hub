@@ -87,6 +87,26 @@ export const fr: Dictionary = {
   "login.password": "Mot de passe",
   "login.submit": "Se connecter",
   "login.forgot": "Mot de passe oublié",
+  "login.faceit.or": "ou",
+  "login.faceit.continue": "Continuer avec FACEIT",
+  "login.faceit.note":
+    "Connecte le compte CS2 PRO déjà lié à ce compte FACEIT, ou crée un compte avec l'e-mail vérifié de FACEIT. Un compte existant n'est jamais lié par e-mail.",
+  "login.faceit.signingIn": "Connexion avec FACEIT",
+  "login.faceit.signingInSubtitle": "Validation de la session…",
+  "login.faceit.not_configured": "La connexion avec FACEIT n'est pas encore disponible.",
+  "login.faceit.cancelled": "L'accès sur FACEIT a été annulé.",
+  "login.faceit.expired": "La tentative a expiré ou a déjà été utilisée. Réessayez.",
+  "login.faceit.browser_mismatch":
+    "Par sécurité, terminez la connexion dans le navigateur où elle a commencé.",
+  "login.faceit.email_not_verified":
+    "FACEIT n'a pas fourni d'e-mail vérifié, aucun compte n'a donc été créé. Créez un compte avec e-mail et mot de passe puis connectez FACEIT sur la page Analyse.",
+  "login.faceit.account_exists":
+    "Un compte avec cet e-mail existe déjà. Connectez-vous avec e-mail et mot de passe puis liez FACEIT sur la page Analyse.",
+  "login.faceit.duplicate_account": "Ce compte FACEIT est déjà lié à un autre compte CS2 PRO.",
+  "login.faceit.rate_limited": "Trop de tentatives. Attendez une minute et réessayez.",
+  "login.faceit.temporary": "FACEIT n'a pas répondu. Réessayez dans un instant.",
+  "login.faceit.failed":
+    "Impossible de se connecter avec FACEIT. Réessayez ou utilisez e-mail et mot de passe.",
 
   "register.title": "Créer votre compte",
   "register.subtitle":

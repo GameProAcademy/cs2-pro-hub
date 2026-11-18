@@ -119,3 +119,26 @@ export function resolveFaceitIdentityFromPayload(
 export function extractFaceitPlayerId(payload: unknown): string | null {
   return resolveFaceitIdentityFromPayload(payload)?.playerId ?? null;
 }
+
+const EMAIL_PATTERN = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,63}$/;
+
+/**
+ * PM5 — contact fields of a userinfo payload. The e-mail is trusted as VERIFIED only when the
+ * payload says `email_verified: true` (boolean); any other value, or its absence, is unverified.
+ * Nothing here is an identifier: the account id comes from `resolveFaceitIdentityFromPayload`.
+ */
+export function faceitAccountContact(payload: unknown): {
+  email: string | null;
+  emailVerified: boolean;
+  nickname: string | null;
+} {
+  const record = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const rawEmail = typeof record["email"] === "string" ? record["email"].trim().toLowerCase() : "";
+  const email = EMAIL_PATTERN.test(rawEmail) ? rawEmail : null;
+  const nicknameRaw = record["nickname"] ?? record["preferred_username"];
+  const nickname =
+    typeof nicknameRaw === "string" && /^[A-Za-z0-9_.-]{1,32}$/.test(nicknameRaw.trim())
+      ? nicknameRaw.trim()
+      : null;
+  return { email, emailVerified: email !== null && record["email_verified"] === true, nickname };
+}

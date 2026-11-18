@@ -2241,37 +2241,43 @@ export type Database = {
       }
       oauth_connection_states: {
         Row: {
+          browser_binding_hash: string | null
           code_verifier: string
           consumed_at: string | null
           created_at: string
           expires_at: string
           id: string
           provider: Database["public"]["Enums"]["data_source"]
+          purpose: string
           redirect_uri: string
           state_hash: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          browser_binding_hash?: string | null
           code_verifier: string
           consumed_at?: string | null
           created_at?: string
           expires_at: string
           id?: string
           provider: Database["public"]["Enums"]["data_source"]
+          purpose?: string
           redirect_uri: string
           state_hash: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          browser_binding_hash?: string | null
           code_verifier?: string
           consumed_at?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           provider?: Database["public"]["Enums"]["data_source"]
+          purpose?: string
           redirect_uri?: string
           state_hash?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
