@@ -1,7 +1,8 @@
 /**
  * FASE 2.2.1 / PM5 — FACEIT OAuth callback handler (server-side only), shared by the routes
  * `/api/public/integrations/faceit/callback` (Fase 2.2.1) and `/faceit/callback` (the redirect
- * URI registered in the FACEIT App Studio for production, PM5).
+ * URI registered in the FACEIT App Studio for production, PM5). A LOGIN attempt (PM5, "Continue
+ * with FACEIT") is handed to `faceit.login.server.ts`; a LINK attempt keeps the flow below.
  *
  * The user is identified by the server-side OAuth state, never by a browser parameter. The state
  * is validated, bound to the user who started the flow, single-use and short-lived. The redirect
@@ -34,8 +35,13 @@ export async function handleFaceitCallback(request: Request): Promise<Response> 
   if (oauthError) {
     // The attempt is burned even on the error path: no replay window.
     const { consumeFaceitOAuthStateQuietly } = await import("@/lib/faceit/faceit.oauth.server");
-    await consumeFaceitOAuthStateQuietly(state);
+    const burned = await consumeFaceitOAuthStateQuietly(state);
     const mapped = faceitErrorFromOAuthParam(oauthError);
+    if (burned?.purpose === "login") {
+      // PM5: a cancelled / failed FACEIT sign-in goes back to the login page.
+      const { completeFaceitLogin } = await import("@/lib/faceit/faceit.login.server");
+      return completeFaceitLogin(request, burned, null, mapped);
+    }
     console.warn(`[faceit] faceit_connection_failure code=${mapped}`);
     return redirectTo(request, errorPath(callbackReason(mapped)));
   }
@@ -50,6 +56,14 @@ export async function handleFaceitCallback(request: Request): Promise<Response> 
       return redirectTo(request, errorPath(callbackReason("FACEIT_OAUTH_STATE_INVALID")));
     }
     const attempt = await consumeFaceitOAuthState(state);
+    if (attempt.purpose === "login") {
+      // PM5: sign in / sign up with FACEIT (see faceit.login.server.ts).
+      const { completeFaceitLogin } = await import("@/lib/faceit/faceit.login.server");
+      return completeFaceitLogin(request, attempt, code);
+    }
+    if (!attempt.userId) {
+      return redirectTo(request, errorPath(callbackReason("FACEIT_OAUTH_STATE_INVALID")));
+    }
     if (!code) {
       return redirectTo(request, errorPath(callbackReason("FACEIT_OAUTH_MISSING_CODE")));
     }

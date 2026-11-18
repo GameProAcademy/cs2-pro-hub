@@ -15,6 +15,7 @@ import { FaceitError, faceitErrorFromStatus, toFaceitError } from "./faceit.erro
 import {
   buildAuthorizeUrl,
   extractFaceitPlayerId,
+  faceitAccountContact,
   resolveFaceitIdentityFromPayload,
   codeChallengeS256,
   FACEIT_OAUTH_DEFAULT_SCOPE,
@@ -66,8 +67,62 @@ export async function startFaceitOAuthAttempt(userId: string): Promise<StartedAt
   };
 }
 
+/** Global ceiling of unauthenticated LOGIN attempts per minute (abuse of the public start). */
+export const FACEIT_LOGIN_ATTEMPTS_PER_MINUTE = 120;
+
+/**
+ * PM5 — creates a pending LOGIN attempt (no CS2 PRO user yet). It is bound to the browser by
+ * `browserBindingHash` (hash of an HttpOnly cookie set by the start route), so a callback URL
+ * produced in another browser can never sign this browser in (login CSRF).
+ */
+export async function startFaceitLoginAttempt(browserBindingHash: string): Promise<StartedAttempt> {
+  const config = requireFaceitOAuthConfig();
+  const db = await admin();
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const { count, error: countError } = await db
+    .from("oauth_connection_states")
+    .select("id", { count: "exact", head: true })
+    .eq("provider", "faceit")
+    .eq("purpose", "login")
+    .gte("created_at", since);
+  if (countError) throw new FaceitError("FACEIT_INTERNAL_ERROR");
+  if ((count ?? 0) >= FACEIT_LOGIN_ATTEMPTS_PER_MINUTE)
+    throw new FaceitError("FACEIT_RATE_LIMITED");
+
+  const state = generateState();
+  const codeVerifier = generateCodeVerifier();
+  const challenge = await codeChallengeS256(codeVerifier);
+  const expiresAt = new Date(Date.now() + FACEIT_OAUTH_STATE_TTL_SECONDS * 1000).toISOString();
+  const { error } = await db.from("oauth_connection_states").insert({
+    user_id: null,
+    purpose: "login",
+    browser_binding_hash: browserBindingHash,
+    provider: "faceit",
+    state_hash: await hashState(state),
+    code_verifier: codeVerifier,
+    redirect_uri: config.redirectUri,
+    expires_at: expiresAt,
+  } as never);
+  if (error) throw new FaceitError("FACEIT_INTERNAL_ERROR");
+  return {
+    authorizeUrl: buildAuthorizeUrl({
+      authorizeUrl: config.authorizeUrl,
+      clientId: config.clientId,
+      redirectUri: config.redirectUri,
+      state,
+      codeChallenge: challenge,
+      scope: FACEIT_OAUTH_DEFAULT_SCOPE,
+    }),
+    expiresAt,
+  };
+}
+
 export interface ConsumedAttempt {
-  userId: string;
+  /** null only for a LOGIN attempt (PM5): the user is not known before FACEIT answers. */
+  userId: string | null;
+  purpose: "link" | "login";
+  /** SHA-256 of the HttpOnly browser-binding cookie of a LOGIN attempt (login-CSRF defence). */
+  browserBindingHash: string | null;
   codeVerifier: string;
   redirectUri: string;
 }
@@ -83,7 +138,9 @@ export async function consumeFaceitOAuthState(state: string): Promise<ConsumedAt
 
   const { data: attempt } = await db
     .from("oauth_connection_states")
-    .select("id, user_id, provider, code_verifier, redirect_uri, expires_at, consumed_at")
+    .select(
+      "id, user_id, provider, purpose, browser_binding_hash, code_verifier, redirect_uri, expires_at, consumed_at",
+    )
     .eq("state_hash", stateHash)
     .maybeSingle();
 
@@ -104,8 +161,14 @@ export async function consumeFaceitOAuthState(state: string): Promise<ConsumedAt
 
   if (!consumed) throw new FaceitError("FACEIT_OAUTH_STATE_CONSUMED");
 
+  const row = attempt as typeof attempt & {
+    purpose?: string | null;
+    browser_binding_hash?: string | null;
+  };
   return {
-    userId: attempt.user_id,
+    userId: attempt.user_id ?? null,
+    purpose: row.purpose === "login" ? "login" : "link",
+    browserBindingHash: row.browser_binding_hash ?? null,
     codeVerifier: attempt.code_verifier,
     redirectUri: attempt.redirect_uri,
   };
@@ -115,12 +178,15 @@ export async function consumeFaceitOAuthState(state: string): Promise<ConsumedAt
  * Consumes a state without raising. Used on the ERROR callback path so that a
  * failed/denied consent still burns the attempt (no replay window is left open).
  */
-export async function consumeFaceitOAuthStateQuietly(state: string | null): Promise<void> {
-  if (!state) return;
+export async function consumeFaceitOAuthStateQuietly(
+  state: string | null,
+): Promise<ConsumedAttempt | null> {
+  if (!state) return null;
   try {
-    await consumeFaceitOAuthState(state);
+    return await consumeFaceitOAuthState(state);
   } catch {
     // An invalid/expired/consumed state on the error path is not actionable.
+    return null;
   }
 }
 
@@ -212,6 +278,23 @@ export async function resolveFaceitPlayerId(
   accessToken: string,
   fetchImpl: typeof fetch = globalThis.fetch,
 ): Promise<string> {
+  return (await resolveFaceitAccount(accessToken, fetchImpl)).playerId;
+}
+
+export interface FaceitAccount {
+  playerId: string;
+  /** Present only when userinfo returns it (scope `email`). */
+  email: string | null;
+  /** true ONLY when userinfo states `email_verified: true`; absent or anything else = false. */
+  emailVerified: boolean;
+  nickname: string | null;
+}
+
+/** PM5 — the FACEIT account behind the OAuth session (id, and e-mail only as FACEIT states it). */
+export async function resolveFaceitAccount(
+  accessToken: string,
+  fetchImpl: typeof fetch = globalThis.fetch,
+): Promise<FaceitAccount> {
   // HTTPS enforced HERE, at the point where the Bearer token is actually sent.
   const { requireFaceitUserinfoUrl } = await import("./faceit.config.server");
   const userinfoUrl = requireFaceitUserinfoUrl();
@@ -237,7 +320,7 @@ export async function resolveFaceitPlayerId(
   if (!resolution) throw new FaceitError("FACEIT_PLAYER_NOT_FOUND");
   // Traceability without secrets: which documented field resolved the identity.
   console.info(`[faceit] identity_resolved source=${resolution.source}`);
-  return resolution.playerId;
+  return { playerId: resolution.playerId, ...faceitAccountContact(payload) };
 }
 
 export { extractFaceitPlayerId, resolveFaceitIdentityFromPayload };

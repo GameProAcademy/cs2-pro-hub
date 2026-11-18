@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { useT } from "@/i18n";
+import { useT, type TranslationKey } from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorKey, fetchAccountStatus, isValidEmail, touchLastLogin } from "@/lib/auth";
 import { SafeForm } from "@/components/common/SafeForm";
+import { FACEIT_LOGIN_REASONS, type FaceitLoginReason } from "@/lib/faceit/faceitLogin";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -27,12 +28,20 @@ export const Route = createFileRoute("/login")({
       },
     ],
   }),
+  // PM5: result of a "Continue with FACEIT" attempt (a fixed reason code, never a token).
+  validateSearch: (search: Record<string, unknown>): { faceit?: FaceitLoginReason } => {
+    const raw = search["faceit"];
+    return typeof raw === "string" && (FACEIT_LOGIN_REASONS as readonly string[]).includes(raw)
+      ? { faceit: raw as FaceitLoginReason }
+      : {};
+  },
   component: LoginPage,
 });
 
 function LoginPage() {
   const t = useT();
   const navigate = useNavigate();
+  const { faceit } = Route.useSearch();
   const [mode, setMode] = useState<"signIn" | "forgot">("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -107,6 +116,15 @@ function LoginPage() {
       title={isForgot ? t("login.forgotTitle") : t("login.title")}
       subtitle={isForgot ? t("login.forgotSubtitle") : t("login.subtitle")}
     >
+      {faceit ? (
+        <p
+          role="alert"
+          data-faceit-login={faceit}
+          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs leading-relaxed text-destructive-foreground"
+        >
+          {t(`login.faceit.${faceit}` as TranslationKey)}
+        </p>
+      ) : null}
       <SafeForm className="space-y-4" onSubmit={isForgot ? handleForgot : handleSignIn}>
         <div className="space-y-2">
           <Label htmlFor="email">{t("login.email")}</Label>
@@ -182,6 +200,24 @@ function LoginPage() {
           {isForgot ? t("login.backToLogin") : t("login.forgot")}
         </Button>
       </SafeForm>
+      {!isForgot ? (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            {t("login.faceit.or")}
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          {/* A full navigation: the server route sets the browser-binding cookie and redirects. */}
+          <Button asChild variant="outline" className="w-full">
+            <a href="/faceit/login" data-faceit-login-start>
+              {t("login.faceit.continue")}
+            </a>
+          </Button>
+          <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+            {t("login.faceit.note")}
+          </p>
+        </div>
+      ) : null}
     </AuthLayout>
   );
 }
