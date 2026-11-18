@@ -204,8 +204,8 @@ export const faceitLifetimeStatsSchema = z.object({
   lifetime: z
     .record(z.string(), z.unknown())
     .nullish()
-    .transform((v) => {
-      if (!v) return v;
+    .transform((v): Record<string, string | number | boolean | null> | null => {
+      if (!v) return null;
       const out: Record<string, string | number | boolean | null> = {};
       for (const [k, raw] of Object.entries(v)) {
         if (raw === null || ["string", "number", "boolean"].includes(typeof raw))
