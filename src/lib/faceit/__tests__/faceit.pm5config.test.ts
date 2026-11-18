@@ -89,3 +89,13 @@ describe("PM5 FACEIT configuration", () => {
     }
   });
 });
+
+describe("PM5 — FACEIT card placement", () => {
+  it("returns the OAuth callback to /profile, where the card is mounted in real mode", () => {
+    const callback = readFileSync("src/lib/faceit/faceit.callback.server.ts", "utf8");
+    expect(callback).toContain('"/profile?connection=faceit_success"');
+    expect(callback).toContain("`/profile?connection=faceit_error&reason=");
+    const profile = readFileSync("src/routes/_authenticated/profile.tsx", "utf8");
+    expect(profile).toMatch(/<FaceitPanel callback=\{faceitCallback\} \/>/);
+  });
+});

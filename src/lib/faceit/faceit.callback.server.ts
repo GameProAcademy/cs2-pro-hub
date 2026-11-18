@@ -14,10 +14,11 @@ import {
   toFaceitError,
 } from "@/lib/faceit/faceit.errors";
 
-const SUCCESS_PATH = "/analysis?connection=faceit_success";
+// PM5: the FACEIT card lives on /profile (next to Steam) in real-data mode.
+const SUCCESS_PATH = "/profile?connection=faceit_success";
 
 function errorPath(reason: string): string {
-  return `/analysis?connection=faceit_error&reason=${encodeURIComponent(reason)}`;
+  return `/profile?connection=faceit_error&reason=${encodeURIComponent(reason)}`;
 }
 
 function redirectTo(request: Request, path: string): Response {

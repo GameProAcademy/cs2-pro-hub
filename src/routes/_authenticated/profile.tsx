@@ -8,6 +8,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AvatarCard } from "@/components/profile/AvatarCard";
 import { CodeMultiSelect } from "@/components/profile/CodeMultiSelect";
 import { CountrySelect } from "@/components/profile/CountrySelect";
+import { FaceitPanel } from "@/components/integrations/FaceitPanel";
 import { SteamPanel } from "@/components/integrations/SteamPanel";
 import { IdentitiesCard } from "@/components/profile/IdentitiesCard";
 import { PasswordCard } from "@/components/profile/PasswordCard";
@@ -42,7 +43,7 @@ import { hasOwnershipProof } from "@/lib/identity/ownership";
 import { evaluateVerification, type IdentitySummary } from "@/lib/profile/verification";
 
 interface ProfileSearch {
-  connection?: "steam_success" | "steam_error";
+  connection?: "steam_success" | "steam_error" | "faceit_success" | "faceit_error";
   reason?: string;
 }
 
@@ -51,7 +52,12 @@ export const Route = createFileRoute("/_authenticated/profile")({
     const connection = search["connection"];
     const reason = search["reason"];
     return {
-      ...(connection === "steam_success" || connection === "steam_error" ? { connection } : {}),
+      ...(connection === "steam_success" ||
+      connection === "steam_error" ||
+      connection === "faceit_success" ||
+      connection === "faceit_error"
+        ? { connection }
+        : {}),
       ...(typeof reason === "string" && /^[a-z_]{1,40}$/.test(reason) ? { reason } : {}),
     };
   },
@@ -78,9 +84,16 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
   const t = useT();
   const search = Route.useSearch();
-  const steamCallback = search.connection
+  const steamCallback = search.connection?.startsWith("steam_")
     ? {
         status: search.connection === "steam_success" ? ("success" as const) : ("error" as const),
+        ...(search.reason ? { reason: search.reason } : {}),
+      }
+    : undefined;
+  // PM5: the FACEIT OAuth callback returns here (the card lives next to Steam in real mode).
+  const faceitCallback = search.connection?.startsWith("faceit_")
+    ? {
+        status: search.connection === "faceit_success" ? ("success" as const) : ("error" as const),
         ...(search.reason ? { reason: search.reason } : {}),
       }
     : undefined;
@@ -364,6 +377,10 @@ function ProfilePage() {
 
             <div className="lg:col-span-2">
               <SteamPanel callback={steamCallback} />
+            </div>
+
+            <div className="lg:col-span-3" id="faceit">
+              <FaceitPanel callback={faceitCallback} />
             </div>
 
             <div className="lg:col-span-3">
