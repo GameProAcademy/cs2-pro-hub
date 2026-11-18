@@ -82,16 +82,21 @@ export const en: Dictionary = {
   "login.forgot": "Forgot my password",
   "login.faceit.or": "or",
   "login.faceit.continue": "Continue with FACEIT",
-  "login.faceit.note": "Signs in to the CS2 PRO account already connected to that FACEIT account, or creates a new account with FACEIT's verified e-mail. An existing account is never linked by e-mail.",
+  "login.faceit.note":
+    "Signs in to the CS2 PRO account already connected to that FACEIT account, or creates a new account with FACEIT's verified e-mail. An existing account is never linked by e-mail.",
   "login.faceit.signingIn": "Signing in with FACEIT",
   "login.faceit.signingInSubtitle": "Validating the session…",
   "login.faceit.not_configured": "Sign-in with FACEIT is not available yet.",
   "login.faceit.cancelled": "Access on FACEIT was cancelled.",
   "login.faceit.expired": "The attempt expired or was already used. Try again.",
-  "login.faceit.browser_mismatch": "For security, finish signing in in the same browser where it started.",
-  "login.faceit.email_not_verified": "FACEIT did not report a verified e-mail, so no account was created. Create an account with e-mail and password and connect FACEIT on the Analysis page.",
-  "login.faceit.account_exists": "An account with that e-mail already exists. Sign in with e-mail and password and connect FACEIT on the Analysis page.",
-  "login.faceit.duplicate_account": "That FACEIT account is already linked to another CS2 PRO account.",
+  "login.faceit.browser_mismatch":
+    "For security, finish signing in in the same browser where it started.",
+  "login.faceit.email_not_verified":
+    "FACEIT did not report a verified e-mail, so no account was created. Create an account with e-mail and password and connect FACEIT on the Analysis page.",
+  "login.faceit.account_exists":
+    "An account with that e-mail already exists. Sign in with e-mail and password and connect FACEIT on the Analysis page.",
+  "login.faceit.duplicate_account":
+    "That FACEIT account is already linked to another CS2 PRO account.",
   "login.faceit.rate_limited": "Too many attempts right now. Wait a minute and try again.",
   "login.faceit.temporary": "FACEIT did not respond. Try again shortly.",
   "login.faceit.failed": "Could not sign in with FACEIT. Try again or use e-mail and password.",

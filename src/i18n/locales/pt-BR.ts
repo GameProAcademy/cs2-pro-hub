@@ -87,15 +87,19 @@ export const ptBR = {
   "login.forgot": "Esqueci minha senha",
   "login.faceit.or": "ou",
   "login.faceit.continue": "Continuar com FACEIT",
-  "login.faceit.note": "Entra na conta CS2 PRO já conectada a esse FACEIT, ou cria uma conta nova com o e-mail verificado do FACEIT. Uma conta existente nunca é vinculada pelo e-mail.",
+  "login.faceit.note":
+    "Entra na conta CS2 PRO já conectada a esse FACEIT, ou cria uma conta nova com o e-mail verificado do FACEIT. Uma conta existente nunca é vinculada pelo e-mail.",
   "login.faceit.signingIn": "Entrando com FACEIT",
   "login.faceit.signingInSubtitle": "Validando a sessão…",
   "login.faceit.not_configured": "O login com FACEIT ainda não está disponível.",
   "login.faceit.cancelled": "O acesso no FACEIT foi cancelado.",
   "login.faceit.expired": "A tentativa expirou ou já foi usada. Tente de novo.",
-  "login.faceit.browser_mismatch": "Por segurança, conclua o login no mesmo navegador em que ele começou.",
-  "login.faceit.email_not_verified": "O FACEIT não informou um e-mail verificado, então não criamos conta. Crie uma conta com e-mail e senha e conecte o FACEIT na página Análise.",
-  "login.faceit.account_exists": "Já existe uma conta com esse e-mail. Entre com e-mail e senha e conecte o FACEIT na página Análise.",
+  "login.faceit.browser_mismatch":
+    "Por segurança, conclua o login no mesmo navegador em que ele começou.",
+  "login.faceit.email_not_verified":
+    "O FACEIT não informou um e-mail verificado, então não criamos conta. Crie uma conta com e-mail e senha e conecte o FACEIT na página Análise.",
+  "login.faceit.account_exists":
+    "Já existe uma conta com esse e-mail. Entre com e-mail e senha e conecte o FACEIT na página Análise.",
   "login.faceit.duplicate_account": "Essa conta FACEIT já está ligada a outra conta CS2 PRO.",
   "login.faceit.rate_limited": "Muitas tentativas agora. Aguarde um minuto e tente de novo.",
   "login.faceit.temporary": "O FACEIT não respondeu. Tente de novo em instantes.",

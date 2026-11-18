@@ -83,19 +83,24 @@ export const ptPT: Dictionary = {
   "login.forgot": "Esqueci-me da palavra-passe",
   "login.faceit.or": "ou",
   "login.faceit.continue": "Continuar com FACEIT",
-  "login.faceit.note": "Entra na conta CS2 PRO já ligada a esse FACEIT, ou cria uma conta nova com o e-mail verificado do FACEIT. Uma conta existente nunca é associada pelo e-mail.",
+  "login.faceit.note":
+    "Entra na conta CS2 PRO já ligada a esse FACEIT, ou cria uma conta nova com o e-mail verificado do FACEIT. Uma conta existente nunca é associada pelo e-mail.",
   "login.faceit.signingIn": "A entrar com FACEIT",
   "login.faceit.signingInSubtitle": "A validar a sessão…",
   "login.faceit.not_configured": "O início de sessão com FACEIT ainda não está disponível.",
   "login.faceit.cancelled": "O acesso no FACEIT foi cancelado.",
   "login.faceit.expired": "A tentativa expirou ou já foi usada. Tente novamente.",
-  "login.faceit.browser_mismatch": "Por segurança, conclua o início de sessão no mesmo navegador em que começou.",
-  "login.faceit.email_not_verified": "O FACEIT não indicou um e-mail verificado, por isso não criámos conta. Crie uma conta com e-mail e palavra-passe e ligue o FACEIT na página Análise.",
-  "login.faceit.account_exists": "Já existe uma conta com esse e-mail. Entre com e-mail e palavra-passe e ligue o FACEIT na página Análise.",
+  "login.faceit.browser_mismatch":
+    "Por segurança, conclua o início de sessão no mesmo navegador em que começou.",
+  "login.faceit.email_not_verified":
+    "O FACEIT não indicou um e-mail verificado, por isso não criámos conta. Crie uma conta com e-mail e palavra-passe e ligue o FACEIT na página Análise.",
+  "login.faceit.account_exists":
+    "Já existe uma conta com esse e-mail. Entre com e-mail e palavra-passe e ligue o FACEIT na página Análise.",
   "login.faceit.duplicate_account": "Essa conta FACEIT já está ligada a outra conta CS2 PRO.",
   "login.faceit.rate_limited": "Demasiadas tentativas agora. Aguarde um minuto e tente novamente.",
   "login.faceit.temporary": "O FACEIT não respondeu. Tente novamente dentro de instantes.",
-  "login.faceit.failed": "Não foi possível entrar com FACEIT. Tente novamente ou use e-mail e palavra-passe.",
+  "login.faceit.failed":
+    "Não foi possível entrar com FACEIT. Tente novamente ou use e-mail e palavra-passe.",
 
   "register.title": "Criar a sua conta",
   "register.subtitle":
