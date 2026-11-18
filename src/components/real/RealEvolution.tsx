@@ -10,6 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { ProBenchmarkCard } from "@/components/benchmarks/ProBenchmarkCard";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -77,6 +78,7 @@ export function RealEvolutionPage({
           <EvolutionBody r={query.data} search={clean} onSearch={onSearch} />
         )}
         <DnaCard />
+        <ProBenchmarkCard />
       </div>
     </AppShell>
   );
