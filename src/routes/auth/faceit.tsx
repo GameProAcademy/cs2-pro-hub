@@ -45,9 +45,10 @@ function FaceitHandoverPage() {
         return fail();
       }
       await touchLastLogin();
+      // A new account lands on the FACEIT card (/profile), where the first sync shows.
       if (handover.created)
         navigate({
-          to: "/analysis",
+          to: "/profile",
           search: { connection: "faceit_success" } as never,
           replace: true,
         });
