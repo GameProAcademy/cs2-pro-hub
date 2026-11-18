@@ -34,6 +34,7 @@ import { Route as AuthenticatedRoundsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 import { Route as AuthenticatedUtilityRouteImport } from './routes/_authenticated/utility'
+import { Route as FaceitCallbackRouteImport } from './routes/faceit.callback'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin/catalog'
@@ -183,6 +184,11 @@ const AuthenticatedUtilityRoute = AuthenticatedUtilityRouteImport.update({
   id: '/utility',
   path: '/utility',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const FaceitCallbackRoute = FaceitCallbackRouteImport.update({
+  id: '/faceit/callback',
+  path: '/faceit/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -338,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/utility': typeof AuthenticatedUtilityRoute
+  '/faceit/callback': typeof FaceitCallbackRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -385,6 +392,7 @@ export interface FileRoutesByTo {
   '/training': typeof AuthenticatedTrainingRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/utility': typeof AuthenticatedUtilityRoute
+  '/faceit/callback': typeof FaceitCallbackRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -435,6 +443,7 @@ export interface FileRoutesById {
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/_authenticated/utility': typeof AuthenticatedUtilityRoute
+  '/faceit/callback': typeof FaceitCallbackRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -485,6 +494,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/upload'
     | '/utility'
+    | '/faceit/callback'
     | '/admin/audit'
     | '/admin/catalog'
     | '/admin/demo-e2e'
@@ -532,6 +542,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/upload'
     | '/utility'
+    | '/faceit/callback'
     | '/admin/audit'
     | '/admin/catalog'
     | '/admin/demo-e2e'
@@ -581,6 +592,7 @@ export interface FileRouteTypes {
     | '/_authenticated/training'
     | '/_authenticated/upload'
     | '/_authenticated/utility'
+    | '/faceit/callback'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/demo-e2e'
@@ -611,6 +623,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  FaceitCallbackRoute: typeof FaceitCallbackRoute
   ApiPublicA91ReferenceFixtureRoute: typeof ApiPublicA91ReferenceFixtureRoute
   ApiPublicH3eRawAuditReasonsRoute: typeof ApiPublicH3eRawAuditReasonsRoute
   ApiPublicH3eRetentionOperatorRoute: typeof ApiPublicH3eRetentionOperatorRoute
@@ -802,6 +815,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/utility'
       preLoaderRoute: typeof AuthenticatedUtilityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/faceit/callback': {
+      id: '/faceit/callback'
+      path: '/faceit/callback'
+      fullPath: '/faceit/callback'
+      preLoaderRoute: typeof FaceitCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -1045,6 +1065,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  FaceitCallbackRoute: FaceitCallbackRoute,
   ApiPublicA91ReferenceFixtureRoute: ApiPublicA91ReferenceFixtureRoute,
   ApiPublicH3eRawAuditReasonsRoute: ApiPublicH3eRawAuditReasonsRoute,
   ApiPublicH3eRetentionOperatorRoute: ApiPublicH3eRetentionOperatorRoute,
