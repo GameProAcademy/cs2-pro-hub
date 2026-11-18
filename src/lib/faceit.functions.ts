@@ -16,6 +16,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 import { FaceitError, toFaceitError, type FaceitErrorCode } from "./faceit/faceit.errors";
+import { fillFaceitLang } from "./faceit/faceit.mapper";
 
 export type FaceitConnectionState =
   "disconnected" | "connected" | "syncing" | "error" | "configuration_missing";
@@ -155,7 +156,7 @@ export const getFaceitConnection = createServerFn({ method: "GET" })
       state,
       connected,
       nickname: connection.external_username,
-      profileUrl: connection.profile_url,
+      profileUrl: connection.profile_url ? fillFaceitLang(connection.profile_url) : null,
       avatar: profileString(connection.metadata, "avatar"),
       country: profileString(connection.metadata, "country"),
       skillLevel: profileNumber(connection.metadata, "skill_level"),
