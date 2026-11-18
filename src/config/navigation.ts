@@ -16,6 +16,7 @@ import {
   Bomb,
   Coins,
   TrendingUp,
+  Bookmark,
 } from "lucide-react";
 
 import type { TranslationKey } from "@/i18n/config";
@@ -34,6 +35,7 @@ export const navItems: NavItem[] = [
   { labelKey: "nav.matches", to: "/matches", icon: ListOrdered },
   { labelKey: "nav.performance", to: "/performance", icon: Gauge },
   { labelKey: "nav.evolution", to: "/evolution", icon: TrendingUp },
+  { labelKey: "nav.moments", to: "/moments", icon: Bookmark },
   { labelKey: "nav.playerDna", to: "/player-dna", icon: Dna },
   { labelKey: "nav.maps", to: "/maps", icon: MapPinned },
   { labelKey: "nav.deaths", to: "/deaths", icon: Skull },

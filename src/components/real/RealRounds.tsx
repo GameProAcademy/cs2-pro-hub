@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
+import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
@@ -405,6 +406,27 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
                 >
                   {t("combat.openReplay")}
                 </Link>
+                {e.byMe || e.onMe || e.type !== "kill" ? (
+                  <SaveMomentButton
+                    compact
+                    matchId={matchId}
+                    round={round.roundNumber}
+                    tick={e.tick}
+                    kind={
+                      e.type === "bomb_plant"
+                        ? "PLANT"
+                        : e.type === "bomb_defuse"
+                          ? "DEFUSE"
+                          : e.type === "kill"
+                            ? e.onMe
+                              ? "DEATH"
+                              : "KILL"
+                            : "ROUND"
+                    }
+                    source="ROUNDS"
+                    defaultTitle={`${fill(t("rounds.roundN"), { n: round.roundNumber })} · ${eventText(t, e, side)}`}
+                  />
+                ) : null}
               </li>
             ))}
             {round.timeline.length === 0 ? (
