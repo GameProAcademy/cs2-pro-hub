@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info, UserX } from "lucide-react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -314,6 +315,15 @@ function FlashRowView({ f, matchId }: { f: FlashRow; matchId: string }) {
         >
           {t("combat.openReplay")}
         </Link>
+        <SaveMomentButton
+          compact
+          matchId={matchId}
+          round={f.round}
+          tick={f.tick}
+          kind="UTILITY"
+          source="UTILITY"
+          defaultTitle={`${fill(t("rounds.roundN"), { n: f.round })} · Flash`}
+        />
       </td>
     </tr>
   );
