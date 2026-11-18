@@ -1,0 +1,83 @@
+{
+  "deployment_id": "584ea563-f978-476a-9ba6-9984d16ca0ab",
+  "branch": "main",
+  "semantic_commit": "0c646583dc98426d4a2298a8797658253ad565c0",
+  "build_commit": "0c646583dc98426d4a2298a8797658253ad565c0",
+  "deployment_commit": "0c646583dc98426d4a2298a8797658253ad565c0",
+  "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+  "parser_version": "0.42.2",
+  "critical_hashes": {
+    "parser.py": "421dfd9563ae1a7950d4d5a4229556a1e20df17d",
+    "adapter.py": "1eaf38401a09baceebbf9d959adf2f30ded5e962",
+    "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+    "raw_evidence.py": "3890313eb4855fc58f9636d9688309e3356790b7",
+    "settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d"
+  },
+  "database_target_md5": {
+    "assert_verified_parser_provenance": "e35c5ff8903e331f7b47214665fcab31",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "recorder_target_md5": "515f433f919370312dbe9a8a60c9dd31",
+  "observed": {
+    "observed_at": "2026-11-17T23:58:00Z",
+    "railway_deployment": {
+      "id": "584ea563-f978-476a-9ba6-9984d16ca0ab",
+      "status": "SUCCESS",
+      "commitHash": "0c646583dc98426d4a2298a8797658253ad565c0",
+      "branch": "main",
+      "reason": "deploy",
+      "created_at": "2026-11-17T23:48:09.688Z",
+      "release_control": "queue idle (no queued/processing jobs) before the release; PR #319 (merge 0c646583) merged with the service source pinned (768646ea) and the watch-pattern freeze in place, so the merge deployed nothing; PARSER_REVISION/PARSER_BUILD_REVISION set to git:0c646583dc98426d4a2298a8797658253ad565c0 with skipped deploys; the persistent service source was aligned to 0c646583 (repo GameProAcademy/cs2-pro-hub, branch main, rootDirectory services/cs2-demo-parser) in the same controlled operation. The deployment created by that source change (90e6a5d5-4ced-4aec-a275-046c1439b9f4) was SKIPPED by the watch-pattern freeze and built nothing; exactly one deployment of the pinned commit was then triggered through the Railway agent (584ea563), the only build of this release",
+      "failed_builds_never_served": [],
+      "previous_deployment_status_after_release": "3335c88d REMOVED",
+      "service_source_after_release": {
+        "repo": "GameProAcademy/cs2-pro-hub",
+        "branch": "main",
+        "commitSha": "0c646583dc98426d4a2298a8797658253ad565c0",
+        "rootDirectory": "services/cs2-demo-parser"
+      }
+    },
+    "railway_variables_changed": {
+      "PARSER_REVISION": "git:0c646583dc98426d4a2298a8797658253ad565c0",
+      "PARSER_BUILD_REVISION": "git:0c646583dc98426d4a2298a8797658253ad565c0",
+      "set_with_skip_deploys": true
+    },
+    "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: parser.gamepro.network/version and cs2-demo-parser-production.up.railway.app/version observed 2026-11-17T23:58Z: parser demoparser2 0.42.2, revision = semantic = build = git:0c646583dc98426d4a2298a8797658253ad565c0, build.commit 0c646583dc98426d4a2298a8797658253ad565c0, embedded true, source railway, declared_revision_matches true",
+    "dependency_drift_check": "requirements unchanged (demoparser2==0.42.2); parser.py reads cash_spent_this_round at round end and attaches money_spent and human player_disconnect ticks to each round_end event; raw_evidence.py maps the player_disconnect fields (field catalog regenerated, RAW audit PASS on real demos)",
+    "before": {
+      "deployment_id": "3335c88d-2a0f-461c-8919-5d6086b518fd",
+      "semantic_revision": "git:768646ea76646219b1749f9fd2e757703292a24c",
+      "build_revision": "git:768646ea76646219b1749f9fd2e757703292a24c",
+      "parser_version": "0.42.2"
+    },
+    "managed_start_state": {
+      "read_at": "2026-11-17T23:58:00Z",
+      "record_parser_runtime_attestation": "b46f6701d4d930c6771148a443ead4bc",
+      "assert_verified_parser_provenance": "95dc9e5f05d76376b3e31488b3c1f058",
+      "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+      "pin_occurrences": {
+        "record_parser_runtime_attestation": {
+          "deployment": 1,
+          "commit": 4,
+          "parser_blob": 1,
+          "raw_evidence_blob": 1
+        },
+        "assert_verified_parser_provenance": {
+          "deployment": 1,
+          "commit": 3,
+          "parser_blob": 0,
+          "raw_evidence_blob": 0
+        }
+      },
+      "target_md5_computed_read_only": "recorder target = scripts/repin/r5_8_11.target_md5(spec) = md5 of the managed recorder with the four pins replaced (both 515f433f...); assertion target from the managed definition with the pins replaced (read-only SELECT)"
+    }
+  },
+  "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+  "supersedes": "docs/reference/r5_8_30/spec.json",
+  "pin_role": "R5.8.31: re-pin semantic/build commit, Railway deployment and the parser.py and raw_evidence.py critical blobs (PR #319, PM4 round economy spend and disconnects on round_end); parser version 0.42.2 and the adapter.py, worker.py, settings.py and workflow blobs unchanged",
+  "r5_8_30_database_target_md5": {
+    "assert_verified_parser_provenance": "95dc9e5f05d76376b3e31488b3c1f058",
+    "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+  },
+  "r5_8_30_recorder_target_md5": "b46f6701d4d930c6771148a443ead4bc"
+}
