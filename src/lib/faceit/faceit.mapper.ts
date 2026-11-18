@@ -47,10 +47,19 @@ export interface FaceitProfileView {
   activatedAt: string | null;
 }
 
-function faceitHttpsUrl(value: string | null): string | null {
+/**
+ * FACEIT's Data API returns profile/match links with a literal `{lang}` placeholder
+ * (e.g. `https://www.faceit.com/{lang}/players/<nick>`), which opens a 404 page as is.
+ * The placeholder is filled with `en` (FACEIT then follows the viewer's language).
+ */
+export function fillFaceitLang(value: string): string {
+  return value.replace(/\{lang\}|%7Blang%7D/gi, "en");
+}
+
+export function faceitHttpsUrl(value: string | null): string | null {
   if (!value) return null;
   try {
-    const url = new URL(value);
+    const url = new URL(fillFaceitLang(value));
     if (url.protocol !== "https:") return null;
     if (!/(^|\.)faceit\.com$/i.test(url.hostname)) return null;
     return url.toString();
