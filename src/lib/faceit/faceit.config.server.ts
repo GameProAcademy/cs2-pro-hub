@@ -24,6 +24,36 @@ function env(name: string): string | null {
   return value && value.trim().length > 0 ? value.trim() : null;
 }
 
+/**
+ * PM5 — secret names accepted in production. The owner created the PM5 names
+ * (`FACEIT_DATA_API_KEY`, `FACEIT_OAUTH_REDIRECT_URI`); the Fase 2.2.1 names still win when set.
+ */
+const ALIASES: Record<string, string> = {
+  FACEIT_API_KEY: "FACEIT_DATA_API_KEY",
+  FACEIT_REDIRECT_URI: "FACEIT_OAUTH_REDIRECT_URI",
+};
+
+/**
+ * PM5 — FACEIT Connect endpoints published by FACEIT's own OpenID discovery document
+ * (https://api.faceit.com/auth/v1/openid_configuration, read 2026-11-18). Used only when the
+ * corresponding variable is not set; an explicitly configured value always wins.
+ */
+export const FACEIT_DISCOVERED_ENDPOINTS: Record<string, string> = {
+  FACEIT_OAUTH_AUTHORIZE_URL: "https://accounts.faceit.com",
+  FACEIT_OAUTH_TOKEN_URL: "https://api.faceit.com/auth/v1/oauth/token",
+  FACEIT_OAUTH_USERINFO_URL: "https://api.faceit.com/auth/v1/resources/userinfo",
+};
+
+/** Configured value, its PM5 alias, or the documented FACEIT endpoint (never a guess). */
+function setting(name: string): string | null {
+  return (
+    env(name) ??
+    (ALIASES[name] ? env(ALIASES[name]) : null) ??
+    FACEIT_DISCOVERED_ENDPOINTS[name] ??
+    null
+  );
+}
+
 function int(name: string, fallback: number): number {
   const raw = env(name);
   if (!raw) return fallback;
@@ -68,11 +98,11 @@ export function faceitConfigStatus(): FaceitConfigStatus {
   const status = {
     clientId: env("FACEIT_CLIENT_ID") !== null,
     clientSecret: env("FACEIT_CLIENT_SECRET") !== null,
-    apiKey: env("FACEIT_API_KEY") !== null,
-    authorizeUrl: isHttpsUrl(env("FACEIT_OAUTH_AUTHORIZE_URL")),
-    tokenUrl: isHttpsUrl(env("FACEIT_OAUTH_TOKEN_URL")),
-    userinfoUrl: isHttpsUrl(env("FACEIT_OAUTH_USERINFO_URL")),
-    redirectUri: isAllowedRedirectUri(env("FACEIT_REDIRECT_URI")),
+    apiKey: setting("FACEIT_API_KEY") !== null,
+    authorizeUrl: isHttpsUrl(setting("FACEIT_OAUTH_AUTHORIZE_URL")),
+    tokenUrl: isHttpsUrl(setting("FACEIT_OAUTH_TOKEN_URL")),
+    userinfoUrl: isHttpsUrl(setting("FACEIT_OAUTH_USERINFO_URL")),
+    redirectUri: isAllowedRedirectUri(setting("FACEIT_REDIRECT_URI")),
     apiBaseUrl: isHttpsUrl(env("FACEIT_API_BASE_URL") ?? FACEIT_DEFAULT_API_BASE_URL),
     gameId: true,
   };
@@ -123,7 +153,7 @@ export function requireSecureFaceitUrl(name: string, value: string | null): stri
 
 /** OAuth userinfo endpoint — HTTPS enforced here, where the token is sent. */
 export function requireFaceitUserinfoUrl(): string {
-  return requireSecureFaceitUrl("FACEIT_OAUTH_USERINFO_URL", env("FACEIT_OAUTH_USERINFO_URL"));
+  return requireSecureFaceitUrl("FACEIT_OAUTH_USERINFO_URL", setting("FACEIT_OAUTH_USERINFO_URL"));
 }
 
 /** HTTPS required; plain http tolerated only for localhost in development. */
@@ -141,15 +171,15 @@ export function isAllowedRedirectUri(value: string | null): boolean {
 }
 
 /**
- * OAuth endpoints are NEVER hardcoded: FACEIT documents them through its own
- * app configuration, so a missing value is a configuration error, not a guess.
+ * OAuth endpoints come from configuration or, when unset, from FACEIT's published OpenID
+ * discovery document (FACEIT_DISCOVERED_ENDPOINTS) — never from a guess.
  */
 export function requireFaceitOAuthConfig(): FaceitOAuthConfig {
   const clientId = env("FACEIT_CLIENT_ID");
   const clientSecret = env("FACEIT_CLIENT_SECRET");
-  const authorizeUrl = env("FACEIT_OAUTH_AUTHORIZE_URL");
-  const tokenUrl = env("FACEIT_OAUTH_TOKEN_URL");
-  const redirectUri = env("FACEIT_REDIRECT_URI");
+  const authorizeUrl = setting("FACEIT_OAUTH_AUTHORIZE_URL");
+  const tokenUrl = setting("FACEIT_OAUTH_TOKEN_URL");
+  const redirectUri = setting("FACEIT_REDIRECT_URI");
 
   if (
     !clientId ||
@@ -171,7 +201,7 @@ export function requireFaceitOAuthConfig(): FaceitOAuthConfig {
 }
 
 export function requireFaceitDataApiConfig(): FaceitDataApiConfig {
-  const apiKey = env("FACEIT_API_KEY");
+  const apiKey = setting("FACEIT_API_KEY");
   if (!apiKey) throw new FaceitError("FACEIT_CONFIGURATION_MISSING");
   return {
     apiKey,
