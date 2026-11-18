@@ -20,6 +20,7 @@ import { nadePtBR } from "./nade/pt-BR";
 import { roundsPtBR } from "./rounds/pt-BR";
 import { evolutionPtBR } from "./evolution/pt-BR";
 import { momentsPtBR } from "./moments/pt-BR";
+import { adaptivePtBR } from "./adaptive/pt-BR";
 import { replayPtBR } from "./replay/pt-BR";
 
 export const ptBR = {
@@ -31,6 +32,7 @@ export const ptBR = {
   ...roundsPtBR,
   ...evolutionPtBR,
   ...momentsPtBR,
+  ...adaptivePtBR,
   ...replayPtBR,
   ...catalogPtBR,
   ...demoFlowPtBR,
