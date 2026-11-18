@@ -4,7 +4,8 @@
  * The browser can only:
  *   1. read its OWN Steam link state (`getSteamConnection`);
  *   2. ask the server to start a link (`startSteamConnection`);
- *   3. unlink (`unlinkSteamConnection`).
+ *   3. unlink (`unlinkSteamConnection`);
+ *   4. refresh its public Steam profile (`syncSteamConnection`, throttled).
  *
  * It never sees a Web API key, a realm, a state value, an OpenID signature or
  * another player's SteamID64. Server-only modules are imported INSIDE the
@@ -14,6 +15,7 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { deriveLinkState } from "./identity/linkState";
 import { maskSteamId64 } from "./steam/steam.openid";
 import { publicSteamErrorCode, toSteamError, type SteamErrorCode } from "./steam/steam.errors";
 import type { SteamConnectionView } from "./steam/steam.types";
@@ -54,6 +56,8 @@ export const getSteamConnection = createServerFn({ method: "GET" })
       integrationState: status.state,
       webApiReady: status.webApiReady,
       openidReady: status.openidReady,
+      linkState: status.openidReady ? "NOT_LINKED" : "UNAVAILABLE",
+      lastSyncAt: null,
     };
 
     const { data: player } = await supabase
@@ -67,7 +71,7 @@ export const getSteamConnection = createServerFn({ method: "GET" })
       supabase
         .from("player_connections")
         .select(
-          "status, external_id, external_username, profile_url, metadata, connected_at, disconnected_at",
+          "status, external_id, external_username, profile_url, metadata, connected_at, disconnected_at, last_sync_at, last_sync_status",
         )
         .eq("player_id", player.id)
         .eq("source", "steam")
@@ -99,17 +103,54 @@ export const getSteamConnection = createServerFn({ method: "GET" })
           ? "connected"
           : "disconnected",
       connected,
-      // The full id is returned ONLY to the owner of the account.
-      steamId64: connection.external_id,
-      steamId64Masked: maskSteamId64(connection.external_id),
-      personaName:
-        connection.external_username ?? text(profileField(connection.metadata, "persona_name")),
-      profileUrl: connection.profile_url,
-      avatar: text(profileField(connection.metadata, "avatar")),
-      profilePublic: typeof visibility === "boolean" ? visibility : null,
+      // The full id is returned ONLY to the owner of the account, and only while linked:
+      // a disconnected account shows none of its old data.
+      steamId64: connected ? connection.external_id : null,
+      steamId64Masked: connected ? maskSteamId64(connection.external_id) : null,
+      personaName: connected
+        ? (connection.external_username ?? text(profileField(connection.metadata, "persona_name")))
+        : null,
+      profileUrl: connected ? connection.profile_url : null,
+      avatar: connected ? text(profileField(connection.metadata, "avatar")) : null,
+      profilePublic: connected && typeof visibility === "boolean" ? visibility : null,
       connectedAt: connection.connected_at,
       disconnectedAt: connection.disconnected_at,
+      linkState: deriveLinkState({
+        configured: status.openidReady,
+        connectionStatus: connection.status,
+        identityStatus: identity?.identity_status,
+        isVerified: identity?.is_verified,
+        lastSyncAt: connection.last_sync_at,
+        lastSyncStatus: connection.last_sync_status,
+      }),
+      lastSyncAt: connected ? connection.last_sync_at : null,
     };
+  });
+
+export interface SyncSteamResult {
+  ok: boolean;
+  status?: "SYNCED" | "UNAVAILABLE" | "THROTTLED";
+  profilePublic?: boolean | null;
+  errorCode?: SteamErrorCode;
+}
+
+/**
+ * Refreshes the signed-in player's PUBLIC Steam profile (persona name, avatar, profile URL,
+ * visibility) and records the persona name as a nickname alias. Server-side Web API key;
+ * at most once every few minutes per player. A private profile keeps the link verified.
+ */
+export const syncSteamConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<SyncSteamResult> => {
+    try {
+      const { syncSteamProfile } = await import("./steam/steam.sync.server");
+      const result = await syncSteamProfile(context.userId);
+      return { ok: true, status: result.status, profilePublic: result.profilePublic };
+    } catch (error) {
+      const errorCode = publicSteamErrorCode(toSteamError(error).code);
+      console.warn(`[steam] steam_sync_failure code=${errorCode}`);
+      return { ok: false, errorCode };
+    }
   });
 
 export interface StartSteamLinkResult {

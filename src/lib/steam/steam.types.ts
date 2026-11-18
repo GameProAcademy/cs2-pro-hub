@@ -61,4 +61,7 @@ export interface SteamConnectionView {
   /** Steam Web API configured? Linking works without it. */
   webApiReady: boolean;
   openidReady: boolean;
+  /** Derived with `deriveLinkState` — the same rule every screen uses. */
+  linkState: import("@/lib/identity/linkState").ExternalLinkState;
+  lastSyncAt: string | null;
 }

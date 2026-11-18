@@ -384,10 +384,7 @@ function ProfilePage() {
             </div>
 
             <div className="lg:col-span-3">
-              <IdentitiesCard
-                identities={profile?.identities ?? []}
-                connections={profile?.connections ?? []}
-              />
+              <IdentitiesCard />
             </div>
             <div className="lg:col-span-3">
               <NicknameHistoryCard history={profile?.nicknameHistory ?? []} />

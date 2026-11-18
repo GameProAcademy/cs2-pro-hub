@@ -67,9 +67,11 @@ describe("identity UX wiring", () => {
   });
 
   it("the suggestion is read from the caller's own player only", () => {
-    const start = server.indexOf("async function readOwnNicknameHistory");
+    const start = server.indexOf("async function readOwnIdentityEvidence");
     const body = server.slice(start, server.indexOf("\n}\n", start));
     expect(body).toContain('.eq("user_id", userId)');
     expect(body).toContain('.eq("player_id", playerId)');
+    // STEAM: the verified SteamID64 is read for the same own player only.
+    expect(body).toContain("readVerifiedSteamId64(supabase, playerId)");
   });
 });

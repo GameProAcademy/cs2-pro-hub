@@ -205,7 +205,11 @@ export function DemoPlayerIdentity({
                     )}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t("pipeline.identify.suggestionWhy")}
+                    {t(
+                      suggestion.basis === "steam_id"
+                        ? "pipeline.identify.suggestionWhySteam"
+                        : "pipeline.identify.suggestionWhy",
+                    )}
                   </p>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button

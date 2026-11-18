@@ -61,6 +61,7 @@ import {
 } from "@/lib/coach/roundsEvolution";
 import { loadOpenTrainingPlan } from "@/lib/adaptiveTraining.functions";
 import { compactTrainingPlan, loadCoachMoments } from "@/lib/coach/pm5Context";
+import { loadCoachExternalAccounts } from "@/lib/coach/steamContext";
 import { buildEvolution } from "@/lib/evolution/evolution";
 import { loadRoundsInput } from "@/lib/rounds.functions";
 import { buildRoundReports, summarizeRounds } from "@/lib/rounds/roundImpact";
@@ -406,6 +407,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             latestMatchRounds,
             trainingPlan,
             savedMoments,
+            externalAccounts,
           ] = await Promise.all([
             loadSideRounds(db, [playerId], coachMatchIds),
             loadRoundContext(db, [playerId], coachMatchIds),
@@ -420,6 +422,8 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
               .then((p) => compactTrainingPlan(p, input.locale))
               .catch(() => null),
             loadCoachMoments(db as never).catch(() => null),
+            // STEAM: own linked accounts (state + provenance only, never an id or key).
+            loadCoachExternalAccounts(db as never, playerId).catch(() => null),
           ]);
           const facts = buildCoachFacts(overview, dna, input.locale, {
             message: input.message,
@@ -432,6 +436,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             latestMatchRounds,
             trainingPlan,
             savedMoments,
+            externalAccounts,
             // PM4: same pure report as /evolution (last 10 eligible matches, all maps).
             evolution: overview.matches.length
               ? compactEvolution(

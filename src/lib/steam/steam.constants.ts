@@ -13,6 +13,14 @@
 /** Official Steam OpenID 2.0 provider endpoint. */
 export const STEAM_OPENID_DEFAULT_ENDPOINT = "https://steamcommunity.com/openid/login";
 
+/**
+ * Production origin and callback (public values, not secrets). Used only when the
+ * environment does not override them; the callback must stay inside the realm.
+ */
+export const STEAM_PRODUCTION_REALM = "https://gamepro.network";
+export const STEAM_PRODUCTION_RETURN_URL =
+  "https://gamepro.network/api/public/integrations/steam/callback";
+
 /** OpenID 2.0 namespace. Any other value in a callback is refused. */
 export const STEAM_OPENID_NS = "http://specs.openid.net/auth/2.0";
 

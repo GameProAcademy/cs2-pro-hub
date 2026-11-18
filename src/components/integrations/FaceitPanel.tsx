@@ -7,13 +7,15 @@
  * missing FACEIT data is shown as "—", never as zero.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ExternalLink, Link2, Link2Off, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, ExternalLink, Link2Off, Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
+import { FaceitIcon } from "@/components/brand/BrandIcons";
 import { ChartCard } from "@/components/common/ChartCard";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/i18n";
 import type { FaceitErrorCode } from "@/lib/faceit/faceit.errors";
+import { invalidateExternalLinks } from "@/lib/identity/useExternalLinks";
 import {
   disconnectFaceitConnection,
   getFaceitConnection,
@@ -91,7 +93,7 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
     mutationFn: () => requestFaceitSync(),
     onSuccess: (result) => {
       setLocalReason(result.ok ? null : reasonFor(result.errorCode));
-      void queryClient.invalidateQueries({ queryKey: ["faceit", "connection"] });
+      invalidateExternalLinks(queryClient);
     },
     onError: () => setLocalReason("error"),
   });
@@ -100,7 +102,7 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
     mutationFn: () => disconnectFaceitConnection(),
     onSuccess: () => {
       setLocalReason(null);
-      void queryClient.invalidateQueries({ queryKey: ["faceit", "connection"] });
+      invalidateExternalLinks(queryClient);
     },
     onError: () => setLocalReason("error"),
   });
@@ -192,7 +194,7 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
               {startMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               ) : (
-                <Link2 className="size-4" aria-hidden />
+                <FaceitIcon className="size-4" />
               )}
               {t("faceit.connect")}
             </Button>
