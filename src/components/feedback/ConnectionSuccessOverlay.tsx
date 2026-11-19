@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { FaceitIcon, SteamIcon } from "@/components/brand/BrandIcons";
 import { useT } from "@/i18n";
 
-export const SUCCESS_OVERLAY_MS = 2800;
+export const SUCCESS_OVERLAY_MS = 6000;
 const FADE_MS = 350;
 
 export function ConnectionSuccessOverlay({ provider }: { provider: "steam" | "faceit" | null }) {
