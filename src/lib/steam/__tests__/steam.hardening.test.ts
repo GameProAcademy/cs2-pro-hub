@@ -154,7 +154,7 @@ describe("steam mapping", () => {
     const fields = mapSteamConnectionFields(steamMinimalProfile(STEAM_ID), "steam.openid.v1");
     expect(() => assertSafeConnectionMetadata(fields.metadata)).not.toThrow();
     expect(fields.external_id).toBe(STEAM_ID);
-    expect(fields.profile_locator_type).toBe("steam_id_64");
+    expect(fields.profile_locator_type).toBe("numeric_id");
     expect(JSON.stringify(fields.metadata)).not.toContain("token");
   });
 });

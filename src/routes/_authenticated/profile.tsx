@@ -1,3 +1,4 @@
+import { ConnectionSuccessOverlay } from "@/components/feedback/ConnectionSuccessOverlay";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
@@ -170,6 +171,15 @@ function ProfilePage() {
 
   return (
     <AppShell>
+      <ConnectionSuccessOverlay
+        provider={
+          search.connection === "steam_success"
+            ? "steam"
+            : search.connection === "faceit_success"
+              ? "faceit"
+              : null
+        }
+      />
       <div className="space-y-8">
         <PageHeader
           eyebrow={t("profile.eyebrow")}

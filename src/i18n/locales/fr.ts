@@ -989,6 +989,7 @@ export const fr: Dictionary = {
   "link.state.ERROR": "Erreur de synchronisation",
   "link.state.UNAVAILABLE": "Indisponible",
   "link.lastSync": "Dernière synchronisation",
+  "link.success.title": "Connecté avec succès",
   "steam.field.lastSync": "Dernière synchronisation",
   "steam.action.sync": "Synchroniser",
   "steam.sync.done": "Profil Steam mis à jour.",

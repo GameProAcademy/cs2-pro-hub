@@ -207,3 +207,41 @@
     color: var(--primary-foreground);
   }
 }
+
+/* Link success overlay: ring then check are drawn, the card pops in. */
+@keyframes cs-success-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes cs-success-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.cs-success-card {
+  animation: cs-success-pop 320ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.cs-success-ring {
+  stroke-dasharray: 330;
+  stroke-dashoffset: 330;
+  animation: cs-success-draw 600ms ease-out 120ms forwards;
+}
+.cs-success-check {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 80;
+  animation: cs-success-draw 380ms ease-out 620ms forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-success-card,
+  .cs-success-ring,
+  .cs-success-check {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

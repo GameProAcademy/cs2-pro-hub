@@ -1,3 +1,4 @@
+import { ConnectionSuccessOverlay } from "@/components/feedback/ConnectionSuccessOverlay";
 import { createFileRoute } from "@tanstack/react-router";
 import { Quote } from "lucide-react";
 import { RealXRayPage } from "@/components/real/RealXRay";
@@ -65,6 +66,9 @@ function AnalysisPage() {
 
   return (
     <AppShell>
+      <ConnectionSuccessOverlay
+        provider={search.connection === "faceit_success" ? "faceit" : null}
+      />
       <div className="space-y-8">
         <PageHeader
           eyebrow={t("analysis.eyebrow")}

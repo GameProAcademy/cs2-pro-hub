@@ -990,6 +990,7 @@ export const ptPT: Dictionary = {
   "link.state.ERROR": "Erro na sincronização",
   "link.state.UNAVAILABLE": "Indisponível",
   "link.lastSync": "Última sincronização",
+  "link.success.title": "Ligado com sucesso",
   "steam.field.lastSync": "Última sincronização",
   "steam.action.sync": "Sincronizar",
   "steam.sync.done": "Perfil Steam atualizado.",
