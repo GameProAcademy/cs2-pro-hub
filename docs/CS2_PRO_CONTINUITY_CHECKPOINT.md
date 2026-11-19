@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 ENCERRADO (C6, #342 `10da2e7f`); integração Steam ENCERRADA (#343–#348) · por: sessão Claude
+Atualizado em: 2026-11-19 (America/Sao_Paulo) — PM5 ENCERRADO (#342 `10da2e7f`); integração Steam ENCERRADA (#343–#348, `main` `5007544a`) · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,23 +12,23 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Nenhuma missão ativa. **Integração Steam/Valve ENCERRADA** (2026-11-18) — `docs/steam/STEAM_CHECKPOINT.md`                                                                         |
-| Etapa atual                        | Steam encerrada: vínculo/sync/desvínculo/reconexão validados em produção; identificação real em demo não validada por falta de demo nova                                           |
-| Última etapa concluída             | #347 (`f5fc22b1`): correção do vínculo Steam (constraint de locator) e overlay de sucesso; #348: overlay 6 s e checkpoints                                                         |
-| Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                              |
-| Processos em execução              | Nenhum                                                                                                                                                                             |
-| Branch ativa                       | nenhuma além de `main`                                                                                                                                                             |
-| Último commit confirmado em `main` | `462929e7` (merge do #345)                                                                                                                                                         |
-| Build validado em produção         | App publicado de `462929e7` (bundle `index-DdHe30Q3.js`). Worker inalterado: Railway `584ea563` (R5.8.31); a mudança de identificação roda no app, não no worker                   |
-| Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                 |
-| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
-| **Próxima ação exata**             | Aguardar instrução do dono. Opcional: validar o critério 22 da Steam com uma demo nova                                                                                             |
-| Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`                                                                   |
-| Ações manuais necessárias          | Opcional: demo nova da conta Steam vinculada. Limitações do PM5 inalteradas                                                                                                        |
+| Item                               | Valor                                                                                                                                                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | Nenhuma missão ativa. PM5 encerrado no #342; **integração Steam/Valve encerrada no #348** (`docs/steam/STEAM_CHECKPOINT.md`)                                                                                         |
+| Etapa atual                        | Nenhuma. Steam: vínculo, sincronização, desvínculo e reconexão validados em produção pelo dono; identificação real de demo pela Steam NOT_VALIDATED por falta de demo nova da conta vinculada                        |
+| Última etapa concluída             | #348 (`5007544a`): overlay por 6 s e encerramento da Steam nos checkpoints                                                                                                                                           |
+| Operações em andamento             | Nenhuma                                                                                                                                                                                                              |
+| Processos em execução              | Nenhum                                                                                                                                                                                                               |
+| Branch ativa                       | nenhuma além de `main`                                                                                                                                                                                               |
+| Último commit confirmado em `main` | `5007544af6377872be4f8dc18446be70a98bc362` (merge do #348)                                                                                                                                                           |
+| Build validado em produção         | App: Lovable publicado e sincronizado com `5007544a`. Worker: Railway R5.8.31, commit `0c646583`, deploy `584ea563`, sem alteração para a Steam (a identificação pela Steam roda no app)                             |
+| Gates mais recentes                | `5007544a`: Quality Gates 44443360442, Queue Semantics 44443360396, attestation 44446633720, H.3-E PASS 44446661458 (1ª execução 44445613991 falhou pelo padrão do §21 item 5). E2E 44438464636 em `f5fc22b1`, 12/12 |
+| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                   |
+| **Próxima ação exata**             | Aguardar instrução do dono                                                                                                                                                                                           |
+| Ações que NÃO devem ser repetidas  | PM1–PM5 (#264–#342); Steam (#343–#348); migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`                                                                                         |
+| Ações manuais necessárias          | Nenhuma obrigatória. Opcionais: demo nova da conta Steam vinculada (critério 22 da Steam); limitações do PM5 (importação FACEIT real, login por FACEIT, fonte de benchmark licenciada, envio da revisão mensal)      |
 
-Missão ativa: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
+Nenhuma missão ativa. Últimas encerradas: Steam/Valve (`docs/steam/STEAM_CHECKPOINT.md`) e PM5 (`docs/pm5/PM5_CHECKPOINT.md`, `docs/pm5/PM5_REPORT.md`).
 
 ## 1. Identificação
 
@@ -38,7 +38,7 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 
 ## 2. Estado atual do projeto
 
-- `main` = `10da2e7f` (2026-11-18, fechamento do PM5). HISTÓRICO: `f1cb9e8e` fechou o PM4; `ad7b73b2` era o último funcional do PM3; `10e90693` (#318) foi o fechamento documental.
+- `main` = `5007544a` (2026-11-19, merge do #348, encerramento da Steam). HISTÓRICO: `10da2e7f` fechou o PM5; `f1cb9e8e` fechou o PM4; `ad7b73b2` era o último funcional do PM3; `10e90693` (#318) foi o fechamento documental.
 - Fundação publicada: Score `pro-score-v1` e DNA `dna-weighted-v2`.
 - **PM1** (4.2.1–4.2.2): concluído e validado em produção (`docs/pm1/PM1_EXECUTION_REPORT.md`).
 - **PM6** (compatibilidade de demos, integridade de partida, nicks, segurança): **concluído** em 2026-11-14 (#290 `66d4af1d`; `docs/pm6/PM6_FINAL_REPORT.md` §11, "pronto para o PM2, com ressalvas classificadas").
@@ -47,12 +47,11 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 - **PM3** (4.2.5–4.2.6, módulos C e D): **concluído** em 2026-11-17 (`docs/pm3/PM3_REPORT.md` C6, #318 `10e90693`).
 - **PM4** (4.2.7–4.2.8, módulos E, F, G e histórico/DNA de J): **concluído** em 2026-11-17 (`docs/pm4/PM4_REPORT.md` C6).
 - **PM5** (4.2.9–4.2.10, módulos H, I e J; FACEIT; Coach; revisão mensal): **encerrado** em 2026-11-18 (`docs/pm5/PM5_REPORT.md` C6, #342 `10da2e7f`). FACEIT: conectar/desconectar/reconectar validados pelo usuário; importação de partidas reais e login novo por FACEIT não validados; benchmark profissional indisponível; revisão mensal só como prévia, sem envio.
+- **Integração Steam/Valve** (missão após o PM5): **encerrada** em 2026-11-18 (#343–#348, `5007544a`; `docs/steam/STEAM_CHECKPOINT.md`). Vínculo OpenID, sincronização pela Web API, aliases, desvínculo e reconexão validados em produção; identificação real de demo pela Steam NOT_VALIDATED por falta de demo nova da conta vinculada; "Entrar com Steam" não ativado (decisão de produto); worker sem alteração (R5.8.31).
 
 ## 3. Objetivo da missão vigente
 
-**Missão vigente: nenhuma. Última: integração Steam/Valve (encerrada em 2026-11-18)** — checkpoint `docs/steam/STEAM_CHECKPOINT.md`, documentação `docs/steam/STEAM_INTEGRATION.md`. PM5 encerrado (#342). HISTÓRICO — PM4: Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
-módulo G, com a parte histórico/DNA do módulo J), até produção, nos 5 idiomas, com métricas só quando a telemetria as
-sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece). Comparativos Pro/coortes ficam no PM5. Limites:
+**Missão vigente: nenhuma.** Última: integração Steam/Valve, encerrada em 2026-11-18 (#343–#348). Checkpoint: `docs/steam/STEAM_CHECKPOINT.md`; documentação: `docs/steam/STEAM_INTEGRATION.md`. Antes dela, PM5 encerrado no #342. Limites permanentes:
 
 - nenhum prompt ao agente Lovable;
 - nenhum reprocessamento em massa;
@@ -60,7 +59,7 @@ sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece).
 - Coach continua em OpenRouter `openai/gpt-oss-20b`, sem fallback.
 
 Missões concluídas: fundação; protocolo de continuidade (#260, #261); metodologia (2026-11-11); mapeamento 4.2 (#263);
-PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318); PM4 (#319–#325); PM5 (#326–#342).
+PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318); PM4 (#319–#325); PM5 (#326–#342); Steam/Valve (#343–#348).
 
 ## 4–5. Fase 4.2: entregas, módulos, Prompts Mestres e fases do protocolo
 
@@ -78,14 +77,15 @@ PM1 (#264–#277); PM6 (#278–#290); PM2 (#291–#308); PM3 (#309–#318); PM4 
 - Os arquivos `checkpoints/PHASE_*` ficam como histórico. O estado por PM vive em
   `docs/pm1/`, `docs/pm6/`, `docs/pm2/`, `docs/pm3/`, `docs/pm4/` e `docs/pm5/`.
 
-| Fase    | Nome / escopo                    | Situação                                | Checkpoint                    |
-| ------- | -------------------------------- | --------------------------------------- | ----------------------------- |
-| 1 (PM1) | 4.2.1–4.2.2, módulos A e B       | CONCLUÍDA, validada em produção         | `pm1/PM1_EXECUTION_REPORT.md` |
-| PM6     | Compatibilidade de demos         | CONCLUÍDA (2026-11-14, #290)            | `pm6/PM6_FINAL_REPORT.md`     |
-| 2 (PM2) | 4.2.3–4.2.4, módulos B e I       | COMPLETE (2026-11-17; relatório §30)    | `pm2/PM2_FINAL_REPORT.md`     |
-| 3 (PM3) | 4.2.5–4.2.6, módulos C e D       | CONCLUÍDA (2026-11-17, #318)            | `pm3/PM3_CHECKPOINT.md`       |
-| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J | CONCLUÍDA (2026-11-17)                  | `pm4/PM4_CHECKPOINT.md`       |
-| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J   | ENCERRADA (2026-11-18, #342 `10da2e7f`) | `pm5/PM5_CHECKPOINT.md`       |
+| Fase    | Nome / escopo                        | Situação                                | Checkpoint                    |
+| ------- | ------------------------------------ | --------------------------------------- | ----------------------------- |
+| 1 (PM1) | 4.2.1–4.2.2, módulos A e B           | CONCLUÍDA, validada em produção         | `pm1/PM1_EXECUTION_REPORT.md` |
+| PM6     | Compatibilidade de demos             | CONCLUÍDA (2026-11-14, #290)            | `pm6/PM6_FINAL_REPORT.md`     |
+| 2 (PM2) | 4.2.3–4.2.4, módulos B e I           | COMPLETE (2026-11-17; relatório §30)    | `pm2/PM2_FINAL_REPORT.md`     |
+| 3 (PM3) | 4.2.5–4.2.6, módulos C e D           | CONCLUÍDA (2026-11-17, #318)            | `pm3/PM3_CHECKPOINT.md`       |
+| 4 (PM4) | 4.2.7–4.2.8, módulos E, F, G e J     | CONCLUÍDA (2026-11-17)                  | `pm4/PM4_CHECKPOINT.md`       |
+| 5 (PM5) | 4.2.9–4.2.10, módulos H, I e J       | ENCERRADA (2026-11-18, #342 `10da2e7f`) | `pm5/PM5_CHECKPOINT.md`       |
+| Steam   | Integração Steam/Valve (fora da 4.2) | ENCERRADA (2026-11-18, #348 `5007544a`) | `steam/STEAM_CHECKPOINT.md`   |
 
 ## 6–8. Fase em execução, última etapa, próxima ação
 
@@ -129,6 +129,7 @@ Lista e evidências em `checkpoints/FOUNDATION_CHECKPOINT.md` §C e em
 
 ## 14. Testes executados
 
+- Steam (2026-11-18): suítes Steam/identidade/Coach no CI (#344–#348 verdes), harness PostgreSQL de aliases com teste de mutação, regressão das constraints do banco (`steam.dbConstraints`), E2E contra produção 12/12 (run 44438464636, passo `steam_identities`). Detalhe: `docs/steam/STEAM_INTEGRATION.md` §11.
 - PM2 (2026-11-17):
   - vitest 685/685 nas suítes de UI/lib tocadas;
   - `pytest scripts/tests scripts/ci` 461;
@@ -139,7 +140,7 @@ Lista e evidências em `checkpoints/FOUNDATION_CHECKPOINT.md` §C e em
 
 ## 15. Testes pendentes
 
-Do PM3, a definir no plano C2 (`docs/pm3/`). Herdados: tabela do Score em celular com dados reais; idiomas ≠ pt-BR verificados em
+Nenhum obrigatório. Opcional: identificação real de demo pela Steam (critério 22 da Steam), quando houver demo nova da conta vinculada. Herdados: tabela do Score em celular com dados reais; idiomas ≠ pt-BR verificados em
 produção (o E2E roda em pt-BR).
 
 ## 16–17. Branches, commits e PRs
@@ -187,14 +188,22 @@ produção (o E2E roda em pt-BR).
 | #312 Re-pin R5.8.30                                                            | `release/r5-8-30-repin`                                          | `4cacaf5c`            | merged; migration aplicada; atestação pendente (secrets)        |
 | #313 Módulo D `/utility` (`cs2.utility.v1`)                                    | `feat/pm3-module-d-utility`                                      | `afa58592`            | merged; não publicado                                           |
 | #314 `Server-Timing` do replay                                                 | `perf/replay-server-timing`                                      | `5ad16f13`            | merged; não publicado                                           |
-| #315 Coach C/D + E2E `/duels` `/utility`                                       | `feat/pm3-coach-combat-utility`                                  | —                     | aberto, CI                                                      |
+| #315–#318 PM3 (Coach C/D, docs C0–C5, replay paralelo, fechamento C6)          | `feat/pm3-*`, `docs/pm3-*`, `perf/replay-parallel-reads`         | `0344b3fe`…`10e90693` | merged (#318 fecha o PM3)                                       |
+| #319–#325 PM4 (R5.8.31, módulos E/F/G, re-pin, Coach, docs C6)                 | `feat/pm4-*`, `release/r5-8-31-repin`, `docs/pm4-*`              | `0c646583`…`4ca69886` | merged; worker R5.8.31 (`584ea563`); #325 fecha o PM4           |
+| #326–#342 PM5 (módulos H/I/J, FACEIT, Coach, revisão mensal, E2E, docs C6)     | `feat/pm5-*`, `fix/pm5-*`, `test/pm5-e2e`, `docs/pm5-*`          | `7c0a3a4c`…`10da2e7f` | merged; #342 fecha o PM5                                        |
+| #343 Coerência documental do PM5                                               | `docs/pm5-checkpoint-coherence`                                  | `e5d6b182`            | merged                                                          |
+| #344 Steam: OpenID real, padrões de produção, diagnóstico                      | `feat/steam-openid-production`                                   | `45d4529c`            | merged; migration `20261119000000` aplicada                     |
+| #345 Steam: SteamID nas demos, sync, aliases, estado único, logotipos, Coach   | `feat/steam-identity-demos`                                      | `462929e7`            | merged; migration `20261119010000` aplicada; publicado          |
+| #346 Steam: documentação, checkpoints e passo E2E                              | `docs/steam-integration`                                         | `3c72947a`            | merged                                                          |
+| #347 Steam: correção do vínculo (locator) e overlay de sucesso                 | `fix/steam-locator-type`                                         | `f5fc22b1`            | merged; publicado; vínculo validado pelo dono                   |
+| #348 Overlay 6 s e encerramento da Steam                                       | `feat/success-overlay-6s`                                        | `5007544a`            | merged; publicado; Lovable sincronizado                         |
 
 PRs abertos antigos (#7–#161, fora desta missão): não tocados; alguns são autorizações H.3-E
 do dono. Não fazer merge nem fechar sem instrução.
 
 ## 18. Estado do CI
 
-Atual: ver "Gates mais recentes" na tabela de retomada. Padrão conhecido: a H.3-E dispara cedo em todo merge e falha com
+Atual (`5007544a`): Quality Gates 44443360442, Queue Semantics 44443360396, attestation 44446633720, H.3-E PASS 44446661458; E2E 44438464636 12/12. Padrão conhecido: a H.3-E dispara cedo em todo merge e falha com
 `RUN_NOT_COMPLETED` enquanto os Quality Gates rodam; a execução seguinte, depois do F553, passa (§21 item 5).
 
 HISTÓRICO:
@@ -204,9 +213,9 @@ HISTÓRICO:
 
 ## 19. Publicação e deploy
 
-- App atual: publicação `0719c851` de `d68a82db` (2026-11-17). Validado em produção (relatório PM2 §29): `/login` com
-  `method="post"` e `fieldset disabled` antes da hidratação.
-- Worker atual: Railway `3375b68b` (`47ba6ffe`, R5.8.29). Source persistente alinhado; o `4716f894` do §21 item 10 está resolvido.
+- App atual: Lovable publicado e sincronizado com `5007544a` (2026-11-19, #348); `gamepro.network` serve o bundle novo.
+- Worker atual: Railway R5.8.31, commit `0c646583`, deploy `584ea563`. A Steam não exigiu alteração no worker.
+- HISTÓRICO: app `0719c851` de `d68a82db` (2026-11-17, PM2); worker `3375b68b` (`47ba6ffe`, R5.8.29).
 - Publicação do app pelo conector (`deploy_project`):
   - **HISTÓRICO:** a regra do PM6 §14 (2026-11-13) deixava a publicação como ação manual do dono.
   - No PM2, o dono autorizou publicar pelo conector.
@@ -226,7 +235,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 1. Índices por dimensão do DNA não calibrados (regra "< 60" do Raio-X e prioridade de treino).
 2. Pesos do Score não ajustados estatisticamente.
-3. Posições: o parser no ar (R5.8.29) emite posição do atacante e da vítima no tick da morte e trajetórias por round
+3. Posições: o parser no ar (R5.8.31; desde R5.8.28) emite posição do atacante e da vítima no tick da morte e trajetórias por round
    (`cs2.round-trajectory.v1`, a cada 16 ticks, desde R5.8.28). Partidas antigas continuam sem essas posições (nada reprocessado).
 4. `buy_context` e `survived` vazios em `round_players`; `weapon_fire` sem autor.
 5. H.3-E Activation Gate falha na 1ª execução de todo merge e passa na 2ª.
@@ -292,7 +301,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 ## 23. Checkpoints individuais
 
-`docs/pm3/PM3_CHECKPOINT.md` (fase ativa) · `docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
+Nenhuma fase ativa. Últimos: `docs/steam/STEAM_CHECKPOINT.md` (Steam, encerrada) e `docs/pm5/PM5_CHECKPOINT.md` (PM5, encerrado) · Histórico: `docs/pm1/` a `docs/pm4/`, `docs/pm6/` · `docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
 `docs/checkpoints/PHASE_{1..5}_CHECKPOINT.md` · protocolo em `docs/checkpoints/README.md`.
 Preexistente e preservado: `docs/A9_1_CONTINUITY_CHECKPOINT.md`.
 Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
@@ -301,7 +310,7 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 
 ## 24. Como continuar
 
-1. Ler este arquivo; depois só o checkpoint da fase ativa.
+1. Ler este arquivo; depois só o checkpoint da fase ativa (hoje: nenhuma).
 2. Conferir: `git fetch && git log --oneline -5 origin/main`; PRs abertos da missão; checks
    do último commit de `main`; `latest_commit_sha` do projeto no Lovable.
 3. Se algo divergir daqui, corrigir este arquivo **antes** de continuar.
@@ -310,10 +319,13 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 ## RESUMO PARA PRÓXIMA SESSÃO
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
-- Fase 4.2: PM1, PM6, PM2, PM3, PM4 e **PM5 concluídos**; missão ativa: integração Steam/Valve (`docs/steam/STEAM_CHECKPOINT.md`)
-- Produção: app de `eeffaa2e` (validação completa em `98d10f9c`); worker R5.8.31 (`584ea563`, `0c646583`)
-- Última etapa: PM5 C6 (relatório `docs/pm5/PM5_REPORT.md`, #342 `10da2e7f`)
-- Commit: `main` `462929e7` (#345)
-- Bloqueios: nenhum. Limitações do PM5: importação FACEIT real e login por FACEIT não validados; benchmark indisponível; revisão mensal sem envio
-- Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`, `docs/pm4/PM4_REPORT.md`, `docs/pm5/PM5_REPORT.md`
+- Fase 4.2: PM1, PM6, PM2, PM3, PM4 e PM5 concluídos (PM5 encerrado no #342). Integração Steam/Valve encerrada no #348
+- Missão ativa: nenhuma; próxima ação: aguardar instrução do dono
+- Produção: app publicado e sincronizado com `main` `5007544a`; worker R5.8.31 (`0c646583`, deploy `584ea563`), sem alteração para a Steam
+- Commit: `main` `5007544af6377872be4f8dc18446be70a98bc362`
+- Bloqueios: nenhum
+- Limitações:
+  - PM5: importação FACEIT real e login por FACEIT não validados; benchmark indisponível; revisão mensal sem envio.
+  - Steam: identificação real de demo NOT_VALIDATED (sem demo nova da conta vinculada); "Entrar com Steam" não ativado.
+- Arquivo central: este. Relatórios: `docs/pm1/`, `docs/pm6/PM6_FINAL_REPORT.md`, `docs/pm2/PM2_FINAL_REPORT.md`, `docs/pm3/PM3_REPORT.md`, `docs/pm4/PM4_REPORT.md`, `docs/pm5/PM5_REPORT.md`, `docs/steam/STEAM_CHECKPOINT.md`
 - Não repetir: ver a tabela de retomada
