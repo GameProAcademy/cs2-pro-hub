@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 ENCERRADO (C6, #342 `10da2e7f`); integração Steam publicada (#344, #345); teste manual pendente · por: sessão Claude
+Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 ENCERRADO (C6, #342 `10da2e7f`); integração Steam ENCERRADA (#343–#348) · por: sessão Claude
 `session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -14,19 +14,19 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 | Item                               | Valor                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Nenhuma fase 4.2 ativa — PM5 encerrado (C6). **Missão ativa: integração Steam/Valve** — `docs/steam/STEAM_CHECKPOINT.md`                                                           |
-| Etapa atual                        | Steam publicada em produção (`462929e7`); aguardando teste manual do dono e E2E                                                                                                    |
-| Última etapa concluída             | #345 (`462929e7`) mergeado, migrações `20261119000000`/`20261119010000` aplicadas e registradas, publicação conferida em gamepro.network                                           |
-| Operações em andamento             | Gates do `main` em `462929e7`                                                                                                                                                      |
+| Fase atual                         | Nenhuma missão ativa. **Integração Steam/Valve ENCERRADA** (2026-11-18) — `docs/steam/STEAM_CHECKPOINT.md`                                                                         |
+| Etapa atual                        | Steam encerrada: vínculo/sync/desvínculo/reconexão validados em produção; identificação real em demo não validada por falta de demo nova                                           |
+| Última etapa concluída             | #347 (`f5fc22b1`): correção do vínculo Steam (constraint de locator) e overlay de sucesso; #348: overlay 6 s e checkpoints                                                         |
+| Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                              |
 | Processos em execução              | Nenhum                                                                                                                                                                             |
-| Branch ativa                       | `docs/steam-integration` (docs + E2E Steam)                                                                                                                                        |
+| Branch ativa                       | nenhuma além de `main`                                                                                                                                                             |
 | Último commit confirmado em `main` | `462929e7` (merge do #345)                                                                                                                                                         |
 | Build validado em produção         | App publicado de `462929e7` (bundle `index-DdHe30Q3.js`). Worker inalterado: Railway `584ea563` (R5.8.31); a mudança de identificação roda no app, não no worker                   |
 | Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                 |
 | Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
-| **Próxima ação exata**             | Seguir a "Próxima ação exata" de `docs/steam/STEAM_CHECKPOINT.md`                                                                                                                  |
-| Ações que NÃO devem ser repetidas  | PM1–PM5; PRs #326–#345; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`; pesquisa Steam                                                       |
-| Ações manuais necessárias          | Steam: teste manual de conectar/sincronizar/desconectar/reconectar e envio de uma demo após o vínculo (instruções no checkpoint Steam). Limitações do PM5 inalteradas              |
+| **Próxima ação exata**             | Aguardar instrução do dono. Opcional: validar o critério 22 da Steam com uma demo nova                                                                                             |
+| Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`                                                                   |
+| Ações manuais necessárias          | Opcional: demo nova da conta Steam vinculada. Limitações do PM5 inalteradas                                                                                                        |
 
 Missão ativa: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
 
@@ -50,7 +50,7 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 
 ## 3. Objetivo da missão vigente
 
-**Missão vigente: integração Steam/Valve (autorizada em 2026-11-18)** — checkpoint `docs/steam/STEAM_CHECKPOINT.md`, documentação `docs/steam/STEAM_INTEGRATION.md`. PM5 encerrado (#342). HISTÓRICO — PM4: Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
+**Missão vigente: nenhuma. Última: integração Steam/Valve (encerrada em 2026-11-18)** — checkpoint `docs/steam/STEAM_CHECKPOINT.md`, documentação `docs/steam/STEAM_INTEGRATION.md`. PM5 encerrado (#342). HISTÓRICO — PM4: Fases 4.2.7 (economia e impacto por round; módulos E e F) e 4.2.8 (evolução e consistência;
 módulo G, com a parte histórico/DNA do módulo J), até produção, nos 5 idiomas, com métricas só quando a telemetria as
 sustenta. Prompt: Prompt Mestre 4 atualizado em 2026-11-17 (o adendo prevalece). Comparativos Pro/coortes ficam no PM5. Limites:
 
