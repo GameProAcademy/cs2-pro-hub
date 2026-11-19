@@ -990,6 +990,7 @@ export const ptBR = {
   "link.state.ERROR": "Erro na sincronização",
   "link.state.UNAVAILABLE": "Indisponível",
   "link.lastSync": "Última sincronização",
+  "link.success.title": "Conectado com sucesso",
   "steam.field.lastSync": "Última sincronização",
   "steam.action.sync": "Sincronizar",
   "steam.sync.done": "Perfil Steam atualizado.",

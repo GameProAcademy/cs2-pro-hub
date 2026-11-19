@@ -968,6 +968,7 @@ export const en: Dictionary = {
   "link.state.ERROR": "Sync error",
   "link.state.UNAVAILABLE": "Unavailable",
   "link.lastSync": "Last sync",
+  "link.success.title": "Connected successfully",
   "steam.field.lastSync": "Last sync",
   "steam.action.sync": "Sync",
   "steam.sync.done": "Steam profile updated.",

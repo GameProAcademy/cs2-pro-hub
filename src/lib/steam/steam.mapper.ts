@@ -66,7 +66,8 @@ export interface SteamConnectionFields {
   external_id: string;
   external_username: string | null;
   profile_url: string;
-  profile_locator_type: string;
+  /** Must be allowed by `*_locator_type_chk` (numeric_id | slug): a SteamID64 URL is numeric. */
+  profile_locator_type: "numeric_id" | "slug";
   profile_slug: string | null;
   metadata: Record<string, unknown>;
 }
@@ -83,7 +84,7 @@ export function mapSteamConnectionFields(
     external_id: profile.steamId64,
     external_username: profile.personaName,
     profile_url: profile.profileUrl,
-    profile_locator_type: "steam_id_64",
+    profile_locator_type: "numeric_id",
     profile_slug: null,
     metadata: {
       provider: "steam",
@@ -108,7 +109,8 @@ export interface SteamIdentityFields {
   external_id: string;
   username: string | null;
   profile_url: string;
-  profile_locator_type: string;
+  /** Must be allowed by `*_locator_type_chk` (numeric_id | slug): a SteamID64 URL is numeric. */
+  profile_locator_type: "numeric_id" | "slug";
   profile_slug: string | null;
 }
 
@@ -117,7 +119,7 @@ export function mapSteamIdentityFields(profile: SteamProfileView): SteamIdentity
     external_id: profile.steamId64,
     username: profile.personaName,
     profile_url: profile.profileUrl,
-    profile_locator_type: "steam_id_64",
+    profile_locator_type: "numeric_id",
     profile_slug: null,
   };
 }
