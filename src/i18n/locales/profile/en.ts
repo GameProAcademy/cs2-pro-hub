@@ -28,7 +28,7 @@ export const profileEn: Record<keyof typeof profilePtBR, string> = {
 
   "profile.identities.readOnly": "These identities are managed by the server.",
   "profile.identities.blocked": "External access blocked by the source.",
-  "profile.identities.connect": "Connect in Upload & sources",
+  "profile.identities.connect": "Connect accounts above",
 
   "verification.progress": "Verification progress",
   "verification.badge": "Verified profile",

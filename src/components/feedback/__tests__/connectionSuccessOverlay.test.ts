@@ -19,7 +19,8 @@ describe("ConnectionSuccessOverlay", () => {
   });
 
   it("dismisses itself, on click and on Escape, and only celebrates once", () => {
-    expect(overlay).toContain("SUCCESS_OVERLAY_MS");
+    // The owner asked for 6 seconds on screen.
+    expect(overlay).toContain("export const SUCCESS_OVERLAY_MS = 6000;");
     expect(overlay).toContain('e.key === "Escape"');
     expect(overlay).toContain('onClick={() => setPhase("out")}');
     expect(overlay).toContain('url.searchParams.delete("connection")');

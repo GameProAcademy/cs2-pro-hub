@@ -27,7 +27,7 @@ export const profilePtBR = {
 
   "profile.identities.readOnly": "Estas identidades são geridas pelo servidor.",
   "profile.identities.blocked": "Acesso externo bloqueado pela fonte.",
-  "profile.identities.connect": "Conectar em Upload & Fontes",
+  "profile.identities.connect": "Conectar contas acima",
 
   "verification.progress": "Progresso da verificação",
   "verification.badge": "Perfil verificado",
