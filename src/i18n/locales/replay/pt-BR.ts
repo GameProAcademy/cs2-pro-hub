@@ -43,6 +43,8 @@ export const replayPtBR = {
   "replay.focus": "Destacar jogador",
   "replay.focus.none": "Nenhum",
   "replay.slot.you": "Você",
+  "replay.slot.ally": "Aliado {n}",
+  "replay.slot.enemy": "Adversário {n}",
   "replay.time.seconds": "{s} s",
   "replay.time.ticks": "tick {t}",
   "replay.time.nominal":

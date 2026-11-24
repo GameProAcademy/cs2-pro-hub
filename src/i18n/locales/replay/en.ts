@@ -43,6 +43,8 @@ export const replayEn: Record<keyof typeof replayPtBR, string> = {
   "replay.focus": "Highlight player",
   "replay.focus.none": "None",
   "replay.slot.you": "You",
+  "replay.slot.ally": "Ally {n}",
+  "replay.slot.enemy": "Opponent {n}",
   "replay.time.seconds": "{s} s",
   "replay.time.ticks": "tick {t}",
   "replay.time.nominal":

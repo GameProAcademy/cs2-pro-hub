@@ -167,36 +167,38 @@ function DnaHistory() {
         <p className="text-sm text-muted-foreground">{t("real.dna.history.empty")}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" data-dna-history>
-            <thead>
-              <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                <th className="py-2 pr-4 font-normal">{t("real.dna.history.date")}</th>
-                <th className="py-2 pr-4 font-normal">{t("real.dna.history.matches")}</th>
-                <th className="py-2 pr-4 font-normal">{t("real.dna.history.version")}</th>
-                <th className="py-2 pr-4 font-normal">{t("real.dna.history.dimensions")}</th>
-                <th className="py-2 font-normal">{t("real.dna.history.state")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {query.data.map((h) => (
-                <tr key={h.createdAt}>
-                  <td className="py-2 pr-4 font-mono text-xs">
-                    <time dateTime={h.createdAt}>{formatDateTime(h.createdAt, intlTag)}</time>
-                  </td>
-                  <td className="py-2 pr-4 font-mono">{h.matchCount ?? "—"}</td>
-                  <td className="py-2 pr-4 font-mono text-xs">{h.dnaVersion ?? "—"}</td>
-                  <td className="py-2 pr-4 font-mono">
-                    {Object.values(h.dimensions).filter((v) => v !== null).length}
-                  </td>
-                  <td className="py-2 text-muted-foreground">
-                    {h.state === "READY" || h.state === "INSUFFICIENT_SAMPLE"
-                      ? t(`real.dna.history.${h.state}` as TranslationKey)
-                      : (h.state ?? "—")}
-                  </td>
+          <div className="overflow-x-auto" data-table-scroll>
+            <table className="w-full text-sm" data-dna-history>
+              <thead>
+                <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <th className="py-2 pr-4 font-normal">{t("real.dna.history.date")}</th>
+                  <th className="py-2 pr-4 font-normal">{t("real.dna.history.matches")}</th>
+                  <th className="py-2 pr-4 font-normal">{t("real.dna.history.version")}</th>
+                  <th className="py-2 pr-4 font-normal">{t("real.dna.history.dimensions")}</th>
+                  <th className="py-2 font-normal">{t("real.dna.history.state")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {query.data.map((h) => (
+                  <tr key={h.createdAt}>
+                    <td className="py-2 pr-4 font-mono text-xs">
+                      <time dateTime={h.createdAt}>{formatDateTime(h.createdAt, intlTag)}</time>
+                    </td>
+                    <td className="py-2 pr-4 font-mono">{h.matchCount ?? "—"}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{h.dnaVersion ?? "—"}</td>
+                    <td className="py-2 pr-4 font-mono">
+                      {Object.values(h.dimensions).filter((v) => v !== null).length}
+                    </td>
+                    <td className="py-2 text-muted-foreground">
+                      {h.state === "READY" || h.state === "INSUFFICIENT_SAMPLE"
+                        ? t(`real.dna.history.${h.state}` as TranslationKey)
+                        : (h.state ?? "—")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </ChartCard>

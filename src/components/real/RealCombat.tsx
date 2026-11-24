@@ -223,59 +223,63 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
           title={t("combat.section.weaponClass")}
           subtitle={t("combat.section.weaponClass.subtitle")}
         >
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
-              <tr>
-                <th className="py-1 font-medium">{t("combat.col.class")}</th>
-                <th className="py-1 font-medium">{t("combat.col.wonLost")}</th>
-                <th className="py-1 font-medium">{t("combat.col.rate")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rep.byWeaponClass.length === 0 ? (
+          <div className="overflow-x-auto" data-table-scroll>
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-muted-foreground">
                 <tr>
-                  <td colSpan={3} className="py-2 text-muted-foreground">
-                    {t("combat.none")}
-                  </td>
+                  <th className="py-1 font-medium">{t("combat.col.class")}</th>
+                  <th className="py-1 font-medium">{t("combat.col.wonLost")}</th>
+                  <th className="py-1 font-medium">{t("combat.col.rate")}</th>
                 </tr>
-              ) : (
-                rep.byWeaponClass.map((c) => (
-                  <tr key={c.cls} className="border-t border-border">
-                    <td className="py-1">{t(`combat.class.${c.cls}` as TranslationKey)}</td>
-                    <td className="py-1 font-mono">{`${c.won} / ${c.lost}`}</td>
-                    <td className="py-1 font-mono">
-                      <Rate m={c.metric} />
+              </thead>
+              <tbody>
+                {rep.byWeaponClass.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-2 text-muted-foreground">
+                      {t("combat.none")}
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  rep.byWeaponClass.map((c) => (
+                    <tr key={c.cls} className="border-t border-border">
+                      <td className="py-1">{t(`combat.class.${c.cls}` as TranslationKey)}</td>
+                      <td className="py-1 font-mono">{`${c.won} / ${c.lost}`}</td>
+                      <td className="py-1 font-mono">
+                        <Rate m={c.metric} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </ChartCard>
         <ChartCard
           title={t("combat.section.distance")}
           subtitle={t("combat.section.distance.subtitle")}
         >
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs text-muted-foreground">
-              <tr>
-                <th className="py-1 font-medium">{t("combat.col.band")}</th>
-                <th className="py-1 font-medium">{t("combat.col.killsDeaths")}</th>
-                <th className="py-1 font-medium">{t("combat.col.killShare")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rep.byDistance.map((b) => (
-                <tr key={b.band} className="border-t border-border">
-                  <td className="py-1">{t(`combat.band.${b.band}` as TranslationKey)}</td>
-                  <td className="py-1 font-mono">{`${b.kills} / ${b.deaths}`}</td>
-                  <td className="py-1 font-mono">
-                    <Rate m={b.metric} />
-                  </td>
+          <div className="overflow-x-auto" data-table-scroll>
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="py-1 font-medium">{t("combat.col.band")}</th>
+                  <th className="py-1 font-medium">{t("combat.col.killsDeaths")}</th>
+                  <th className="py-1 font-medium">{t("combat.col.killShare")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rep.byDistance.map((b) => (
+                  <tr key={b.band} className="border-t border-border">
+                    <td className="py-1">{t(`combat.band.${b.band}` as TranslationKey)}</td>
+                    <td className="py-1 font-mono">{`${b.kills} / ${b.deaths}`}</td>
+                    <td className="py-1 font-mono">
+                      <Rate m={b.metric} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </ChartCard>
       </div>
 
@@ -293,54 +297,60 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
         </div>
         {rep.shooting.status === "MEASURED" ? (
           <div className="mt-4 grid gap-6 lg:grid-cols-3">
-            <table className="w-full text-sm">
-              <caption className="pb-1 text-left text-xs font-medium text-muted-foreground">
-                {t("combat.byWeapon")}
-              </caption>
-              <tbody>
-                {rep.shooting.byWeapon.slice(0, 8).map((w) => (
-                  <tr key={w.weapon} className="border-t border-border">
-                    <td className="py-1">{w.weapon}</td>
-                    <td className="py-1 font-mono">{`${w.hits} / ${w.shots}`}</td>
-                    <td className="py-1 font-mono">
-                      <Rate m={w.metric} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table className="w-full text-sm">
-              <caption className="pb-1 text-left text-xs font-medium text-muted-foreground">
-                {t("combat.spray")}
-              </caption>
-              <tbody>
-                {rep.shooting.spray.map((s) => (
-                  <tr key={s.bucket} className="border-t border-border">
-                    <td className="py-1">{fill(t("combat.spray.bullet"), { n: s.bucket })}</td>
-                    <td className="py-1 font-mono">{`${s.hits} / ${s.shots}`}</td>
-                    <td className="py-1 font-mono">
-                      <Rate m={s.metric} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table className="w-full text-sm">
-              <caption className="pb-1 text-left text-xs font-medium text-muted-foreground">
-                {t("combat.hitGroups")}
-              </caption>
-              <tbody>
-                {rep.shooting.hitGroups.map((h) => (
-                  <tr key={h.group} className="border-t border-border">
-                    <td className="py-1">{t(`combat.hitGroup.${h.group}` as TranslationKey)}</td>
-                    <td className="py-1 font-mono">{h.hits}</td>
-                    <td className="py-1 font-mono">
-                      <Rate m={h.metric} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto" data-table-scroll>
+              <table className="w-full text-sm">
+                <caption className="pb-1 text-left text-xs font-medium text-muted-foreground">
+                  {t("combat.byWeapon")}
+                </caption>
+                <tbody>
+                  {rep.shooting.byWeapon.slice(0, 8).map((w) => (
+                    <tr key={w.weapon} className="border-t border-border">
+                      <td className="py-1">{w.weapon}</td>
+                      <td className="py-1 font-mono">{`${w.hits} / ${w.shots}`}</td>
+                      <td className="py-1 font-mono">
+                        <Rate m={w.metric} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="overflow-x-auto" data-table-scroll>
+              <table className="w-full text-sm">
+                <caption className="pb-1 text-left text-xs font-medium text-muted-foreground">
+                  {t("combat.spray")}
+                </caption>
+                <tbody>
+                  {rep.shooting.spray.map((s) => (
+                    <tr key={s.bucket} className="border-t border-border">
+                      <td className="py-1">{fill(t("combat.spray.bullet"), { n: s.bucket })}</td>
+                      <td className="py-1 font-mono">{`${s.hits} / ${s.shots}`}</td>
+                      <td className="py-1 font-mono">
+                        <Rate m={s.metric} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="overflow-x-auto" data-table-scroll>
+              <table className="w-full text-sm">
+                <caption className="pb-1 text-left text-xs font-medium text-muted-foreground">
+                  {t("combat.hitGroups")}
+                </caption>
+                <tbody>
+                  {rep.shooting.hitGroups.map((h) => (
+                    <tr key={h.group} className="border-t border-border">
+                      <td className="py-1">{t(`combat.hitGroup.${h.group}` as TranslationKey)}</td>
+                      <td className="py-1 font-mono">{h.hits}</td>
+                      <td className="py-1 font-mono">
+                        <Rate m={h.metric} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : null}
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
@@ -371,8 +381,10 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
         {rep.duels.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("combat.noDuels")}</p>
         ) : (
-          <table className="w-full text-sm" data-duel-list>
-            <thead className="text-left text-xs text-muted-foreground">
+          // UX-1.0 M-1: below 640 px every row becomes a two-column card (no horizontal overflow,
+          // no hidden control); from 640 px it is the original table.
+          <table className="w-full text-sm max-sm:block" data-duel-list>
+            <thead className="text-left text-xs text-muted-foreground max-sm:sr-only">
               <tr>
                 <th className="py-1 font-medium">{t("combat.col.round")}</th>
                 <th className="py-1 font-medium">{t("combat.col.outcome")}</th>
@@ -384,7 +396,7 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="max-sm:block">
               {rep.duels.map((d) => (
                 <DuelRow
                   key={`${d.ref.round}:${d.ref.tick}:${d.endTick}`}
@@ -403,29 +415,44 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
 
 function DuelRow({ d, matchId, intlTag }: { d: Duel; matchId: string; intlTag: string }) {
   const t = useT();
+  // Mobile-only inline label (the header row is visually hidden below 640 px).
+  const label = (key: TranslationKey) => (
+    <span className="text-xs text-muted-foreground sm:hidden">{`${t(key)}: `}</span>
+  );
   return (
     <tr
-      className="border-t border-border"
+      className="border-t border-border max-sm:grid max-sm:grid-cols-2 max-sm:gap-x-3 max-sm:gap-y-1 max-sm:py-2"
       data-duel-outcome={d.outcome}
       data-duel-opening={d.opening ? "true" : "false"}
     >
-      <td className="py-1 font-mono">{d.ref.round}</td>
-      <td className="py-1">
+      <td className="py-1 font-mono max-sm:py-0">
+        <span className="sm:hidden">{`${fill(t("rounds.roundN"), { n: d.ref.round })}`}</span>
+        <span className="max-sm:hidden">{d.ref.round}</span>
+      </td>
+      <td className="py-1 max-sm:py-0">
         {t(`combat.outcome.${d.outcome}` as TranslationKey)}
         {d.opening ? ` · ${t("combat.opening")}` : ""}
       </td>
-      <td className="py-1">{d.weapon ?? NOT_AVAILABLE_MARK}</td>
-      <td className="py-1 font-mono">
+      <td className="py-1 max-sm:py-0">
+        {label("combat.col.weapon")}
+        {d.weapon ?? NOT_AVAILABLE_MARK}
+      </td>
+      <td className="py-1 font-mono max-sm:py-0">
+        {label("combat.col.distance")}
         {d.distanceMeters === null
           ? NOT_AVAILABLE_MARK
           : `${formatNumber(d.distanceMeters, intlTag, 1)} m`}
       </td>
-      <td className="py-1 font-mono">{`${formatNumber(d.damageDealt, intlTag)} / ${formatNumber(d.damageTaken, intlTag)}`}</td>
-      <td className="py-1 text-right">
+      <td className="py-1 font-mono max-sm:col-span-2 max-sm:py-0">
+        {label("combat.col.damage")}
+        {`${formatNumber(d.damageDealt, intlTag)} / ${formatNumber(d.damageTaken, intlTag)}`}
+      </td>
+      <td className="py-1 text-right max-sm:col-span-2 max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:py-0 max-sm:text-left">
         <Link
           to="/replay"
           search={{ matchId, round: d.ref.round, tick: d.ref.tick }}
-          className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+          // UX-1.0 M-1/M-5: a real touch target (≥ 44 px tall on mobile, ≥ 28 px on desktop).
+          className="inline-flex min-h-7 items-center rounded-md px-2 text-xs font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-11 max-sm:border max-sm:border-primary/40 max-sm:px-3"
           data-replay-link
         >
           {t("combat.openReplay")}
