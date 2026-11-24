@@ -1600,6 +1600,7 @@ export type Database = {
           adr: number | null
           damage_enemy_hp: number | null
           damage_enemy_hp_method: string | null
+          damage_enemy_hp_excluded_hits: number | null
           assists: number | null
           clutch_attempts: number | null
           clutch_wins: number | null
@@ -1634,6 +1635,7 @@ export type Database = {
           adr?: number | null
           damage_enemy_hp?: number | null
           damage_enemy_hp_method?: string | null
+          damage_enemy_hp_excluded_hits?: number | null
           assists?: number | null
           clutch_attempts?: number | null
           clutch_wins?: number | null
@@ -1668,6 +1670,7 @@ export type Database = {
           adr?: number | null
           damage_enemy_hp?: number | null
           damage_enemy_hp_method?: string | null
+          damage_enemy_hp_excluded_hits?: number | null
           assists?: number | null
           clutch_attempts?: number | null
           clutch_wins?: number | null

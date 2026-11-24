@@ -153,6 +153,7 @@ export const METRIC_DATA_DEPENDENCIES_V3: Readonly<Record<string, readonly Metri
   adr: ["EVENTS", "ROUNDS"],
   damage_enemy_hp: ["EVENTS", "ROUNDS"],
   damage_enemy_hp_method: ["EVENTS", "ROUNDS"],
+  damage_enemy_hp_excluded_hits: ["EVENTS", "ROUNDS"],
   kast: ["EVENTS", "ROUNDS", "DECLARED_TICKRATE"],
   hs_percent: ["EVENTS"],
   first_kills: ["EVENTS", "ROUNDS"],

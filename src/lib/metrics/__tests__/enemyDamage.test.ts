@@ -103,4 +103,134 @@ describe("enemy-hp-v1 — enemy health removed, each hit capped", () => {
     ).toBe("MIXED");
     expect(enemyHealthDamage([], ME, sameSide)).toMatchObject({ enemyHp: 0, method: null });
   });
+
+  // ---- UX-1.0 regression cases requested by the owner (2026-11-24) ----
+
+  it("does not depend on tick order when health_after is recorded (null ticks, shuffled input)", () => {
+    const ordered = [
+      hit({ damage: 28, healthAfter: 72 }),
+      hit({ actor: "ally2", damage: 28, healthAfter: 44 }),
+      hit({ damage: 118, healthAfter: 0 }),
+    ];
+    const noTicks = ordered.map((h) => ({ ...h, tick: null }));
+    const shuffled = [noTicks[2]!, noTicks[0]!, noTicks[1]!];
+    // 28 (mine) + 44 (my lethal hit removed the 44 left after the ally's 28).
+    expect(enemyHealthDamage(ordered, ME, sameSide).enemyHp).toBe(72);
+    expect(enemyHealthDamage(shuffled, ME, sameSide)).toMatchObject({
+      enemyHp: 72,
+      uncertainHits: 0,
+    });
+  });
+
+  it("a hit without tick and without health_after makes that victim's walk UNCERTAIN, never placed last", () => {
+    const r = enemyHealthDamage(
+      [hit({ damage: 60 }), hit({ actor: "ally2", damage: 60, tick: null }), hit({ damage: 60 })],
+      ME,
+      sameSide,
+    );
+    expect(r).toMatchObject({ enemyHp: 0, uncertainHits: 2, enemyHits: 0 });
+  });
+
+  it("survived hits remove exactly dmg_health; the lethal hit removes the health left before it", () => {
+    // dmg + health_after = health before, within the observed ±1 HP rounding.
+    const r = enemyHealthDamage(
+      [
+        hit({ damage: 12, healthAfter: 88 }),
+        hit({ damage: 12, healthAfter: 75 }), // 12 + 75 = 87 ≈ 88 (±1)
+        hit({ damage: 142, healthAfter: 0 }),
+      ],
+      ME,
+      sameSide,
+    );
+    expect(r).toMatchObject({ enemyHp: 12 + 12 + 75, enemyRaw: 166, uncertainHits: 0 });
+  });
+
+  it("several attackers on one victim: each removes only what it actually took", () => {
+    const r = enemyHealthDamage(
+      [
+        hit({ actor: "ally", damage: 40, healthAfter: 60 }),
+        hit({ damage: 30, healthAfter: 30 }),
+        hit({ actor: "ally2", damage: 27, healthAfter: 3 }),
+        hit({ damage: 99, healthAfter: 0 }),
+      ],
+      ME,
+      sameSide,
+    );
+    expect(r.enemyHp).toBe(30 + 3);
+  });
+
+  it("a missing hit before the lethal one makes ONLY the lethal hit uncertain", () => {
+    // 28 → 72, then (missing 30) → 42 observed as 20 → 22, then lethal: chain 72 → (20+22=42) breaks.
+    const r = enemyHealthDamage(
+      [
+        hit({ damage: 28, healthAfter: 72 }),
+        hit({ damage: 20, healthAfter: 22 }),
+        hit({ damage: 100, healthAfter: 0 }),
+      ],
+      ME,
+      sameSide,
+    );
+    expect(r).toMatchObject({ enemyHp: 48, enemyHits: 2, uncertainHits: 1 });
+  });
+
+  it("two lethal hits on the same victim in a round make the lethal hit uncertain", () => {
+    const r = enemyHealthDamage(
+      [hit({ damage: 100, healthAfter: 0 }), hit({ actor: "ally2", damage: 100, healthAfter: 0 })],
+      ME,
+      sameSide,
+    );
+    expect(r).toMatchObject({ enemyHp: 0, uncertainHits: 1 });
+  });
+
+  it("drops a stored-twice event instead of counting it twice", () => {
+    const once = hit({ damage: 27, healthAfter: 73 });
+    const r = enemyHealthDamage(
+      [once, { ...once, order: "dup" }, hit({ damage: 100, healthAfter: 0 })],
+      ME,
+      sameSide,
+    );
+    expect(r).toMatchObject({ enemyHp: 100, duplicateHits: 1, uncertainHits: 0 });
+  });
+
+  it("mixing hits with and without health_after on one victim is uncertain, not guessed", () => {
+    const r = enemyHealthDamage(
+      [
+        hit({ damage: 30, healthAfter: 70 }),
+        hit({ actor: "ally2", damage: 30 }),
+        hit({ damage: 80, healthAfter: 0 }),
+      ],
+      ME,
+      sameSide,
+    );
+    expect(r).toMatchObject({ enemyHp: 0, uncertainHits: 2 });
+  });
+
+  it("uses each round's sides: the same opponent is an enemy before AND after the side swap", () => {
+    // Round 1: me CT vs opp T; round 13: me T vs opp CT; a teammate stays a teammate.
+    const bySide: Record<number, Record<string, "CT" | "T">> = {
+      1: { me: "CT", mate: "CT", opp: "T" },
+      13: { me: "T", mate: "T", opp: "CT" },
+    };
+    const swap = (r: number, a: string, b: string) =>
+      bySide[r]?.[a] && bySide[r]?.[b] ? bySide[r]![a] === bySide[r]![b] : null;
+    const r = enemyHealthDamage(
+      [
+        hit({ round: 1, victim: "opp", damage: 20, healthAfter: 80 }),
+        hit({ round: 13, victim: "opp", damage: 20, healthAfter: 80 }),
+        hit({ round: 13, victim: "mate", damage: 20, healthAfter: 80 }),
+      ],
+      ME,
+      swap,
+    );
+    expect(r).toMatchObject({ enemyHp: 40, teamHits: 1, enemyHits: 2 });
+  });
+
+  it("counts an unknown-side victim as excluded coverage, never as enemy damage", () => {
+    const r = enemyHealthDamage(
+      [hit({ victim: "ghost", damage: 101, healthAfter: 0 })],
+      ME,
+      sameSide,
+    );
+    expect(r).toMatchObject({ enemyHp: 0, unknownSideHits: 1, enemyHits: 0, method: null });
+  });
 });

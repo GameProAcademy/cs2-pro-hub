@@ -229,6 +229,7 @@ export async function persistDemoProjection(args: {
           adr: metrics.adr,
           damage_enemy_hp: metrics.damageEnemyHp,
           damage_enemy_hp_method: metrics.damageEnemyHpMethod,
+          damage_enemy_hp_excluded_hits: metrics.damageEnemyHpExcludedHits,
           kast: metrics.kast,
           damage_taken: metrics.damageTaken,
           damage_efficiency: metrics.damageEfficiency,

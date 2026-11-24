@@ -812,24 +812,27 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   // `adrEnemyHp` (enemy-hp-v1, src/lib/metrics/enemyDamage.ts).
   const adr =
     availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
-  const enemyDamage = availability.damageEvents
-    ? enemyHealthDamage(
-        damageEvents.map((e, i) => ({
-          round: e.roundNumber,
-          tick: e.tick,
-          order: i,
-          actor: e.actorSteamId,
-          victim: e.victimSteamId,
-          damage: e.damage,
-          healthAfter:
-            typeof e.data?.["health_after"] === "number"
-              ? (e.data["health_after"] as number)
-              : null,
-        })),
-        eventPlayerKey,
-        (round, a, b) => sameTeamInRound(match, a, b, round),
-      )
-    : null;
+  // enemy-hp-v1 needs every round extracted: over a partial extraction it is UNAVAILABLE (null),
+  // never a partial number presented as complete.
+  const enemyDamage =
+    availability.damageEvents && availability.completeCoverage
+      ? enemyHealthDamage(
+          damageEvents.map((e, i) => ({
+            round: e.roundNumber,
+            tick: e.tick,
+            order: i,
+            actor: e.actorSteamId,
+            victim: e.victimSteamId,
+            damage: e.damage,
+            healthAfter:
+              typeof e.data?.["health_after"] === "number"
+                ? (e.data["health_after"] as number)
+                : null,
+          })),
+          eventPlayerKey,
+          (round, a, b) => sameTeamInRound(match, a, b, round),
+        )
+      : null;
   const damageEnemyHp = enemyDamage && roundsPlayed > 0 ? enemyDamage.enemyHp : null;
 
   return {
@@ -848,6 +851,10 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     adr,
     damageEnemyHp,
     damageEnemyHpMethod: damageEnemyHp === null ? null : (enemyDamage?.method ?? null),
+    damageEnemyHpExcludedHits:
+      damageEnemyHp === null
+        ? null
+        : (enemyDamage?.unknownSideHits ?? 0) + (enemyDamage?.uncertainHits ?? 0),
     adrEnemyHp:
       damageEnemyHp === null || roundsPlayed <= 0 ? null : round1(damageEnemyHp / roundsPlayed),
     kast: kastAvailable ? round1((kastRounds / roundsPlayed) * 100) : null,

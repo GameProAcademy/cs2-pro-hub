@@ -477,6 +477,11 @@ export interface CanonicalMetrics {
   damageEnemyHp: number | null;
   /** How the health cap was obtained: the game's health_after, reconstructed, or both. */
   damageEnemyHpMethod: "HEALTH_AFTER" | "RECONSTRUCTED" | "MIXED" | null;
+  /**
+   * Player hits on non-teammates left OUT of damageEnemyHp because the victim's side was unknown
+   * or the health removed could not be determined. > 0 means the value is PARTIAL coverage.
+   */
+  damageEnemyHpExcludedHits: number | null;
   /** The ADR shown to players: damageEnemyHp ÷ roundsPlayed, one decimal. */
   adrEnemyHp: number | null;
   kast: number | null;

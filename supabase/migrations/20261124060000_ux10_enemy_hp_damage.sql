@@ -6,17 +6,23 @@
 -- scoreboard, FACEIT, Leetify, HLTV and awpy count enemy health removed, each hit capped.
 --
 -- Additive only:
---   * two nullable columns; `adr` keeps its historical meaning (pro-score-v1 and
+--   * three nullable columns; `adr` keeps its historical meaning (pro-score-v1 and
 --     dna-weighted-v2 are built on it and are not changed);
---   * persist_demo_projection is the production definition (md5 81fa7d85…) with the two
---     columns added to the INSERT and to the ON CONFLICT update — nothing else changes.
--- Rollback: DROP the two columns and re-create the previous definition (migration
+--   * persist_demo_projection is the production definition with the three columns added to the
+--     INSERT and to the ON CONFLICT update — nothing else changes. Verified 2026-11-24:
+--       md5(pg_get_functiondef) in production = 81fa7d85f106803edfa3bd7f71f0b26d (full CREATE text)
+--       md5(prosrc) in production            = f9ebd3648fd5e87c2ca5e948a891e6a3 (body only)
+--       md5(body) of 20260921073324_…sql      = f9ebd3648fd5e87c2ca5e948a891e6a3 (identical)
+--     Signature, defaults, SECURITY DEFINER, search_path '' and language are unchanged; owner and
+--     grants are re-stated below exactly as 20260921073324 set them.
+-- Rollback: DROP the three columns and re-create the previous definition (migration
 -- 20260921073324_eb26ca2b-d870-4053-9865-4cdb352b045c.sql). Historical rows are filled by
 -- the reviewed TypeScript implementation (src/lib/metrics/enemyDamage.ts), not here.
 
 ALTER TABLE public.match_metrics
   ADD COLUMN IF NOT EXISTS damage_enemy_hp integer,
-  ADD COLUMN IF NOT EXISTS damage_enemy_hp_method text;
+  ADD COLUMN IF NOT EXISTS damage_enemy_hp_method text,
+  ADD COLUMN IF NOT EXISTS damage_enemy_hp_excluded_hits integer;
 
 DO $$
 BEGIN
@@ -26,6 +32,7 @@ BEGIN
     ALTER TABLE public.match_metrics
       ADD CONSTRAINT match_metrics_damage_enemy_hp_check CHECK (
         (damage_enemy_hp IS NULL OR damage_enemy_hp >= 0)
+        AND (damage_enemy_hp_excluded_hits IS NULL OR damage_enemy_hp_excluded_hits >= 0)
         AND (damage_enemy_hp_method IS NULL
              OR damage_enemy_hp_method IN ('HEALTH_AFTER', 'RECONSTRUCTED', 'MIXED'))
       );
@@ -36,6 +43,8 @@ COMMENT ON COLUMN public.match_metrics.damage_enemy_hp IS
   'enemy-hp-v1: enemy health removed by the player (each hit capped at the victim''s remaining health; team, self, world and unknown-side hits excluded). ADR shown to players = damage_enemy_hp / rounds_played.';
 COMMENT ON COLUMN public.match_metrics.damage_enemy_hp_method IS
   'enemy-hp-v1 health cap source: HEALTH_AFTER (game health after each hit), RECONSTRUCTED (100 per round minus prior hits) or MIXED.';
+COMMENT ON COLUMN public.match_metrics.damage_enemy_hp_excluded_hits IS
+  'enemy-hp-v1 coverage: player hits on non-teammates left out of damage_enemy_hp because the victim side was unknown or the health removed could not be determined. > 0 = PARTIAL.';
 COMMENT ON COLUMN public.match_metrics.adr IS
   'Historical: every dmg_health the player dealt (uncapped, all victims) / rounds_played. Input of pro-score-v1 and dna-weighted-v2. Not the ADR shown to players (see damage_enemy_hp).';
 
@@ -90,7 +99,7 @@ BEGIN
 
   INSERT INTO public.match_metrics (
     match_id, player_id, rounds_played, kills, deaths, assists, hs_percent, adr,
-    damage_enemy_hp, damage_enemy_hp_method,
+    damage_enemy_hp, damage_enemy_hp_method, damage_enemy_hp_excluded_hits,
     kast, damage_taken, damage_efficiency, first_kills, first_deaths,
     opening_attempts, opening_success, opening_success_rate, trade_kills,
     trade_deaths, clutch_attempts, clutch_wins, clutches, multi_kills,
@@ -100,6 +109,7 @@ BEGIN
     (_metrics->>'kills')::int, (_metrics->>'deaths')::int, (_metrics->>'assists')::int,
     (_metrics->>'hs_percent')::numeric, (_metrics->>'adr')::numeric,
     (_metrics->>'damage_enemy_hp')::int, NULLIF(_metrics->>'damage_enemy_hp_method', ''),
+    (_metrics->>'damage_enemy_hp_excluded_hits')::int,
     (_metrics->>'kast')::numeric,
     (_metrics->>'damage_taken')::numeric, (_metrics->>'damage_efficiency')::numeric,
     (_metrics->>'first_kills')::int, (_metrics->>'first_deaths')::int,
@@ -117,6 +127,7 @@ BEGIN
     assists = EXCLUDED.assists, hs_percent = EXCLUDED.hs_percent, adr = EXCLUDED.adr,
     damage_enemy_hp = EXCLUDED.damage_enemy_hp,
     damage_enemy_hp_method = EXCLUDED.damage_enemy_hp_method,
+    damage_enemy_hp_excluded_hits = EXCLUDED.damage_enemy_hp_excluded_hits,
     kast = EXCLUDED.kast, damage_taken = EXCLUDED.damage_taken,
     damage_efficiency = EXCLUDED.damage_efficiency, first_kills = EXCLUDED.first_kills,
     first_deaths = EXCLUDED.first_deaths, opening_attempts = EXCLUDED.opening_attempts,
@@ -189,3 +200,6 @@ BEGIN
   RETURN _match_id;
 END;
 $function$;
+
+REVOKE ALL ON FUNCTION public.persist_demo_projection(uuid, uuid, uuid, text, jsonb, jsonb, jsonb, jsonb, uuid, jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.persist_demo_projection(uuid, uuid, uuid, text, jsonb, jsonb, jsonb, jsonb, uuid, jsonb) TO service_role;
