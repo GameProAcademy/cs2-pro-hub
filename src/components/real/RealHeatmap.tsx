@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
+import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
@@ -258,14 +259,20 @@ function SupportedHeatmap({ h, matches }: { h: HeatmapResult; matches: SpatialMa
   const [selected, setSelected] = useState<number | null>(null);
   const plotted = h.events.value ?? 0;
   const max = useMemo(() => h.cells.reduce((m, c) => Math.max(m, c.count), 0), [h.cells]);
+  // UX-1.9a: every map cell is also reachable from this list (WCAG 2.5.8 "equivalent"
+  // control): the map's cells are smaller than 24 px on phones.
+  const [showAll, setShowAll] = useState(false);
   const top = useMemo(
-    () => [...h.cells].sort((a, b) => b.count - a.count || a.cell - b.cell).slice(0, 10),
-    [h.cells],
+    () =>
+      [...h.cells]
+        .sort((a, b) => b.count - a.count || a.cell - b.cell)
+        .slice(0, showAll ? undefined : 10),
+    [h.cells, showAll],
   );
   const showShare =
     h.perRound.status !== "INSUFFICIENT_SAMPLE" && h.perRound.status !== "UNAVAILABLE";
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem), showAll]">
       <ChartCard
         title={t(`spatial.layer.${h.layer}`)}
         subtitle={t(`spatial.layer.${h.layer}.semantics`)}
@@ -309,6 +316,20 @@ function SupportedHeatmap({ h, matches }: { h: HeatmapResult; matches: SpatialMa
               </li>
             ))}
           </ol>
+          {h.cells.length > 10 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((v) => !v)}
+            >
+              {showAll
+                ? t("spatial.cells.showTop")
+                : fill(t("spatial.cells.showAll"), { n: h.cells.length })}
+            </Button>
+          ) : null}
         </ChartCard>
       ) : null}
       {h.cells.length ? <DrillDown h={h} cell={selected} matches={matches} /> : null}
