@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-24 (America/Sao_Paulo) — UX-1.0 EM EXECUÇÃO (#354 `fcc042c` em produção) · por: sessão Claude
+Atualizado em: 2026-11-24 (America/Sao_Paulo) — UX-1.0 EM EXECUÇÃO (`56e2403` em produção) · por: sessão Claude
 `session_012i4uaf82YyjhPZuSt2ZHhn`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -15,16 +15,16 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 | Item                               | Valor                                                                                                                                                                                                                            |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                                                                       |
-| Etapa atual                        | UX-1.6 (DNA v3, #355) e UX-1.7 (Treino v2, #356) em CI; depois UX-1.4, UX-1.8, revisão geral                                                                                                                                     |
-| Última etapa concluída             | #354 (`fcc042c`): UX-1.3 (mobile/a11y) e UX-1.5 (5 áreas, Sala da Partida) — VALIDADO EM PRODUÇÃO (checkpoint UX-1.0 §2.6)                                                                                                       |
+| Etapa atual                        | UX-1.0: #360 (Raio-X segue o Treino), #357 (UX-1.4) e #358 (UX-1.8) em CI; R-07 com 2 de 3 demos                                                                                                                                 |
+| Última etapa concluída             | #355/#356/#359/#361: DNA v3, Treino v2, plano como histórico e alvos de toque — VALIDADO EM PRODUÇÃO (checkpoint UX-1.0 §2.8–§2.9)                                                                                               |
 | Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                                                                            |
 | Processos em execução              | Nenhum                                                                                                                                                                                                                           |
-| Branch ativa                       | `ux1.7/training-v2` (empilhado sobre `ux1.6/dna-v3`)                                                                                                                                                                             |
-| Último commit confirmado em `main` | `fcc042c` (merge do #354)                                                                                                                                                                                                        |
-| Build validado em produção         | Deploy `707f8943…` de `fcc042c` validado em 2026-11-24 (§2.6). Worker inalterado: Railway `584ea563` (R5.8.31)                                                                                                                   |
+| Branch ativa                       | `docs/ux1-checkpoint-2`; código em `ux1.7c/xray-consistency`, `ux1.4/data-states`, `ux1.8/coach-screen`                                                                                                                          |
+| Último commit confirmado em `main` | `56e2403` (merge do #361)                                                                                                                                                                                                        |
+| Build validado em produção         | Deploy `828b37f8…` de `56e2403` validado em 2026-11-24 (§2.8–§2.9). Worker inalterado: Railway `584ea563` (R5.8.31)                                                                                                              |
 | Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                                                               |
 | Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                               |
-| **Próxima ação exata**             | Merge #355 e depois #356 com checks verdes; publicar; validar DNA v3 e Treino v2 em produção                                                                                                                                     |
+| **Próxima ação exata**             | Merge #360, #357 e #358 com checks verdes; publicar; validar o Raio-X; 3ª demo para R-07                                                                                                                                         |
 | Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); UX-1.0 #350–#354; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`, `20261124060000`; backfill `enemy-hp-v1` (11 linhas, guardado por `damage_enemy_hp IS NULL`) |
 | Ações manuais necessárias          | Nenhuma                                                                                                                                                                                                                          |
 
