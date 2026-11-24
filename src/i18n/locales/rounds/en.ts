@@ -41,7 +41,7 @@ export const roundsEn: Record<keyof typeof roundsPtBR, string> = {
   "rounds.section.me": "Your contribution",
   "rounds.section.me.subtitle": "Your numbers in the analysed rounds, apart from the team result.",
   "rounds.me.kda": "Kills / deaths / assists",
-  "rounds.me.adr": "Damage per round",
+  "rounds.me.adr": "Enemy damage per valid round",
   "rounds.me.opening": "Opening",
   "rounds.me.openingValue": "{k} opening kills and {d} opening deaths in {n} rounds",
   "rounds.me.tradeKills": "Trade kills (avenged a teammate within 5 s)",

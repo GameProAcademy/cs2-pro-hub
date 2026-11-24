@@ -149,7 +149,7 @@ describe("the guard explains what was removed and why", () => {
   });
 
   it("only the kinds actually removed are explained", () => {
-    const r = guardCoachReply("**Dados**\n- ADR 76 (fonte: x_table.y).", facts("pt-BR"), "pt-BR");
+    const r = guardCoachReply("**Dados**\n- ADR 80,9 (fonte: x_table.y).", facts("pt-BR"), "pt-BR");
     expect(r.text).toContain(NOTICE["pt-BR"].sources);
     expect(r.text).not.toContain(NOTICE["pt-BR"].comparisons);
     expect(r.text).not.toContain(NOTICE["pt-BR"].stats);
@@ -158,9 +158,10 @@ describe("the guard explains what was removed and why", () => {
 
 describe("guard precision", () => {
   it("a clean, fully grounded reply is untouched in every language", () => {
+    // UX-1.0: ADR and KAST are the pooled (metrics-catalog-v2) values of the two fixture matches.
     for (const l of LOCALES) {
       const clean =
-        "**Dados**\n- K/D: 0,87 (20 / 23) — match_metrics.kills / match_metrics.deaths.\n- ADR: 76.\n- KAST: 62,1 %.\n\n**Interpretação**\n- Amostra pequena: 2 partidas, 34 rounds.";
+        "**Dados**\n- K/D: 0,87 (20 / 23) — match_metrics.kills / match_metrics.deaths.\n- ADR: 80,9.\n- KAST: 64,7 %.\n\n**Interpretação**\n- Amostra pequena: 2 partidas, 34 rounds.";
       const r = guardCoachReply(clean, facts(l), l);
       expect(r.removed, l).toEqual({ stats: 0, comparisons: 0, sources: 0, flashWording: 0 });
       expect(r.text, l).toBe(clean);

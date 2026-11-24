@@ -152,7 +152,7 @@ export interface CoachObservation {
   /** Rounded to the catalog's contract precision; null unless OBSERVED or DERIVED. */
   value: number | null;
   unit: string;
-  /** How several matches were combined (`mean_of_matches` is NOT a pooled rate). */
+  /** How several matches were combined (`pooled`: Σ numerator ÷ Σ own denominator; `mean_of_matches`: per-match mean). */
   aggregation: string;
   /** Matches that carry the value. */
   matches: number;
@@ -473,11 +473,12 @@ const METRIC_NOTES: Record<string, string> = {
     "A count DERIVED by CS2 PRO when the demo was processed, by one of two methods: the game's per-kill flash-assist flag when every kill of the match carried it, otherwise a timed attribution (a teammate's flash on the same victim shortly before the kill). Four different things, never confused: (a) the COUNT is a CS2 PRO derivation, not a game report, unless the observation's provenance is GAME_FLAG; (b) the METHOD of each match is recorded from flash-assist-provenance-v1 on (methods: GAME_FLAG, TIMED_ATTRIBUTION, MIXED); matches processed earlier read NOT_RECORDED, which says nothing about whether flash assists happened; (c) a count of 0 means no kill was credited as flash-assisted by either method, NOT that the player threw no flashes or never helps teammates (flashes thrown are not part of this metric) — never as proof that the player does not flash for teammates; (d) enemies flashed is a different metric and is NOT MEASURED.",
   winRate:
     "Excluded by the demo admission (match result not resolved); never estimate wins, losses or a score.",
-  hsPercent: "Mean of per-match HS% (each match weighs the same), not headshots ÷ kills pooled.",
-  adr: "Mean of per-match ADR (each match weighs the same), not damage ÷ rounds pooled.",
-  kast: "Mean of per-match KAST (each match weighs the same).",
+  hsPercent:
+    "Pooled over kills (metrics-catalog-v2): Σ headshot kills ÷ Σ kills × 100 — numerator and denominator are those counts. The same value the Dashboard, the X-ray and Evolution show.",
+  adr: "Pooled over rounds (metrics-catalog-v2): Σ damage ÷ Σ rounds played — numerator is the damage, denominator the rounds. The same value the Dashboard, the X-ray and Evolution show.",
+  kast: "Pooled over rounds (metrics-catalog-v2): Σ KAST rounds ÷ Σ rounds played × 100 — numerator is the KAST rounds, denominator the rounds.",
   rating:
-    "CS2 PRO's per-match relative rating (0.45·KPR/0.70 + 0.25·(1−DPR/0.75) + 0.30·ADR/80), averaged per match; not HLTV Rating, not the CS2 PRO Score.",
+    "CS2 PRO's relative rating (0.45·KPR/0.70 + 0.25·(1−DPR/0.75) + 0.30·ADR/80), pooled over rounds: Σ (match rating × rounds) ÷ Σ rounds, which equals the rating of the pooled KPR, DPR and ADR; not HLTV Rating, not the CS2 PRO Score.",
 };
 
 function toCoachObservation(o: XRayObservation): CoachObservation {
@@ -867,7 +868,7 @@ export function coachSystemPrompt(locale: Locale): string {
     "8. Be concise: at most about 300 words unless the player asks for more detail.",
     "9. Format: plain Markdown only (short headings, bullet lists, **bold**, and simple pipe tables when comparing matches). No code blocks. Never use LaTeX or math markup (no \\frac, \\text, $...$); write formulas in plain text, e.g. K/D = kills / deaths.",
     "10. Refer to Player DNA signals by their label exactly as given, and quote their values as given in `shown` (a value like '84 / 100' is an index, not a percentage).",
-    "11. When you explain a metric, use the product's own definitions: K/D = kills / deaths. ADR = total damage dealt / rounds played. KAST = rounds in which the player got a Kill, an Assist, Survived, or was Traded (died and a teammate killed the killer shortly after), divided by rounds played, as a percentage; each round counts once, the four parts are not added together. HS% = headshot kills / kills. Never present another formula for these metrics. observations[].aggregation says how matches were combined: mean_of_matches is the average of per-match values (each match weighs the same), never a pooled rate.",
+    "11. When you explain a metric, use the product's own definitions: K/D = kills / deaths. ADR = total damage dealt / rounds played. KAST = rounds in which the player got a Kill, an Assist, Survived, or was Traded (died and a teammate killed the killer shortly after), divided by rounds played, as a percentage; each round counts once, the four parts are not added together. HS% = headshot kills / kills. Never present another formula for these metrics. observations[].aggregation says how matches were combined: pooled is Σ numerator ÷ Σ of the metric's own denominator (ADR and KAST over rounds, HS% over kills) — the value every screen shows; quote it as given and never recompute, re-average or adjust it. mean_of_matches (CT/T rating only) is the average of per-match values.",
     "12. Units: every count in matches[] (kills, deaths, assists, openingKills, openingDeaths, tradeKills, flashAssists) is per MATCH. A per-round rate is count / roundsPlayed; the number of matches is never a number of rounds. Copy sums and per-round rates from totals instead of computing them; totals and observations cover ALL matches together (sample.matches), while matches[] may hold only the matches relevant to this question (matchesIncluded), so never list a totals value under one map or match; if a value you need is null there, say it cannot be computed. The K/D of one match is matches[].killDeathRatio; the overall K/D is the kd observation (with its numerator / denominator); never quote one as the other. For the strongest or weakest Player DNA dimension, copy playerDna.strongest / playerDna.weakest (empty unless READY).",
     "13. Dates: when period.dateBasis (or a match's dateBasis) is 'processed', the date is when CS2 PRO processed the demo, never when the match was played; say so if you mention a date.",
     "14. Match result, score and win rate are UNAVAILABLE unless an observation with status OBSERVED or DERIVED says otherwise: never infer a win, a loss or a score from kills, rounds or anything else.",

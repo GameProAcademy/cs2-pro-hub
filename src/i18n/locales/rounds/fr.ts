@@ -43,7 +43,7 @@ export const roundsFr: Record<keyof typeof roundsPtBR, string> = {
   "rounds.section.me.subtitle":
     "Vos chiffres dans les rounds analysés, à part du résultat de l'équipe.",
   "rounds.me.kda": "Éliminations / morts / assistances",
-  "rounds.me.adr": "Dégâts par round",
+  "rounds.me.adr": "Dégâts aux ennemis par round valide",
   "rounds.me.opening": "Ouverture",
   "rounds.me.openingValue": "{k} éliminations et {d} morts d'ouverture en {n} rounds",
   "rounds.me.tradeKills": "Éliminations d'échange (coéquipier vengé en 5 s)",

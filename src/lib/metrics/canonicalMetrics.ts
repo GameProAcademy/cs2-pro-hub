@@ -26,7 +26,13 @@ export type MetricUnit = "ratio" | "percent" | "per_round" | "count" | "index" |
 export type MetricAggregation =
   /** Σ numerator ÷ Σ denominator over matches that carry both (K/D). */
   | "sum_ratio"
-  /** Arithmetic mean of the per-match values that exist (ADR, KAST, HS%, rating). */
+  /**
+   * metrics-catalog-v2: Σ numerator ÷ Σ of the metric's OWN denominator over the matches that
+   * carry both (ADR and KAST over rounds, HS% over kills, rating over rounds) — see
+   * `canonicalAggregate.ts`, the single implementation every screen and the AI Coach use.
+   */
+  | "pooled"
+  /** Arithmetic mean of the per-match values that exist (CT / T rating: no per-side round count). */
   | "mean_of_matches"
   /** Σ of the per-match counts that exist (opening kills, trades, flash assists). */
   | "sum"
@@ -117,8 +123,8 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     source: "match_metrics.adr",
     unit: "per_round",
     formula: "damage dealt ÷ rounds played",
-    denominator: "rounds played in the match",
-    aggregation: "mean_of_matches",
+    denominator: "rounds played (Σ over matches with ADR and rounds)",
+    aggregation: "pooled",
     minMatches: 1,
     nullWhen: "damage events unavailable, or 0 rounds played",
     digits: { contract: 1, display: 1 },
@@ -129,8 +135,8 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     source: "match_metrics.kast",
     unit: "percent",
     formula: "rounds with a kill, assist, proven survival or trade ÷ rounds played × 100",
-    denominator: "rounds played in the match",
-    aggregation: "mean_of_matches",
+    denominator: "rounds played (Σ over matches with KAST and rounds)",
+    aggregation: "pooled",
     minMatches: 1,
     nullWhen: "survival or trade timing not provable for every round",
     digits: { contract: 1, display: 1 },
@@ -141,8 +147,8 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     source: "match_metrics.hs_percent",
     unit: "percent",
     formula: "headshot kills ÷ kills × 100",
-    denominator: "kills in the match",
-    aggregation: "mean_of_matches",
+    denominator: "kills (Σ over matches with HS% and at least one kill)",
+    aggregation: "pooled",
     minMatches: 1,
     nullWhen: "the player made no kill (no denominator)",
     digits: { contract: 1, display: 1 },
@@ -153,8 +159,8 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     source: "match_metrics.rating",
     unit: "index",
     formula: "0.45·(KPR/0.70) + 0.25·(1 − DPR/0.75) + 0.30·(ADR/80), floored at 0",
-    denominator: "rounds played in the match",
-    aggregation: "mean_of_matches",
+    denominator: "rounds played (Σ over matches with a rating and rounds)",
+    aggregation: "pooled",
     minMatches: 1,
     nullWhen: "kill or damage events missing, or round coverage incomplete",
     digits: { contract: 3, display: 2 },

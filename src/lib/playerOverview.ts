@@ -8,6 +8,8 @@
  * state (EMPTY, PROCESSING, IDENTITY_PENDING, BLOCKED, FAILED, ERROR).
  */
 
+import { pooledValue } from "@/lib/metrics/canonicalAggregate";
+
 export type OverviewState =
   "EMPTY" | "PROCESSING" | "IDENTITY_PENDING" | "BLOCKED" | "FAILED" | "READY";
 
@@ -214,25 +216,19 @@ function num(value: number | string | null | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function mean(values: Array<number | null>): number | null {
-  const present = values.filter((value): value is number => value !== null);
-  if (!present.length) return null;
-  return present.reduce((sum, value) => sum + value, 0) / present.length;
-}
-
 export function aggregate(matches: OverviewMatch[]): OverviewAggregates | null {
   if (!matches.length) return null;
-  const withKd = matches.filter((m) => m.kills !== null && m.deaths !== null);
-  const kills = withKd.reduce((sum, m) => sum + (m.kills ?? 0), 0);
-  const deaths = withKd.reduce((sum, m) => sum + (m.deaths ?? 0), 0);
+  const kd = pooledValue(matches, "kd");
   const decided = matches.filter((m) => m.result === "win" || m.result === "loss");
   return {
     matches: matches.length,
-    kd: withKd.length && deaths > 0 ? kills / deaths : null,
-    adr: mean(matches.map((m) => m.adr)),
-    kast: mean(matches.map((m) => m.kast)),
-    hsPercent: mean(matches.map((m) => m.hsPercent)),
-    rating: mean(matches.map((m) => m.rating)),
+    // metrics-catalog-v2: every rate pooled over its own denominator (canonicalAggregate.ts),
+    // the same function the X-ray, the AI Coach and Evolution use.
+    kd: kd.value,
+    adr: pooledValue(matches, "adr").value,
+    kast: pooledValue(matches, "kast").value,
+    hsPercent: pooledValue(matches, "hsPercent").value,
+    rating: pooledValue(matches, "rating").value,
     wins: matches.filter((m) => m.result === "win").length,
     decided: decided.length,
     resultUnresolved: matches.filter((m) => m.resultStatus === "UNRESOLVED_BY_DEMO").length,

@@ -41,7 +41,7 @@ export const roundsPtBR = {
   "rounds.section.me.subtitle":
     "Seus números nos rounds analisados, separados do resultado da equipe.",
   "rounds.me.kda": "Abates / mortes / assistências",
-  "rounds.me.adr": "Dano por round",
+  "rounds.me.adr": "Dano em inimigos por round válido",
   "rounds.me.opening": "Abertura",
   "rounds.me.openingValue": "{k} abates e {d} mortes de abertura em {n} rounds",
   "rounds.me.tradeKills": "Abates de troca (vingou aliado em até 5 s)",
