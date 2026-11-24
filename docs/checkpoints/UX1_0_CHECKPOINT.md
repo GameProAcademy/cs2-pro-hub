@@ -13,7 +13,12 @@ CI APROVADO · INTEGRADO NO MAIN · SINCRONIZADO NO LOVABLE · PUBLICADO · VALI
 | G1 — `metrics-catalog-v2` (ADR/KAST/HS/K/D/Rating somados pelo próprio denominador), rótulo "Dano em inimigos por round válido" (Rounds), "Índice de dano" (Score/DNA)                           | #350 · `77d3ef6`                   | VALIDADO EM PRODUÇÃO                                                                                                                | checks 5/5 (incl. "Main required gates"); merge `bbecff1`; Lovable `latest_commit_sha` = `bbecff1`; deploy `9b1803d6…`; Dashboard, Raio-X e Evolução mostram 106,7 / 76,6 / 58,1 (2026-11-24) |
 | G1 — Replay com rótulos estáveis "Aliado N / Adversário N"; mobile (duelos em cartões, alvo ≥ 44 px, tabelas com rolagem, radar, campo do Coach)                                                 | #350 · `ba8765a`                   | VALIDADO EM PRODUÇÃO                                                                                                                | 360 e 375 px: 82/82 controles de duelo inteiros, botão Replay 98×44 px, campo do Coach 40 px acima da barra, 9/9 rótulos do radar dentro da tela; Replay sem rótulo T1–CT5 nem SteamID        |
 | G2 — ADR `enemy-hp-v1` (vida de inimigo removida, golpe limitado à vida restante; sem dano em aliados, próprio, do mundo ou de lado desconhecido); kills sem suicídio e sem team kill comprovado | #351 · `4ce8edf` → merge `85e5929` | INTEGRADO NO MAIN · migration e backfill APLICADOS EM PRODUÇÃO · SINCRONIZADO NO LOVABLE · deploy `629916bc…` pendente de validação | 7/7 checks em `4ce8edf`; §2.1 (hashes), §2.2 (simulação), §2.3 (pós-escrita)                                                                                                                  |
-| G2b — telas e Coach leem o ADR canônico (`playerAdr`); Rounds/Raio-X por round com `enemyHpByRound` (`cs2.rounds.v2`, `round-context-v2`)                                                        | branch `ux1.0/enemy-hp-display`    | VALIDADO EM TESTE                                                                                                                   | suíte: 2.869 aprovados; 35 falhas só em `*.integration` (exigem PostgreSQL do CI, idênticas à base)                                                                                           |
+| G2b — telas e Coach leem o ADR canônico (`playerAdr`); Rounds/Raio-X por round com `enemyHpByRound` (`cs2.rounds.v2`, `round-context-v2`)                                                        | #352 · merge `6ecce59`             | VALIDADO EM PRODUÇÃO (conta `42650ddd`; limites em §2.5)                                                                            | §2.5                                                                                                                                                                                          |
+| G2c — marcador ADR parcial (5 idiomas), glossário do ADR, numerador sem ruído, Rounds com 1 casa, rótulo do índice de dano                                                                       | #353 · merge `6c431c6`             | VALIDADO EM PRODUÇÃO                                                                                                                | Nuke com "PARCIAL", dica "Parcial em 1 partida(s)", HS (25/43), KAST (49/64), rótulo do índice sem "ADR"                                                                                      |
+| UX-1.3 — Mortes agrupadas e paginadas (M-2/R-22), menu com Esc e foco (M-4/R-20), Coach em qualquer largura (M-10/R-12), R-17, R-19, R-21, R-23                                                  | #354 · merge `fcc042c`             | VALIDADO EM PRODUÇÃO                                                                                                                | §2.6                                                                                                                                                                                          |
+| UX-1.5 — 5 áreas (R-08, M-3) e Sala da Partida `/matches/$matchId` (R-06)                                                                                                                        | #354 · merge `fcc042c`             | VALIDADO EM PRODUÇÃO (aria-current da aba Resumo corrigido no #356)                                                                 | §2.6                                                                                                                                                                                          |
+| UX-1.6 — Player DNA v3 (`dna-weighted-v3`) e radar A (R-04, R-05, R-14, R-35, R-36)                                                                                                              | #355                               | CI EM EXECUÇÃO                                                                                                                      | `playerDnaV3.test.ts`, `dnaRadarA.test.tsx`                                                                                                                                                   |
+| UX-1.7 — lista única de Treino (`cs2.training-priority.v2`, R-13, R-38)                                                                                                                          | #356 (empilhado sobre #355)        | IMPLEMENTADO · VALIDADO EM TESTE                                                                                                    | simulação: falso positivo 0,50–1,57% (k = 4–8, ρ = 0–0,10)                                                                                                                                    |
 
 ## 2. Auditoria de proveniência do ADR (produção, somente leitura, 2026-11-24)
 
@@ -104,6 +109,24 @@ Verificações posteriores: 11/11 preenchidas; 1 parcial; Σ`adr` inalterado; `d
 - **Demo sem `damage_enemy_hp` → "não medido":** nenhuma linha assim existe em produção (11/11 preenchidas). Coberto por testes (`adrPartialUi.test.tsx`, `playerOverview.test.ts`); não observável em produção sem alterar dados.
 - **Defeitos achados e corrigidos no G2c:** sem marcador de parcial; numerador da fórmula em float cru no Raio-X (`24.996000000000002/43`, `49.024/64`); Rounds com 2 casas; rótulo do Score "Índice de dano (ADR ÷ 100…)" contradizia o ADR exibido (o índice usa o dano total histórico do `pro-score-v1`, inalterado).
 
+### 2.6 Validação em produção — UX-1.3 e UX-1.5 (2026-11-24 ~15:10, Chrome autenticado, conta de teste)
+
+- Navegação: 5 áreas na barra lateral (Início, Partidas, Meu jogo, Treino, Coach); seções da área ativa ("Minhas Partidas", "Momentos").
+- Partidas: linha inteira abre a Sala; links `/matches/<id>` com o nome do mapa.
+- Sala (Mirage): título "MIRAGE · 17/11/2026", "data de processamento · 23 rounds · Resultado não determinado"; 7 abas; KPIs ADR 75,0 · KAST 69,6% · HS 40,0% · K/D 0,88; faixa 23 rounds = 10 vencidos + 13 perdidos + 0 "?" (bate com a aba Rounds).
+- Link antigo `/deaths?matchId=…` → `/matches/…?tab=deaths`; Mortes recolhidas "10 de 17 mortes", sem seletor de partida.
+- Defeito achado: a aba Resumo também recebia `aria-current="page"` (casamento de caminho do TanStack). Corrigido no #356 (`explicitUndefined`), com teste.
+- 375 px: barra inferior com 5 itens de 72×56 px, rótulos inteiros a 11 px; 0 controles < 24 px no Início e em Mortes; Mortes da Sala = 1,9 tela (antes 33,4); botão do Coach 48×48 acima da barra.
+- Menu mobile: `role="dialog"`, foco dentro, Esc fecha, foco volta ao botão. Coach abre em largura total (375 px) com o campo de texto.
+- Upload sem "Não tenho uma demo" e sem o cartão de estados de engenharia; Raio-X sem "Classificação de compra" entre os não suportados; dimensão "Primeiras mortes e trocas"; Rounds 77,3 (1 casa).
+
+### 2.7 Decisões provisórias registradas
+
+- Q-23 (10 ou 11 eixos): v3 mantém 10 eixos (sem DDL) e lista multi-kill como sinal de Duelos, a opção de 10 eixos do Doc. 5. Reversível pelo proprietário.
+- R-35: `opening_discipline` = `opening_success` em 11/11 linhas persistidas: no v3 não entra no índice.
+- Treino v2: referência fixa = 0,60 do índice orientado (a mesma do v1 e do plano do catálogo). Persistência em duas atualizações (Doc. 4 §5.4) não implementada: depende de histórico de prioridades.
+- O plano do catálogo continua com o foco das semanas vindo do DNA (motor `trainingPlan.ts`); só o quadro de prioridades dele saiu da tela. Pendente: alimentar o foco com a lista v2.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
@@ -112,6 +135,8 @@ Verificações posteriores: 11/11 preenchidas; 1 parcial; Σ`adr` inalterado; `d
 
 ## 4. Próximas tarefas
 
-1. G2b: PR de `ux1.0/enemy-hp-display` → checks → merge → publicar → validar Dashboard, Partidas, Raio-X, Evolução, Rounds e Coach em produção (ADR 75,0 na de_mirage; PARCIAL na daef42da/42650ddd).
-2. Validar em produção o deploy `629916bc…` (`85e5929`) e uma nova ingestão gravando `damage_enemy_hp`.
-3. DNA v3; motor único de Treino; vencedor por round; Mortes; 5 áreas; Sala da Partida; revisão mobile completa; i18n.
+1. Merge #355 (DNA v3) e #356 (Treino v2) com checks verdes; publicar; validar DNA (radar A, 10 eixos, Clutch "sem amostra", Economia "não medido"), Raio-X e Treino em produção.
+2. R-07: validar a contagem por lado com 3 demos sem L04 (L-1, L-2) antes do texto "Seu lado venceu X de Y".
+3. UX-1.4 (8 estados de dado nos 5 idiomas), UX-1.8 (Coach com contexto da tela, R-11), revisão de todas as telas e responsividade 360–1440, i18n.
+4. Validar uma nova ingestão gravando `damage_enemy_hp` e o snapshot v3.
+5. Depois: DNA/Treino/Coach restantes do Prompt Mestre (Doc. 7, UX-1.9 por último).
