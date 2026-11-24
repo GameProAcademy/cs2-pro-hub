@@ -63,7 +63,7 @@ export const catalogEn: Record<keyof typeof catalogPtBR, string> = {
   "training.real.noData":
     "No processed matches yet. The plan only uses your real data; upload a demo to start.",
   "training.real.noPriority":
-    "None of your Player DNA dimensions is below 60 / 100 and you have not declared goals in your profile: there is no priority to fix. Keep your routine and set a goal in your profile to get recommendations.",
+    "The Training list above has no priority yet and you have not declared goals in your profile: there is no focus week to build. Keep playing and uploading demos; set a goal in your profile to get recommendations.",
   "training.real.provisional":
     "Small sample ({matches} match(es)): priorities are provisional and will be revised with every new demo.",
   "training.real.catalogUnavailable":
