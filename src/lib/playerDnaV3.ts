@@ -42,6 +42,8 @@ type SampleColumn = "sample_rounds" | "sample_opening_duels" | "sample_clutches"
 export interface DnaFeatureRowV3 extends DnaFeatureRow {
   /** The player's kills in the match (`match_metrics.kills`): the denominator of HS (R-05). */
   sample_kills?: number | null;
+  /** The player's deaths in the match: the denominator of death-based rates (training v2). */
+  sample_deaths?: number | null;
 }
 
 /** Signals moved to another dimension in v3 (source key → dimension that lists it). */

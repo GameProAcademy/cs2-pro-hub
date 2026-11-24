@@ -103,3 +103,11 @@ describe("Match Room", () => {
     expect(room).toContain("roundsQueryKey({ matchId })");
   });
 });
+
+describe("Match Room tabs a11y", () => {
+  it("the Summary tab never matches another tab's URL (one aria-current)", () => {
+    const room = read("src/components/real/RealMatchRoom.tsx");
+    expect(room).toContain('search={tab === "summary" ? { tab: undefined } : { tab }}');
+    expect(room).toContain("activeOptions={{ includeSearch: true, explicitUndefined: true }}");
+  });
+});

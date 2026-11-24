@@ -189,7 +189,10 @@ function RoomTabs({ matchId, active }: { matchId: string; active: MatchRoomTab }
             <Link
               to="/matches/$matchId"
               params={{ matchId }}
-              search={tab === "summary" ? {} : { tab }}
+              // Summary is the room without ?tab: `explicitUndefined` keeps it from matching
+              // every tab (TanStack would mark it active, with aria-current, on any ?tab=).
+              search={tab === "summary" ? { tab: undefined } : { tab }}
+              activeOptions={{ includeSearch: true, explicitUndefined: true }}
               aria-current={tab === active ? "page" : undefined}
               data-room-tab={tab}
               className={cn(

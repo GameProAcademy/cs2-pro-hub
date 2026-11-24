@@ -17,17 +17,25 @@ export async function withKills<T extends DnaFeatureRowV3>(
   if (!rows.length || !playerIds.length) return rows;
   const { data, error } = await db
     .from("match_metrics")
-    .select("match_id, kills")
+    .select("match_id, kills, deaths")
     .in("player_id", playerIds)
     .in(
       "match_id",
       rows.map((r) => r.match_id),
     );
   if (error) throw new Error(`PLAYER_DNA_KILLS_FAILED:${error.code ?? "unknown"}`);
-  const kills = new Map<string, number | null>();
+  const byMatch = new Map<string, { kills: number | null; deaths: number | null } | null>();
   for (const m of data ?? []) {
     // Two own rows in one match would be ambiguous: no weight then.
-    kills.set(m.match_id, kills.has(m.match_id) ? null : (m.kills ?? null));
+    byMatch.set(
+      m.match_id,
+      byMatch.has(m.match_id) ? null : { kills: m.kills ?? null, deaths: m.deaths ?? null },
+    );
   }
-  return rows.map((r) => ({ ...r, sample_kills: kills.get(r.match_id) ?? null }));
+  return rows.map((r) => ({
+    ...r,
+    sample_kills: byMatch.get(r.match_id)?.kills ?? null,
+    // Training v2 (deaths-denominated rates); not part of the DNA v3 digest.
+    sample_deaths: byMatch.get(r.match_id)?.deaths ?? null,
+  }));
 }

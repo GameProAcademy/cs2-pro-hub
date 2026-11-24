@@ -118,16 +118,16 @@ describe("AdaptiveTrainingBody", () => {
     }
   });
 
-  it("lists priorities with evidence, the formula and excluded areas before creation", () => {
+  // UX-1.7 / R-13: the priorities are the ONE list (TrainingPrioritiesV2, tested in
+  // trainingPriorityV2Ui.test.tsx); the creation panel no longer repeats them as a second list.
+  it("offers plan creation without repeating the priority list", () => {
     for (const locale of LOCALES) {
       const html = render(<AdaptiveTrainingBody v={empty(evidence)} />, locale);
       expect(html).toContain("data-create-plan");
-      expect(html).toContain('data-to="/player-dna"');
+      expect(html).not.toContain("data-priorities");
       expect(leaks(html)).toBeNull();
     }
     const pt = render(<AdaptiveTrainingBody v={empty(evidence)} />);
-    expect(pt).toContain("Player DNA: índice 30");
-    expect(pt).toContain("não medida");
     expect(pt).toContain("não garante melhora");
   });
 

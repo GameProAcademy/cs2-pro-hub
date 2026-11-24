@@ -42,4 +42,35 @@ export const roomPtBR = {
   "real.dna.selected": "{dimension}: {value}, {n} sinais",
   "real.dna.pick": "Toque num eixo ou numa dimensão para ver os sinais.",
   "real.dna.clutchAttempts": "{n} de {min} tentativas de clutch",
+  "training.v2.title": "Prioridades de treino",
+  "training.v2.subtitle":
+    "Uma lista só. Entra o sinal com amostra suficiente e intervalo inteiro abaixo da referência fixa do CS2 PRO; no máximo 3.",
+  "training.v2.none":
+    "Ainda sem recomendação: nenhum sinal tem amostra suficiente com o intervalo inteiro abaixo da referência.",
+  "training.v2.observing": "Em observação ({n})",
+  "training.v2.value": "{v}% · intervalo {a}–{b}% · referência {r}%",
+  "training.v2.sample": "{n} {unit} em {m} partida(s)",
+  "training.v2.reason.BELOW_SHOW_MINIMUM": "Amostra insuficiente para mostrar o valor",
+  "training.v2.reason.BELOW_RECOMMEND_MINIMUM": "Ainda sem recomendação",
+  "training.v2.reason.INTERVAL_CONTAINS_REFERENCE":
+    "O intervalo contém a referência: não dá para afirmar que está abaixo",
+  "training.v2.reason.ABOVE_REFERENCE": "Acima da referência",
+  "training.v2.reason.ONE_MATCH_DOMINATES": "Uma partida concentra mais da metade da amostra",
+  "training.v2.reason.DEPENDS_ON_ONE_MATCH":
+    "Sem a partida de maior peso, o sinal deixa de passar no critério",
+  "training.v2.reason.NEVER_RECOMMENDS":
+    "Raro demais para recomendar (clutch por tipo ainda não medido)",
+  "training.v2.missing": "faltam {parts}",
+  "training.v2.missing.sample": "{n} {unit}",
+  "training.v2.missing.matches": "{n} partida(s)",
+  "training.v2.method":
+    "Método cs2.training-priority.v2 · referência fixa do CS2 PRO, não é comparação com outros jogadores.",
+  "training.v2.open": "Ver evidência",
+  "training.v2.waiting": "Também abaixo da referência; aguarda vaga (no máximo 3 prioridades)",
+  "training.v2.unit.rounds": "rounds",
+  "training.v2.unit.kills": "kills",
+  "training.v2.unit.deaths": "mortes",
+  "training.v2.unit.opening_duels": "duelos de abertura",
+  "training.v2.unit.clutches": "clutches",
+  "training.v2.unit.kills_deaths": "kills e mortes",
 } as const;
