@@ -63,7 +63,7 @@ export const catalogPtBR = {
   "training.real.noData":
     "Ainda não há partidas processadas. O plano usa somente os seus dados reais; envie uma demo para começar.",
   "training.real.noPriority":
-    "Nenhuma dimensão do seu Player DNA está abaixo de 60 / 100 e você não declarou objetivos no perfil: não há prioridade a corrigir. Mantenha a rotina e defina um objetivo no perfil para receber recomendações.",
+    "A lista de Treino acima ainda não tem prioridade e você não declarou objetivos no perfil: não há semana de foco para montar. Siga jogando e enviando demos; defina um objetivo no perfil para receber recomendações.",
   "training.real.provisional":
     "Amostra pequena ({matches} partida(s)): as prioridades são provisórias e serão revistas a cada nova demo.",
   "training.real.catalogUnavailable":

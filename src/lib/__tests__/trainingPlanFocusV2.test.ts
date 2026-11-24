@@ -40,3 +40,17 @@ describe("UX-1.7d catalogue plan follows the single Training list (R-13)", () =>
     ]);
   });
 });
+
+describe("UX-1.7e: the no-priority text matches the single-list rule", () => {
+  it("no locale claims the DNA has no dimension below 60", async () => {
+    for (const l of ["pt-BR", "pt-PT", "en", "es", "fr"]) {
+      const { readFileSync } = await import("node:fs");
+      const src = readFileSync(`src/i18n/locales/catalog/${l}.ts`, "utf8");
+      const line = src.slice(
+        src.indexOf('"training.real.noPriority"'),
+        src.indexOf('"training.real.provisional"'),
+      );
+      expect(line, l).not.toMatch(/60 \/ 100/);
+    }
+  });
+});

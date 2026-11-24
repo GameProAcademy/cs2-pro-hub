@@ -64,7 +64,7 @@ export const catalogFr: Record<keyof typeof catalogPtBR, string> = {
   "training.real.noData":
     "Aucune partie traitée pour l’instant. Le plan n’utilise que vos vraies données ; envoyez une démo pour commencer.",
   "training.real.noPriority":
-    "Aucune dimension de votre Player DNA n’est sous 60 / 100 et vous n’avez déclaré aucun objectif : aucune priorité à corriger. Gardez votre routine et définissez un objectif dans votre profil pour recevoir des recommandations.",
+    "La liste d’entraînement ci-dessus n’a pas encore de priorité et vous n’avez déclaré aucun objectif : aucune semaine de focus à construire. Continuez à jouer et à envoyer des démos ; définissez un objectif dans votre profil pour recevoir des recommandations.",
   "training.real.provisional":
     "Petit échantillon ({matches} partie(s)) : les priorités sont provisoires et seront revues à chaque nouvelle démo.",
   "training.real.catalogUnavailable":
