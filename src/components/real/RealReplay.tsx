@@ -478,7 +478,8 @@ export function ReplayPlayer({
               setPlaying(false);
               setPos(Number(e.target.value));
             }}
-            className="w-full"
+            // UX-1.9a: 24 px touch height (WCAG 2.5.8); the track keeps its native look.
+            className="h-6 w-full cursor-pointer"
           />
           {segment.ticksPerSecond ? null : (
             <p className="text-xs text-muted-foreground">{t("replay.time.nominal")}</p>

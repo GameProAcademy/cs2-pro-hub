@@ -96,4 +96,6 @@ export const spatialEs: Record<keyof typeof spatialPtBR, string> = {
   "spatial.map.aria": "Heatmap de {layer} en {map}",
   "spatial.map.cellAria": "Columna {col}, fila {row}: {n} evento(s)",
   "spatial.version": "Método {version}; transformación {transform}.",
+  "spatial.cells.showAll": "Mostrar las {n} celdas",
+  "spatial.cells.showTop": "Mostrar solo las 10 con más eventos",
 };

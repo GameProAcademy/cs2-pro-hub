@@ -98,4 +98,6 @@ export const spatialFr: Record<keyof typeof spatialPtBR, string> = {
   "spatial.map.aria": "Heatmap de {layer} sur {map}",
   "spatial.map.cellAria": "Colonne {col}, ligne {row} : {n} événement(s)",
   "spatial.version": "Méthode {version} ; transformation {transform}.",
+  "spatial.cells.showAll": "Afficher les {n} cellules",
+  "spatial.cells.showTop": "Afficher seulement les 10 premières",
 };
