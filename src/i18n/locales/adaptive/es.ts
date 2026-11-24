@@ -108,7 +108,7 @@ export const adaptiveEs: Record<keyof typeof adaptivePtBR, string> = {
   "training.adaptive.undo": "Deshacer",
   "training.area.aim": "Puntería",
   "training.area.dueling": "Duelos",
-  "training.area.positioning": "Posicionamiento",
+  "training.area.positioning": "Primeras muertes y tradeos",
   "training.area.survivability": "Supervivencia",
   "training.area.utility": "Utilidad",
   "training.area.teamplay": "Juego en equipo (intercambios)",

@@ -47,6 +47,7 @@ import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminPipelineRouteImport } from './routes/_authenticated/admin/pipeline'
 import { Route as AuthenticatedAdminR5ForensicRouteImport } from './routes/_authenticated/admin/r5-forensic'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as AuthenticatedMatchesMatchIdRouteImport } from './routes/_authenticated/matches_.$matchId'
 import { Route as ApiPublicA91ReferenceFixtureRouteImport } from './routes/api/public/a91-reference-fixture'
 import { Route as ApiPublicH3eRawAuditReasonsRouteImport } from './routes/api/public/h3e-raw-audit-reasons'
 import { Route as ApiPublicH3eRetentionOperatorRouteImport } from './routes/api/public/h3e-retention-operator'
@@ -259,6 +260,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedMatchesMatchIdRoute =
+  AuthenticatedMatchesMatchIdRouteImport.update({
+    id: '/matches_/$matchId',
+    path: '/matches/$matchId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicA91ReferenceFixtureRoute =
   ApiPublicA91ReferenceFixtureRouteImport.update({
     id: '/api/public/a91-reference-fixture',
@@ -374,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/matches/$matchId': typeof AuthenticatedMatchesMatchIdRoute
   '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
   '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
@@ -425,6 +433,7 @@ export interface FileRoutesByTo {
   '/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/matches/$matchId': typeof AuthenticatedMatchesMatchIdRoute
   '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
   '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
@@ -479,6 +488,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/pipeline': typeof AuthenticatedAdminPipelineRoute
   '/_authenticated/admin/r5-forensic': typeof AuthenticatedAdminR5ForensicRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/matches_/$matchId': typeof AuthenticatedMatchesMatchIdRoute
   '/api/public/a91-reference-fixture': typeof ApiPublicA91ReferenceFixtureRoute
   '/api/public/h3e-raw-audit-reasons': typeof ApiPublicH3eRawAuditReasonsRoute
   '/api/public/h3e-retention-operator': typeof ApiPublicH3eRetentionOperatorRoute
@@ -533,6 +543,7 @@ export interface FileRouteTypes {
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
+    | '/matches/$matchId'
     | '/api/public/a91-reference-fixture'
     | '/api/public/h3e-raw-audit-reasons'
     | '/api/public/h3e-retention-operator'
@@ -584,6 +595,7 @@ export interface FileRouteTypes {
     | '/admin/pipeline'
     | '/admin/r5-forensic'
     | '/admin/users'
+    | '/matches/$matchId'
     | '/api/public/a91-reference-fixture'
     | '/api/public/h3e-raw-audit-reasons'
     | '/api/public/h3e-retention-operator'
@@ -637,6 +649,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/pipeline'
     | '/_authenticated/admin/r5-forensic'
     | '/_authenticated/admin/users'
+    | '/_authenticated/matches_/$matchId'
     | '/api/public/a91-reference-fixture'
     | '/api/public/h3e-raw-audit-reasons'
     | '/api/public/h3e-retention-operator'
@@ -945,6 +958,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/matches_/$matchId': {
+      id: '/_authenticated/matches_/$matchId'
+      path: '/matches/$matchId'
+      fullPath: '/matches/$matchId'
+      preLoaderRoute: typeof AuthenticatedMatchesMatchIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/a91-reference-fixture': {
       id: '/api/public/a91-reference-fixture'
       path: '/api/public/a91-reference-fixture'
@@ -1091,6 +1111,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
   AuthenticatedUtilityRoute: typeof AuthenticatedUtilityRoute
+  AuthenticatedMatchesMatchIdRoute: typeof AuthenticatedMatchesMatchIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1115,6 +1136,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
   AuthenticatedUtilityRoute: AuthenticatedUtilityRoute,
+  AuthenticatedMatchesMatchIdRoute: AuthenticatedMatchesMatchIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

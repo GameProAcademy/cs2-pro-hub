@@ -3,6 +3,7 @@ import { catalogEs } from "./catalog/es";
 import { demoFlowEs } from "./demoFlow/es";
 import { guidanceEs } from "./guidance/es";
 import { uxEs } from "./ux/es";
+import { roomEs } from "./room/es";
 import { xrayEs } from "./xray/es";
 import { coach2Es } from "./coach2/es";
 import { notifyEs } from "./notify/es";
@@ -38,6 +39,7 @@ export const es: Dictionary = {
   ...demoFlowEs,
   ...guidanceEs,
   ...uxEs,
+  ...roomEs,
   ...xrayEs,
   ...coach2Es,
   ...notifyEs,
@@ -409,7 +411,7 @@ export const es: Dictionary = {
   "dna.dim.aim": "Puntería",
   "dna.dim.dueling": "Duelos",
   "dna.dim.survivability": "Supervivencia",
-  "dna.dim.positioning": "Posicionamiento",
+  "dna.dim.positioning": "Primeras muertes y tradeos",
   "dna.dim.utility": "Utilidad",
   "dna.dim.decision_making": "Toma de decisiones",
   "dna.dim.teamplay": "Juego en equipo",

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { RealCombatPage, type CombatSearch } from "@/components/real/RealCombat";
 import { combatInput } from "@/lib/combat.functions";
@@ -11,6 +11,17 @@ export const Route = createFileRoute("/_authenticated/duels")({
   validateSearch: (search: Record<string, unknown>): CombatSearch => {
     const parsed = combatInput.shape.matchId.safeParse(search["matchId"]);
     return parsed.success && parsed.data ? { matchId: parsed.data } : {};
+  },
+  // UX-1.5: a link to one match opens that match's room on the equivalent tab (old deep links
+  // keep working); without a match this page still works on its own.
+  beforeLoad: ({ search }) => {
+    if (search.matchId)
+      throw redirect({
+        to: "/matches/$matchId",
+        params: { matchId: search.matchId },
+        search: { tab: "duels", ...{} },
+        replace: true,
+      });
   },
   head: () => ({ meta: [{ title: "Confrontos — CS2 PRO AI COACH" }] }),
   component: DuelsPage,

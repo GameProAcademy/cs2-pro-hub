@@ -98,10 +98,14 @@ const ok = (i: DeathContextInput = input()): Resp => ({
   })),
 });
 const noop = () => {};
+/** The death review lists deaths collapsed (UX-1 M-2); these checks open the first by deep link. */
+const first = (r: Resp) => (r.status === "OK" ? r.deaths[0]?.context.ref.eventId : undefined);
+const open = (r: Resp, locale: Locale = "pt-BR") =>
+  render(<DeathReviewBody r={r} onSearch={noop} openEvent={first(r)} />, locale);
 
 describe("death review UI", () => {
   it.each(LOCALES)("renders the four sections with provenance (%s)", (locale) => {
-    const html = render(<DeathReviewBody r={ok()} onSearch={noop} />, locale);
+    const html = open(ok(), locale);
     const d = dictionaries[locale];
     for (const k of [
       "diagnosis.section.facts",
@@ -117,15 +121,15 @@ describe("death review UI", () => {
   });
 
   it("shows a missing distance as not measured, never 0", () => {
-    const html = render(<DeathReviewBody r={ok()} onSearch={noop} />);
+    const html = open(ok());
     expect(html).toContain('data-missing="distance,wallbang"');
     expect(html).not.toContain(">0 m");
   });
 
   it("draws positions only on a validated map", () => {
-    expect(render(<DeathReviewBody r={ok()} onSearch={noop} />)).toContain("data-death-radar");
+    expect(open(ok())).toContain("data-death-radar");
     const mirage = ok(input({ map: "de_overpass", mapValidation: "NOT_VALIDATED" }));
-    const html = render(<DeathReviewBody r={mirage} onSearch={noop} />);
+    const html = open(mirage);
     expect(html).not.toContain("data-death-radar");
     expect(html).toContain(dictionaries["pt-BR"]["diagnosis.position.notValidated"]);
   });
@@ -133,7 +137,7 @@ describe("death review UI", () => {
   it("does not draw rule conclusions for a special death", () => {
     const self = input();
     self.kills[0] = { ...self.kills[0]!, actor: ME };
-    const html = render(<DeathReviewBody r={ok(self)} onSearch={noop} />);
+    const html = open(ok(self));
     expect(html).toContain('data-death-kind="SELF_KILL"');
     expect(html).toContain(dictionaries["pt-BR"]["diagnosis.kind.special"]);
     expect(html).not.toContain('data-outcome="MATCH"');
@@ -145,6 +149,16 @@ describe("death review UI", () => {
   ] as const)("state %s", (status, key) => {
     const r = (status === "EMPTY" ? { matches: [], status } : { matches, status }) as Resp;
     expect(render(<DeathReviewBody r={r} onSearch={noop} />)).toContain(dictionaries["pt-BR"][key]);
+  });
+
+  it("lists deaths collapsed, each with its Replay link, until opened (M-2)", () => {
+    const r = ok();
+    const html = render(<DeathReviewBody r={r} onSearch={noop} />);
+    expect(html).toContain("data-death-list");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain(dictionaries["pt-BR"]["replay.link"]);
+    expect(html).not.toContain(dictionaries["pt-BR"]["diagnosis.section.facts"]);
+    expect(open(r)).toContain('aria-expanded="true"');
   });
 
   it("states a pre-contract match instead of inventing its end", () => {
@@ -196,7 +210,7 @@ describe("death feedback", () => {
     const r = ok();
     if (r.status !== "OK") throw new Error("expected OK");
     r.deaths[0]!.feedback = { TRADE_NOT_OBSERVED: "INCORRECT", REVIEW: "USEFUL" };
-    const html = render(<DeathReviewBody r={r} onSearch={noop} />);
+    const html = open(r);
     expect(html).toContain('data-feedback="TRADE_NOT_OBSERVED" data-feedback-current="INCORRECT"');
     expect(html).toContain('data-feedback="REVIEW" data-feedback-current="USEFUL"');
     // The rule outcome is unchanged by the feedback.

@@ -20,10 +20,9 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
-import { PageHeader } from "@/components/common/PageHeader";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
-import { AppShell } from "@/components/layout/AppShell";
+import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { replaySlotLabel } from "@/lib/replay/slotLabel";
 import { mapDisplayName } from "@/lib/cs2/maps";
@@ -73,35 +72,37 @@ export function RealReplayPage({
     enabled: Boolean(matchId),
   });
   return (
-    <AppShell>
+    <MaybeShell>
       <div className="space-y-6">
-        <PageHeader
+        <MaybePageHeader
           eyebrow={t("replay.eyebrow")}
           title={t("replay.title")}
           description={t("replay.description")}
         />
         {matches.length ? (
-          <label className="flex max-w-md flex-col gap-1 text-xs text-muted-foreground">
-            <span className="font-mono uppercase tracking-[0.12em]">
-              {t("replay.filter.match")}
-            </span>
-            <select
-              name="match"
-              className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-              // A match id outside the caller's own list (NOT_FOUND) never shows another match as selected.
-              value={matchId && matches.some((m) => m.matchId === matchId) ? matchId : ""}
-              onChange={(e) => onSearch({ matchId: e.target.value })}
-            >
-              {matchId && !matches.some((m) => m.matchId === matchId) ? (
-                <option value="">{NOT_AVAILABLE_MARK}</option>
-              ) : null}
-              {matches.map((m) => (
-                <option key={m.matchId} value={m.matchId}>
-                  {`${formatDate(m.playedAt, intlTag)} · ${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}`}
-                </option>
-              ))}
-            </select>
-          </label>
+          <MatchSelectSlot>
+            <label className="flex max-w-md flex-col gap-1 text-xs text-muted-foreground">
+              <span className="font-mono uppercase tracking-[0.12em]">
+                {t("replay.filter.match")}
+              </span>
+              <select
+                name="match"
+                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                // A match id outside the caller's own list (NOT_FOUND) never shows another match as selected.
+                value={matchId && matches.some((m) => m.matchId === matchId) ? matchId : ""}
+                onChange={(e) => onSearch({ matchId: e.target.value })}
+              >
+                {matchId && !matches.some((m) => m.matchId === matchId) ? (
+                  <option value="">{NOT_AVAILABLE_MARK}</option>
+                ) : null}
+                {matches.map((m) => (
+                  <option key={m.matchId} value={m.matchId}>
+                    {`${formatDate(m.playedAt, intlTag)} · ${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </MatchSelectSlot>
         ) : null}
         {list.isPending ? (
           <LoadingState />
@@ -127,7 +128,7 @@ export function RealReplayPage({
           />
         )}
       </div>
-    </AppShell>
+    </MaybeShell>
   );
 }
 
@@ -225,7 +226,7 @@ export function ReplayBody({
 }
 
 const sideClass = (side: "T" | "CT") =>
-  side === "CT" ? "fill-sky-500 stroke-sky-500" : "fill-amber-500 stroke-amber-500";
+  side === "CT" ? "fill-side-ct stroke-side-ct" : "fill-side-t stroke-side-t";
 
 export function ReplayPlayer({
   segment,
@@ -485,14 +486,14 @@ export function ReplayPlayer({
           <ul className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <li className="flex items-center gap-1.5">
               <span
-                className="inline-block size-3 rounded-full border-2 border-black bg-amber-500"
+                className="inline-block size-3 rounded-full border-2 border-black bg-side-t"
                 aria-hidden
               />
               {t("replay.legend.observed")}
             </li>
             <li className="flex items-center gap-1.5">
               <span
-                className="inline-block size-3 rounded-full border-2 border-dashed border-black bg-amber-500/45"
+                className="inline-block size-3 rounded-full border-2 border-dashed border-black bg-side-t/45"
                 aria-hidden
               />
               {t("replay.legend.interpolated")}

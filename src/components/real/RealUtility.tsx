@@ -10,9 +10,8 @@ import { CircleDashed, Info, UserX } from "lucide-react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
-import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
-import { AppShell } from "@/components/layout/AppShell";
+import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { mapDisplayName } from "@/lib/cs2/maps";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
@@ -45,9 +44,9 @@ export function RealUtilityPage({
     queryFn: () => getMatchUtility({ data: clean }),
   });
   return (
-    <AppShell>
+    <MaybeShell>
       <div className="space-y-6">
-        <PageHeader
+        <MaybePageHeader
           eyebrow={t("nade.eyebrow")}
           title={t("nade.title")}
           description={t("nade.description")}
@@ -64,7 +63,7 @@ export function RealUtilityPage({
           <UtilityBody r={query.data} onSearch={onSearch} />
         )}
       </div>
-    </AppShell>
+    </MaybeShell>
   );
 }
 
@@ -146,22 +145,24 @@ export function UtilityBody({
   const current = r.status === "OK" || r.status === "NO_PARTICIPANT" ? r.matchId : "";
   return (
     <div className="space-y-6" data-utility-status={r.status}>
-      <label className="flex max-w-md flex-col gap-1 text-xs text-muted-foreground">
-        <span className="font-mono uppercase tracking-[0.12em]">{t("combat.filter.match")}</span>
-        <select
-          name="match"
-          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-          value={current}
-          onChange={(e) => onSearch({ matchId: e.target.value || undefined })}
-        >
-          {current ? null : <option value="">{NOT_AVAILABLE_MARK}</option>}
-          {r.matches.map((m) => (
-            <option key={m.matchId} value={m.matchId}>
-              {`${formatDate(m.playedAt, intlTag)} · ${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}`}
-            </option>
-          ))}
-        </select>
-      </label>
+      <MatchSelectSlot>
+        <label className="flex max-w-md flex-col gap-1 text-xs text-muted-foreground">
+          <span className="font-mono uppercase tracking-[0.12em]">{t("combat.filter.match")}</span>
+          <select
+            name="match"
+            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+            value={current}
+            onChange={(e) => onSearch({ matchId: e.target.value || undefined })}
+          >
+            {current ? null : <option value="">{NOT_AVAILABLE_MARK}</option>}
+            {r.matches.map((m) => (
+              <option key={m.matchId} value={m.matchId}>
+                {`${formatDate(m.playedAt, intlTag)} · ${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}`}
+              </option>
+            ))}
+          </select>
+        </label>
+      </MatchSelectSlot>
       {r.status === "NOT_FOUND" ? (
         <EmptyState
           icon={<UserX className="size-5" aria-hidden />}

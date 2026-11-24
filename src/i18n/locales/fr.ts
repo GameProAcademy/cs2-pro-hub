@@ -3,6 +3,7 @@ import { catalogFr } from "./catalog/fr";
 import { demoFlowFr } from "./demoFlow/fr";
 import { guidanceFr } from "./guidance/fr";
 import { uxFr } from "./ux/fr";
+import { roomFr } from "./room/fr";
 import { xrayFr } from "./xray/fr";
 import { coach2Fr } from "./coach2/fr";
 import { notifyFr } from "./notify/fr";
@@ -38,6 +39,7 @@ export const fr: Dictionary = {
   ...demoFlowFr,
   ...guidanceFr,
   ...uxFr,
+  ...roomFr,
   ...xrayFr,
   ...coach2Fr,
   ...notifyFr,
@@ -409,7 +411,7 @@ export const fr: Dictionary = {
   "dna.dim.aim": "Visée",
   "dna.dim.dueling": "Duels",
   "dna.dim.survivability": "Survie",
-  "dna.dim.positioning": "Positionnement",
+  "dna.dim.positioning": "Premières morts et échanges",
   "dna.dim.utility": "Utilitaires",
   "dna.dim.decision_making": "Prise de décision",
   "dna.dim.teamplay": "Jeu en équipe",

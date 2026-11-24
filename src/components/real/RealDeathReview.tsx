@@ -7,13 +7,14 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CircleDashed, Crosshair, MapPinned, UserX } from "lucide-react";
+import { ChevronRight, CircleDashed, Crosshair, MapPinned, UserX } from "lucide-react";
+import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
-import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
-import { AppShell } from "@/components/layout/AppShell";
+import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
+import { Button } from "@/components/ui/button";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { mapDisplayName } from "@/lib/cs2/maps";
 import {
@@ -30,10 +31,13 @@ import type { DeathContext, Field } from "@/lib/diagnosis/deathContext";
 import { DEATH_RULES, PATTERN_POLICY } from "@/lib/diagnosis/deathRules";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
 import { RADAR_SIZE } from "@/lib/spatial/maps";
+import { cn } from "@/lib/utils";
 import { radarAsset } from "@/lib/spatial/radarAssets";
 
 export interface DeathReviewSearch {
   matchId?: string | undefined;
+  /** Deep link to one death (its `round_events` id): that death opens expanded. Client-only. */
+  event?: string | undefined;
 }
 
 export const deathReviewQueryKey = (s: DeathReviewSearch) => ["player", "deaths", s] as const;
@@ -61,9 +65,9 @@ export function RealDeathReviewPage({
     queryFn: () => getMatchDeathReview({ data: clean }),
   });
   return (
-    <AppShell>
+    <MaybeShell>
       <div className="space-y-6">
-        <PageHeader
+        <MaybePageHeader
           eyebrow={t("diagnosis.eyebrow")}
           title={t("diagnosis.title")}
           description={t("diagnosis.description")}
@@ -77,20 +81,22 @@ export function RealDeathReviewPage({
             onRetry={() => void query.refetch()}
           />
         ) : (
-          <DeathReviewBody r={query.data} onSearch={onSearch} />
+          <DeathReviewBody r={query.data} onSearch={onSearch} openEvent={search.event} />
         )}
         <DeathPatterns />
       </div>
-    </AppShell>
+    </MaybeShell>
   );
 }
 
 export function DeathReviewBody({
   r,
   onSearch,
+  openEvent,
 }: {
   r: DeathReviewResponse;
   onSearch: (next: DeathReviewSearch) => void;
+  openEvent?: string | undefined;
 }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -105,22 +111,26 @@ export function DeathReviewBody({
   const current = r.status === "OK" || r.status === "NO_PARTICIPANT" ? r.matchId : "";
   return (
     <div className="space-y-6" data-death-review-status={r.status}>
-      <label className="flex max-w-md flex-col gap-1 text-xs text-muted-foreground">
-        <span className="font-mono uppercase tracking-[0.12em]">{t("diagnosis.filter.match")}</span>
-        <select
-          name="match"
-          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-          value={current}
-          onChange={(e) => onSearch({ matchId: e.target.value || undefined })}
-        >
-          {current ? null : <option value="">{NOT_AVAILABLE_MARK}</option>}
-          {r.matches.map((m) => (
-            <option key={m.matchId} value={m.matchId}>
-              {`${formatDate(m.playedAt, intlTag)} · ${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}`}
-            </option>
-          ))}
-        </select>
-      </label>
+      <MatchSelectSlot>
+        <label className="flex max-w-md flex-col gap-1 text-xs text-muted-foreground">
+          <span className="font-mono uppercase tracking-[0.12em]">
+            {t("diagnosis.filter.match")}
+          </span>
+          <select
+            name="match"
+            className="h-11 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+            value={current}
+            onChange={(e) => onSearch({ matchId: e.target.value || undefined })}
+          >
+            {current ? null : <option value="">{NOT_AVAILABLE_MARK}</option>}
+            {r.matches.map((m) => (
+              <option key={m.matchId} value={m.matchId}>
+                {`${formatDate(m.playedAt, intlTag)} · ${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}`}
+              </option>
+            ))}
+          </select>
+        </label>
+      </MatchSelectSlot>
       {r.status === "NOT_FOUND" ? (
         <EmptyState
           icon={<UserX className="size-5" aria-hidden />}
@@ -154,16 +164,156 @@ export function DeathReviewBody({
               title={t("diagnosis.noDeaths")}
             />
           ) : (
-            <ol className="space-y-4">
-              {r.deaths.map((d) => (
-                <li key={d.context.ref.eventId}>
-                  <DeathSheet d={d} map={r.map} matchId={r.matchId} support={r.mapSupport} />
-                </li>
-              ))}
-            </ol>
+            <DeathList
+              deaths={r.deaths}
+              map={r.map}
+              matchId={r.matchId}
+              support={r.mapSupport}
+              openEvent={openEvent}
+            />
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** Deaths shown before "show more" (UX-1 M-2: the initial page stays under 5 screens). */
+export const DEATHS_PAGE = 10;
+
+/**
+ * UX-1 M-2 / R-22 — one collapsed row per death, grouped by round order, with the round filter
+ * and pagination. Every death keeps its evidence: the row shows the round, the kind and the
+ * Replay link; the six sections open on demand (the same `DeathSheet`, nothing recalculated).
+ */
+export function DeathList({
+  deaths,
+  map,
+  matchId,
+  support,
+  openEvent,
+}: {
+  deaths: DeathReviewItem[];
+  map: string | null;
+  matchId: string;
+  support: "SUPPORTED" | "NOT_VALIDATED" | "UNKNOWN_MAP";
+  openEvent?: string | undefined;
+}) {
+  const t = useT();
+  const [round, setRound] = useState<string>("");
+  const [open, setOpen] = useState<ReadonlySet<string>>(
+    () => new Set(openEvent ? [openEvent] : []),
+  );
+  // A deep-linked death beyond the first page is still shown.
+  const linkedAt = openEvent ? deaths.findIndex((d) => d.context.ref.eventId === openEvent) : -1;
+  const [limit, setLimit] = useState(Math.max(DEATHS_PAGE, linkedAt + 1));
+  const rounds = [
+    ...new Set(deaths.map((d) => d.context.ref.roundNumber).filter((n): n is number => n !== null)),
+  ].sort((a, b) => a - b);
+  const filtered = round
+    ? deaths.filter((d) => String(d.context.ref.roundNumber) === round)
+    : deaths;
+  const shown = filtered.slice(0, limit);
+  const toggle = (id: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  return (
+    <div className="space-y-3" data-death-list>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          <span className="font-mono uppercase tracking-[0.12em]">{t("diagnosis.list.round")}</span>
+          <select
+            name="round"
+            className="h-11 min-w-40 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+            value={round}
+            onChange={(e) => {
+              setRound(e.target.value);
+              setLimit(DEATHS_PAGE);
+            }}
+          >
+            <option value="">{t("diagnosis.list.allRounds")}</option>
+            {rounds.map((n) => (
+              <option key={n} value={String(n)}>
+                {`${t("diagnosis.list.round")} ${n}`}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {fill(t("diagnosis.list.count"), { shown: shown.length, total: filtered.length })}
+        </p>
+      </div>
+      <ol className="space-y-2">
+        {shown.map((d) => {
+          const c = d.context;
+          const id = c.ref.eventId;
+          const expanded = open.has(id);
+          const heading =
+            c.ref.roundNumber === null
+              ? t("diagnosis.death.roundUnknown")
+              : fill(t("diagnosis.death.heading"), {
+                  round: c.ref.roundNumber,
+                  tick: c.ref.tick ?? NOT_AVAILABLE_MARK,
+                });
+          return (
+            <li key={id} data-death-row={id}>
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-2">
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-controls={`death-panel-${id}`}
+                  title={t("diagnosis.list.toggle")}
+                  onClick={() => toggle(id)}
+                  className="flex min-h-11 min-w-0 flex-1 items-center gap-2 py-2 text-left"
+                >
+                  <ChevronRight
+                    className={cn(
+                      "size-4 shrink-0 text-muted-foreground transition-transform",
+                      expanded && "rotate-90",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="shrink-0 font-mono text-xs text-foreground">{heading}</span>
+                  <span className="min-w-0 truncate text-sm text-muted-foreground">
+                    {t(`diagnosis.kind.${c.kind}` as TranslationKey)}
+                  </span>
+                </button>
+                {c.ref.roundNumber !== null && c.ref.tick !== null ? (
+                  <Link
+                    to="/replay"
+                    search={{ matchId, round: c.ref.roundNumber, tick: c.ref.tick }}
+                    className="inline-flex min-h-11 shrink-0 items-center px-2 text-xs font-medium text-primary underline-offset-4 hover:underline"
+                    data-replay-link
+                  >
+                    {t("replay.link")}
+                  </Link>
+                ) : null}
+              </div>
+              {expanded ? (
+                <div id={`death-panel-${id}`} className="mt-2">
+                  <DeathSheet d={d} map={map} matchId={matchId} support={support} />
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+      {filtered.length > shown.length ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11 w-full"
+          onClick={() => setLimit((l) => l + DEATHS_PAGE)}
+        >
+          {fill(t("diagnosis.list.more"), {
+            n: Math.min(DEATHS_PAGE, filtered.length - shown.length),
+          })}
+        </Button>
+      ) : null}
     </div>
   );
 }

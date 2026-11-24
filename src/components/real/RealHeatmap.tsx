@@ -12,9 +12,8 @@ import { useMemo, useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
-import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
-import { AppShell } from "@/components/layout/AppShell";
+import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
 import {
@@ -70,9 +69,9 @@ export function RealHeatmapPage({
     queryFn: () => getSpatialHeatmap({ data: clean(search) }),
   });
   return (
-    <AppShell>
+    <MaybeShell>
       <div className="space-y-6">
-        <PageHeader
+        <MaybePageHeader
           eyebrow={t("spatial.eyebrow")}
           title={t("spatial.title")}
           description={t("spatial.description")}
@@ -89,7 +88,7 @@ export function RealHeatmapPage({
           <HeatmapBody r={query.data} search={search} onSearch={onSearch} />
         )}
       </div>
-    </AppShell>
+    </MaybeShell>
   );
 }
 
@@ -178,32 +177,35 @@ function Filters({
   const hasLower = MAP_OVERVIEWS[h.map]?.lowerLevelMaxZ != null;
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-      <Select<string>
-        name="map"
-        label={t("spatial.filter.map")}
-        value={h.map}
-        options={r.maps.map((m: SpatialMapOption) => ({
-          value: m.map,
-          label:
-            m.support === "SUPPORTED"
-              ? `${mapDisplayName(m.map)} (${m.matches})`
-              : `${mapDisplayName(m.map)} (${m.matches}) · ${t(`spatial.support.${m.support}` as TranslationKey)}`,
-        }))}
-        onChange={(map) => onSearch({ map })}
-      />
-      <Select<string>
-        name="match"
-        label={t("spatial.filter.match")}
-        value={search.matchId ?? ""}
-        options={[
-          { value: "", label: fill(t("spatial.filter.allMatches"), { n: r.matches.length }) },
-          ...r.matches.map((m: SpatialMatchOption) => ({
-            value: m.matchId,
-            label: formatDate(m.playedAt, intlTag),
-          })),
-        ]}
-        onChange={(matchId) => set({ matchId: matchId || undefined })}
-      />
+      {/* In the Match Room the map and the match are fixed by the room. */}
+      <MatchSelectSlot>
+        <Select<string>
+          name="map"
+          label={t("spatial.filter.map")}
+          value={h.map}
+          options={r.maps.map((m: SpatialMapOption) => ({
+            value: m.map,
+            label:
+              m.support === "SUPPORTED"
+                ? `${mapDisplayName(m.map)} (${m.matches})`
+                : `${mapDisplayName(m.map)} (${m.matches}) · ${t(`spatial.support.${m.support}` as TranslationKey)}`,
+          }))}
+          onChange={(map) => onSearch({ map })}
+        />
+        <Select<string>
+          name="match"
+          label={t("spatial.filter.match")}
+          value={search.matchId ?? ""}
+          options={[
+            { value: "", label: fill(t("spatial.filter.allMatches"), { n: r.matches.length }) },
+            ...r.matches.map((m: SpatialMatchOption) => ({
+              value: m.matchId,
+              label: formatDate(m.playedAt, intlTag),
+            })),
+          ]}
+          onChange={(matchId) => set({ matchId: matchId || undefined })}
+        />
+      </MatchSelectSlot>
       <Select<HeatmapLayer>
         name="layer"
         label={t("spatial.filter.layer")}

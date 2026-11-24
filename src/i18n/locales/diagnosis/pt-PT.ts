@@ -15,6 +15,11 @@ export const diagnosisPtPT: Record<keyof typeof diagnosisPtBR, string> = {
   "diagnosis.noParticipant.description":
     "Não foi possível associá-lo a um único jogador desta partida, por isso nenhuma morte lhe é atribuída.",
   "diagnosis.noDeaths": "Nenhuma morte sua registada nesta partida.",
+  "diagnosis.list.round": "Ronda",
+  "diagnosis.list.allRounds": "Todas as rondas",
+  "diagnosis.list.count": "{shown} de {total} mortes",
+  "diagnosis.list.more": "Mostrar mais {n}",
+  "diagnosis.list.toggle": "Ver detalhes da morte",
   "diagnosis.death.heading": "Round {round} · tick {tick}",
   "diagnosis.death.roundUnknown": "Round desconhecido",
   "diagnosis.kind.ENEMY_KILL": "Abatido por um adversário",

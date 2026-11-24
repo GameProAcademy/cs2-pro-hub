@@ -46,6 +46,9 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
+  /* UX-1 R-21: the only CT/T colours (Replay, round strip); AA as graphics on the dark surfaces. */
+  --color-side-ct: var(--side-ct);
+  --color-side-t: var(--side-t);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -95,6 +98,8 @@
   --warning: oklch(0.79 0.15 85);
   --warning-foreground: oklch(0.2 0.03 85);
   --info: oklch(0.7 0.11 235);
+  --side-ct: oklch(0.69 0.15 237);
+  --side-t: oklch(0.77 0.16 70);
 
   --border: oklch(0.3 0.016 252);
   --input: oklch(0.32 0.016 252);
@@ -116,11 +121,7 @@
   --sidebar-ring: oklch(0.9 0.19 131);
 
   --gradient-primary: linear-gradient(60deg, #a4ee65 0%, #23ad27 100%);
-  --gradient-surface: linear-gradient(
-    160deg,
-    oklch(0.235 0.016 252) 0%,
-    oklch(0.2 0.013 252) 100%
-  );
+  --gradient-surface: linear-gradient(160deg, oklch(0.235 0.016 252) 0%, oklch(0.2 0.013 252) 100%);
   --shadow-card: 0 1px 0 0 oklch(1 0 0 / 4%) inset, 0 16px 40px -24px oklch(0 0 0 / 60%);
   --shadow-glow: 0 0 0 1px oklch(0.9 0.19 131 / 25%), 0 18px 50px -20px oklch(0.9 0.19 131 / 35%);
 }

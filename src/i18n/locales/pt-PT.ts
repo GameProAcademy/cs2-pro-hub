@@ -3,6 +3,7 @@ import { catalogPtPT } from "./catalog/pt-PT";
 import { demoFlowPtPT } from "./demoFlow/pt-PT";
 import { guidancePtPT } from "./guidance/pt-PT";
 import { uxPtPT } from "./ux/pt-PT";
+import { roomPtPT } from "./room/pt-PT";
 import { xrayPtPT } from "./xray/pt-PT";
 import { coach2PtPT } from "./coach2/pt-PT";
 import { notifyPtPT } from "./notify/pt-PT";
@@ -38,6 +39,7 @@ export const ptPT: Dictionary = {
   ...demoFlowPtPT,
   ...guidancePtPT,
   ...uxPtPT,
+  ...roomPtPT,
   ...xrayPtPT,
   ...coach2PtPT,
   ...notifyPtPT,
@@ -409,7 +411,7 @@ export const ptPT: Dictionary = {
   "dna.dim.aim": "Mira",
   "dna.dim.dueling": "Duelos",
   "dna.dim.survivability": "Sobrevivência",
-  "dna.dim.positioning": "Posicionamento",
+  "dna.dim.positioning": "Primeiras mortes e trocas",
   "dna.dim.utility": "Utilitários",
   "dna.dim.decision_making": "Tomada de decisão",
   "dna.dim.teamplay": "Jogo de equipa",
