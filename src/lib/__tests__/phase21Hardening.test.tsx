@@ -229,8 +229,12 @@ describe("1. provisional DNA indexes never leave the contract", () => {
     expect(pub.dimensions.find((d) => d.dimension === "aim")!.signals[0]!.mean).toBe(0.45);
     const ready = publishableDna(dna("READY"));
     expect(ready.dimensions.find((d) => d.dimension === "aim")!.value).toBe(0.45);
+    // UX-1.6: the endpoint publishes dna-weighted-v3 through asRealPlayerDna (publish = true).
     expect(read("src/lib/playerData.functions.ts")).toContain(
-      "const dna = publishableDna(computed);",
+      "const dna = asRealPlayerDna(dnaV3);",
+    );
+    expect(read("src/lib/playerDnaV3.ts")).toMatch(
+      /export function asRealPlayerDna\(v3: RealPlayerDnaV3, publish = true\)/,
     );
   });
 

@@ -76,6 +76,9 @@ describe("real Player DNA: observed signals only", () => {
     expect(fn).toContain('.in("player_id", playerIds)');
     const page = readFileSync(resolve("src/components/real/RealDna.tsx"), "utf8");
     expect(page).not.toMatch(/@\/data\/|playerService|demoPlayer/);
-    expect(page).toContain("showAverage={false}");
+    // No average or population polygon (UX-1.6 radar A has none at all).
+    expect(page).toContain("<DnaRadarA");
+    const radar = readFileSync(resolve("src/components/charts/DnaRadarA.tsx"), "utf8");
+    expect(radar).not.toMatch(/average|population|média/i);
   });
 });

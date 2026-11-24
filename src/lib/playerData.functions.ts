@@ -26,13 +26,15 @@ import {
   type OverviewMetricRow,
   type PlayerOverview,
 } from "@/lib/playerOverview";
-import {
-  buildPlayerDna,
-  publishableDna,
-  type DnaFeatureRow,
-  type RealPlayerDna,
-} from "@/lib/playerDna";
+import { buildPlayerDna, type DnaFeatureRow, type RealPlayerDna } from "@/lib/playerDna";
+import { withKills } from "@/lib/playerDnaKills";
 import type { DnaSnapshotFeatureRow } from "@/lib/playerDnaSnapshot";
+import {
+  asRealPlayerDna,
+  buildPlayerDnaV3,
+  DNA_VERSION_V3,
+  type RealPlayerDnaV3,
+} from "@/lib/playerDnaV3";
 
 const JOB_COLUMNS =
   "id, upload_id, status, queued_at, finished_at, error_code, attachment_state, attachment_confirmation_status, match_id, admission_verdict, admission_limitations, match_integrity";
@@ -61,17 +63,14 @@ export const getPlayerOverview = createServerFn({ method: "GET" })
 export const getRealPlayerDna = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<RealPlayerDna> => {
-    const {
-      dna: computed,
-      playerIds,
-      rows,
-    } = await loadPlayerDna(context.supabase, context.userId);
-    // Provisional dimension values never leave the server (Fase 2.1, publishableDna).
-    const dna = publishableDna(computed);
+    const { dnaV3, playerIds, rows } = await loadPlayerDna(context.supabase, context.userId);
+    // UX-1.6: the DNA shown is dna-weighted-v3. Provisional dimension values never leave the
+    // server (Fase 2.1): asRealPlayerDna publishes them as null with `observed`.
+    const dna = asRealPlayerDna(dnaV3);
     if (dna.state === "EMPTY" || playerIds.length !== 1) return { ...dna, snapshot: null };
     try {
       const { dnaInputDigest } = await import("@/lib/playerDnaSnapshot.server");
-      const digest = dnaInputDigest(rows);
+      const digest = dnaInputDigest(rows, DNA_VERSION_V3);
       // Own snapshot rows only (RLS `dna_snapshots_select_own`); columns added by a manual
       // migration are not in the generated types.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,7 +230,14 @@ async function loadFlashMethods(
 export async function loadPlayerDna(
   supabase: SupabaseClient<Database>,
   userId: string,
-): Promise<{ dna: RealPlayerDna; playerIds: string[]; rows: DnaSnapshotFeatureRow[] }> {
+): Promise<{
+  /** dna-weighted-v2 (pro-score-v1, training v1): unchanged. */
+  dna: RealPlayerDna;
+  /** dna-weighted-v3 (UX-1.6), unpublished: what every DNA surface shows. */
+  dnaV3: RealPlayerDnaV3;
+  playerIds: string[];
+  rows: DnaSnapshotFeatureRow[];
+}> {
   const playerIds = await ownPlayerIds(supabase, userId, "PLAYER_DNA");
   const { data, error } = playerIds.length
     ? await supabase
@@ -248,7 +254,13 @@ export async function loadPlayerDna(
   // Same inputs as the persisted snapshot: quarantined matches are never aggregated.
   const quarantined = await quarantinedOwn(all.map((row) => row.match_id));
   const rows = all.filter((row) => !quarantined.has(row.match_id));
-  return { dna: buildPlayerDna(rows as DnaFeatureRow[]), playerIds, rows };
+  const v3rows = await withKills(supabase, playerIds, rows);
+  return {
+    dna: buildPlayerDna(rows as DnaFeatureRow[]),
+    dnaV3: buildPlayerDnaV3(v3rows),
+    playerIds,
+    rows: v3rows,
+  };
 }
 
 /** Server-only lookup, loaded lazily so the service-role client never enters a client bundle. */

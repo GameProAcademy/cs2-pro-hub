@@ -42,8 +42,15 @@ export function stableJson(value: unknown): string {
   return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableJson(v)}`).join(",")}}`;
 }
 
-/** The exact material the digest covers (sorted by match id). */
-export function snapshotDigestInput(rows: DnaSnapshotFeatureRow[]): string {
+/**
+ * The exact material the digest covers (sorted by match id), under one DNA version. The
+ * version is part of the digest, so a v2 and a v3 snapshot of the same matches are different
+ * rows; v3 also covers the kills that weight its HS.
+ */
+export function snapshotDigestInput(
+  rows: DnaSnapshotFeatureRow[],
+  version: string = DNA_VERSION,
+): string {
   const material = [...rows]
     .sort((a, b) => (a.match_id < b.match_id ? -1 : a.match_id > b.match_id ? 1 : 0))
     .map((row) => ({
@@ -55,8 +62,11 @@ export function snapshotDigestInput(rows: DnaSnapshotFeatureRow[]): string {
       schema_version: row.schema_version ?? null,
       analysis_version: row.analysis_version ?? null,
       features: row.features ?? null,
+      ...(version === DNA_VERSION
+        ? {}
+        : { sample_kills: (row as { sample_kills?: number | null }).sample_kills ?? null }),
     }));
-  return stableJson({ dna_version: DNA_VERSION, rows: material });
+  return stableJson({ dna_version: version, rows: material });
 }
 
 function scale(value: number | null): number | null {
@@ -70,6 +80,7 @@ export function snapshotRow(
   dna: RealPlayerDna,
   rows: DnaSnapshotFeatureRow[],
   inputDigest: string,
+  version: string = DNA_VERSION,
 ): DnaSnapshotRow | null {
   if (dna.state === "EMPTY") return null;
   const dims = Object.fromEntries(
@@ -80,7 +91,7 @@ export function snapshotRow(
   ].sort();
   return {
     player_id: playerId,
-    dna_version: DNA_VERSION,
+    dna_version: version,
     state: dna.state,
     source_match_ids: [...new Set(rows.map((r) => r.match_id))].sort(),
     match_count: dna.matches,

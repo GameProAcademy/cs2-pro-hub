@@ -32,4 +32,15 @@ export const roomEn: Record<keyof typeof roomPtBR, string> = {
   "nav.area.training": "Training",
   "nav.area.coach": "Coach",
   "nav.areaSections": "{area} sections",
+  "real.dna.status.NO_SAMPLE": "No sample",
+  "real.dna.status.NOT_MEASURED": "Not measured in this version",
+  "real.dna.notFolded.DUPLICATE": "not in the index: repeats another signal, already counted",
+  "real.dna.notFolded.NOT_DERIVABLE": "not measured: the demo does not provide this data",
+  "real.dna.sample.kills": "{n} kill(s)",
+  "real.dna.legend":
+    "CS2 PRO index with fixed references. It is not a percentile nor a comparison with other players. Different axes use different references.",
+  "real.dna.select": "Player DNA dimensions",
+  "real.dna.selected": "{dimension}: {value}, {n} signals",
+  "real.dna.pick": "Tap an axis or a dimension to see its signals.",
+  "real.dna.clutchAttempts": "{n} of {min} clutch attempts",
 };

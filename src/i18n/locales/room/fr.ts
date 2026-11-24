@@ -32,4 +32,15 @@ export const roomFr: Record<keyof typeof roomPtBR, string> = {
   "nav.area.training": "Entraînement",
   "nav.area.coach": "Coach",
   "nav.areaSections": "Sections : {area}",
+  "real.dna.status.NO_SAMPLE": "Pas d’échantillon",
+  "real.dna.status.NOT_MEASURED": "Non mesuré dans cette version",
+  "real.dna.notFolded.DUPLICATE": "hors indice : répète un autre signal, déjà compté",
+  "real.dna.notFolded.NOT_DERIVABLE": "non mesuré : la démo ne fournit pas cette donnée",
+  "real.dna.sample.kills": "{n} kill(s)",
+  "real.dna.legend":
+    "Indice CS2 PRO à références fixes. Ce n’est ni un percentile ni une comparaison avec d’autres joueurs. Des axes différents utilisent des références différentes.",
+  "real.dna.select": "Dimensions du Player DNA",
+  "real.dna.selected": "{dimension} : {value}, {n} signaux",
+  "real.dna.pick": "Touchez un axe ou une dimension pour voir ses signaux.",
+  "real.dna.clutchAttempts": "{n} sur {min} tentatives de clutch",
 };

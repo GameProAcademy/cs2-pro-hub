@@ -16,6 +16,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { buildXRay, type SideRounds, type XRayDiagnosis } from "@/lib/diagnostics/xray";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 import { DNA_MIN_MATCHES } from "@/lib/playerDna";
+import { asRealPlayerDna, DNA_VERSION_V3 } from "@/lib/playerDnaV3";
 import {
   buildMatchRounds,
   summarizeRoundContext,
@@ -28,7 +29,7 @@ import type { DnaDimension } from "@/types";
 export const getXRay = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<XRayDiagnosis> => {
-    const [overview, { dna, playerIds }] = await Promise.all([
+    const [overview, { dnaV3, playerIds }] = await Promise.all([
       loadPlayerOverview(context.supabase, context.userId),
       loadPlayerDna(context.supabase, context.userId),
     ]);
@@ -37,7 +38,8 @@ export const getXRay = createServerFn({ method: "GET" })
       loadSideRounds(context.supabase, playerIds, matchIds),
       loadRoundContext(context.supabase, playerIds, matchIds),
     ]);
-    return buildXRay({ overview, dna, sides, roundContext });
+    // UX-1.6: the X-ray reads the same DNA the Player DNA page shows (dna-weighted-v3).
+    return buildXRay({ overview, dna: asRealPlayerDna(dnaV3, false), sides, roundContext });
   });
 
 /**
@@ -202,6 +204,8 @@ export const getDnaHistory = createServerFn({ method: "GET" })
         `created_at, dna_version, state, match_count, round_count, ${DNA_DIMENSION_COLUMNS.join(", ")}`,
       )
       .eq("player_id", playerIds[0]!)
+      // One version only: a change between snapshots is only meaningful within a version.
+      .eq("dna_version", DNA_VERSION_V3)
       .order("created_at", { ascending: false })
       .limit(20);
     if (error) throw new Error(`DNA_HISTORY_FAILED:${error.code ?? "unknown"}`);
@@ -261,12 +265,18 @@ export async function loadDnaSummary(
     };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as unknown as SupabaseClient<any>;
-  const { data, error } = await db
-    .from("player_dna_snapshots")
-    .select(`created_at, state, match_count, ${DNA_DIMENSION_COLUMNS.join(", ")}`)
-    .eq("player_id", playerIds[0]!)
-    .order("created_at", { ascending: false })
-    .limit(1);
+  // UX-1.6: the shown version (dna-weighted-v3); a player whose v3 snapshot does not exist yet
+  // falls back to the latest snapshot of any version (read only: nothing is created here).
+  const read = (version: string | null) => {
+    let q = db
+      .from("player_dna_snapshots")
+      .select(`created_at, state, match_count, ${DNA_DIMENSION_COLUMNS.join(", ")}`)
+      .eq("player_id", playerIds[0]!);
+    if (version) q = q.eq("dna_version", version);
+    return q.order("created_at", { ascending: false }).limit(1);
+  };
+  let { data, error } = await read(DNA_VERSION_V3);
+  if (!error && !(data ?? []).length) ({ data, error } = await read(null));
   // A failed read is an error, never an empty summary and never a write fallback.
   if (error) throw new Error(`DNA_SUMMARY_FAILED:${error.code ?? "unknown"}`);
   return dnaSummaryFrom(((data ?? []) as unknown as Array<Record<string, unknown>>)[0]);

@@ -47,6 +47,7 @@ import {
 import { guardCoachReply, guardTag } from "@/lib/coach/coachReplyGuard";
 import { coachSendFlow } from "@/lib/coach/coachSendFlow";
 import { buildXRay } from "@/lib/diagnostics/xray";
+import { asRealPlayerDna } from "@/lib/playerDnaV3";
 import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
 import { loadCoachPreferences } from "@/lib/coachSession.functions";
 import { loadRoundContext, loadSideRounds } from "@/lib/xray.functions";
@@ -382,7 +383,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
         log: (event, detail) => console.info(`[ai-coach] ${event}`, detail),
         generate: async (markProviderCalled) => {
           stage = "context";
-          const [overview, { dna, rows: dnaRows }, declared, preferredName] = await Promise.all([
+          const [overview, { dnaV3, rows: dnaRows }, declared, preferredName] = await Promise.all([
             loadPlayerOverview(db, context.userId),
             loadPlayerDna(db, context.userId),
             loadDeclaredProfile(db, playerId),
@@ -425,6 +426,8 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             // STEAM: own linked accounts (state + provenance only, never an id or key).
             loadCoachExternalAccounts(db as never, playerId).catch(() => null),
           ]);
+          // UX-1.6: the Coach reads the DNA the screens show (dna-weighted-v3).
+          const dna = asRealPlayerDna(dnaV3, false);
           const facts = buildCoachFacts(overview, dna, input.locale, {
             message: input.message,
             xray: buildXRay({ overview, dna, sides, roundContext }),

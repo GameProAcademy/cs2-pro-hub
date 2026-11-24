@@ -17,7 +17,9 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
-import { buildPlayerDna } from "@/lib/playerDna";
+import { buildPlayerDna, DNA_VERSION } from "@/lib/playerDna";
+import { withKills } from "@/lib/playerDnaKills";
+import { asRealPlayerDna, buildPlayerDnaV3, DNA_VERSION_V3 } from "@/lib/playerDnaV3";
 import {
   snapshotDigestInput,
   snapshotRow,
@@ -34,9 +36,12 @@ export interface DnaSnapshotResult {
   matchCount: number;
 }
 
-/** Digest of exactly these rows under the current DNA version (same as the snapshot's). */
-export function dnaInputDigest(rows: DnaSnapshotFeatureRow[]): string {
-  return createHash("sha256").update(snapshotDigestInput(rows)).digest("hex");
+/** Digest of exactly these rows under one DNA version (same as the snapshot's). */
+export function dnaInputDigest(
+  rows: DnaSnapshotFeatureRow[],
+  version: string = DNA_VERSION,
+): string {
+  return createHash("sha256").update(snapshotDigestInput(rows, version)).digest("hex");
 }
 
 export async function refreshPlayerDnaSnapshot(
@@ -66,9 +71,34 @@ export async function refreshPlayerDnaSnapshot(
     rows = rows.filter((r) => !excluded.has(r.match_id));
   }
 
-  const dna = buildPlayerDna(rows);
-  const digest = dnaInputDigest(rows);
-  const row = snapshotRow(playerId, dna, rows, digest);
+  // dna-weighted-v3 (UX-1.6) is persisted next to v2, as its own snapshot (own digest), so the
+  // history of each version only ever compares snapshots of the same version.
+  try {
+    const v3rows = await withKills(db, [playerId], rows);
+    await writeSnapshot(
+      db,
+      playerId,
+      asRealPlayerDna(buildPlayerDnaV3(v3rows), false),
+      v3rows,
+      DNA_VERSION_V3,
+    );
+  } catch (error) {
+    console.error("[player-dna] v3 snapshot failed", {
+      code: error instanceof Error ? error.message.split(":")[0] : "unknown",
+    });
+  }
+  return writeSnapshot(db, playerId, buildPlayerDna(rows), rows, DNA_VERSION);
+}
+
+async function writeSnapshot(
+  db: SupabaseClient<Database>,
+  playerId: string,
+  dna: ReturnType<typeof buildPlayerDna>,
+  rows: DnaSnapshotFeatureRow[],
+  version: string,
+): Promise<DnaSnapshotResult> {
+  const digest = dnaInputDigest(rows, version);
+  const row = snapshotRow(playerId, dna, rows, digest, version);
   if (!row) {
     return { status: "empty", createdAt: null, dnaVersion: null, inputDigest: null, matchCount: 0 };
   }
