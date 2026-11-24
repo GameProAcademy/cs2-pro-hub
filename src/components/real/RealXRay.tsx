@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import type { XRayDiagnosis, XRayObservation } from "@/lib/diagnostics/xray";
 import { dnaLabelKey } from "@/lib/dna";
-import { NOT_AVAILABLE_MARK, fill, formatNumber } from "@/lib/format";
+import { NOT_AVAILABLE_MARK, fill, formatNumber, formatPooledPart } from "@/lib/format";
 import { METRIC_IDS, type MetricId } from "@/lib/glossary";
 import { canonicalMetric } from "@/lib/metrics/canonicalMetrics";
 import type { SideSummary } from "@/lib/roundContext";
@@ -54,12 +54,17 @@ function ObservationValue({ o }: { o: XRayObservation }) {
       </span>
       {o.numerator !== null && o.denominator !== null ? (
         <span className="ml-2 font-mono text-[11px] text-muted-foreground">
-          ({o.numerator}/{o.denominator})
+          ({formatPooledPart(o.numerator, intlTag)}/{formatPooledPart(o.denominator, intlTag)})
         </span>
       ) : null}
       <span className="ml-2 text-[11px] text-muted-foreground">
         {fill(t("xray.inMatches"), { n: o.matches })}
       </span>
+      {o.partialMatches ? (
+        <span className="mt-0.5 block text-[11px] text-amber-400" data-adr-partial="true">
+          {fill(t("adr.partialMatches"), { n: o.partialMatches })}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -323,6 +328,11 @@ function SideRoundContext({ s, min }: { s: SideSummary; min: number }) {
             <dt className="text-muted-foreground">{t("xray.roundContext.adr")}</dt>
             <dd className="font-mono">
               {s.damagePerRound === null ? NOT_AVAILABLE_MARK : n(s.damagePerRound, 1)}
+              {s.damagePerRound !== null && s.damagePartialRounds > 0 ? (
+                <span className="block text-[11px] text-amber-400" data-adr-partial="true">
+                  {fill(t("adr.partialRounds"), { n: s.damagePartialRounds })}
+                </span>
+              ) : null}
             </dd>
           </div>
         </>

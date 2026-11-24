@@ -14,7 +14,12 @@ export const uxFr: Record<keyof typeof uxPtBR, string> = {
   "glossary.adr.label": "ADR (dégâts moyens par round)",
   "glossary.adr.short": "ADR",
   "glossary.adr.definition":
-    "Dégâts infligés aux ennemis divisés par le nombre de rounds joués. Affiché uniquement si la démo contient les événements de dégâts.",
+    "Points de vie retirés aux ennemis, divisés par le nombre de rounds joués. Chaque impact compte au plus les points de vie qu’il restait à l’ennemi ; les dégâts aux coéquipiers, à vous-même, de l’environnement et aux joueurs de camp inconnu ne comptent pas. Affiché uniquement si la démo contient les événements de dégâts.",
+  "adr.partial": "partiel",
+  "adr.partial.hint":
+    "ADR partiel : certains de vos impacts ont été écartés car la démo n’a pas enregistré le camp de la victime ou ne permet pas de savoir combien de points de vie l’impact a retirés. La valeur réelle est égale ou supérieure ; rien n’a été estimé.",
+  "adr.partialMatches": "Partiel dans {n} match(s) : la valeur réelle est égale ou supérieure.",
+  "adr.partialRounds": "Partiel dans {n} round(s) : la valeur réelle est égale ou supérieure.",
   "glossary.kast.label": "KAST",
   "glossary.kast.short": "KAST",
   "glossary.kast.definition":

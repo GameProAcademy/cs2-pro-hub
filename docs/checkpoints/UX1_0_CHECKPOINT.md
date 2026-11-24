@@ -61,6 +61,49 @@ Nenhuma linha com parse parcial. O golpe de lado desconhecido não foi somado ne
 
 UPDATE único com guardas (`match_id`, `player_id`, `rounds_played`, `adr` igual ao antigo, `damage_enemy_hp IS NULL`); escreveu só as 3 colunas novas: 11/11 linhas. Depois: `filled = 11`, `partial = 1`, Σ`adr`×1000 = 984400 (inalterado), `damage_enemy_hp ≤ adr × rounds` em todas. Rollback: `UPDATE public.match_metrics SET damage_enemy_hp = NULL, damage_enemy_hp_method = NULL, damage_enemy_hp_excluded_hits = NULL;` (as telas mostram então "não medido"); rollback completo = remover as 3 colunas e recriar a função da `20260921073324`.
 
+### 2.4 Auditoria da execução (2026-11-24, consultas somente leitura)
+
+IDs abaixo = 8 primeiros caracteres dos UUIDs internos (`match_id`, `player_id`); nenhum SteamID ou nome.
+
+- **Mecanismo:** conector Lovable `query_database` (projeto `91478977…`), uma chamada com `BEGIN … COMMIT` contendo o texto da migration `supabase/migrations/20261124060000_ux10_enemy_hp_damage.sql` e o INSERT em `supabase_migrations.schema_migrations`. Nenhum prompt no chat do Lovable.
+- **Horário:** o banco não guarda horário de commit (`track_commit_timestamp = off`; `schema_migrations` não tem coluna de data). Limites comprovados pelo GitHub: DDL depois de 10:26:13Z (último check concluído em `4ce8edf`) e antes de 10:27:31Z (merge do #351), ou seja, 07:26–07:27 em São Paulo. UPDATE depois de 10:27:31Z e antes de 10:45:44Z (abertura do #352).
+- **Atomicidade:** colunas novas, CHECK, comentários, função e linha em `schema_migrations` têm o mesmo `xmin` = 827284 (uma transação). As 11 linhas de `match_metrics` têm `xmin` = 827285 (uma transação de UPDATE).
+- **Registro:** `schema_migrations.version = 20261124060000`, `name = ux10_enemy_hp_damage`; `statements` = referência `GameProAcademy/cs2-pro-hub@4ce8edf2e288895bddd207cf349aa6142a90904f (PR #351)` e caminho do arquivo (não o texto integral); `created_by`, `idempotency_key`, `rollback` nulos.
+- **Commit:** `4ce8edf2e288895bddd207cf349aa6142a90904f` (PR #351, merge `85e5929`). md5 do arquivo da migration = `1091f7e4b881d24b76d0f965e9fe30de` em `4ce8edf`, `85e5929` e no `main` atual.
+- **Função antes → depois:** corpo `f9ebd3648fd5e87c2ca5e948a891e6a3` → `9ccc0b53852abfd75429497727a48e93`; definição completa `81fa7d85f106803edfa3bd7f71f0b26d` → `0fcdcaa9438ad1c2aad49bcc681abde6`. Privilégios depois: só `postgres` e `service_role` com EXECUTE.
+- **O que a transação 827284 alterou no catálogo:** `match_metrics` (3 colunas `damage_enemy_hp`, `damage_enemy_hp_method`, `damage_enemy_hp_excluded_hits`, nulas); constraint `match_metrics_damage_enemy_hp_check`; comentários das colunas 31–33 e do `adr` (coluna 7: só o texto do COMMENT, marcando-o como histórico); função `persist_demo_projection`; grants reafirmados (iguais aos anteriores).
+- **Dados alterados:** apenas as 3 colunas novas em 11 linhas de `match_metrics` (todas com `xmin` 827285). Nenhuma linha com `xmin` 827284/827285 em `matches`, `match_features`, `round_events`, `match_participants`, `demo_jobs`, `uploads`. `adr`, `rounds_played` e as demais colunas não foram escritas (o UPDATE só fazia SET nas 3 colunas; Σ`adr` = 984,4 antes e depois).
+
+| Mapa       | match_id | player_id | rounds | `adr` histórico (inalterado) | `damage_enemy_hp` antes → depois | ADR exibido novo | método        | excluídos   |
+| ---------- | -------- | --------- | ------ | ---------------------------- | -------------------------------- | ---------------- | ------------- | ----------- |
+| de_ancient | 761a2ac5 | eef31b6d  | 15     | 34,4                         | NULL → 498                       | 33,2             | RECONSTRUCTED | 0           |
+| de_ancient | a1e4390d | 42650ddd  | 17     | 77,4                         | NULL → 1126                      | 66,2             | RECONSTRUCTED | 0           |
+| de_anubis  | 604cab2d | eef31b6d  | 22     | 71,6                         | NULL → 1305                      | 59,3             | RECONSTRUCTED | 0           |
+| de_cache   | 48e517e4 | 9f2b20ff  | 24     | 66,1                         | NULL → 1215                      | 50,6             | RECONSTRUCTED | 0           |
+| de_dust2   | 41a04ba3 | 9f2b20ff  | 23     | 91,4                         | NULL → 1678                      | 73,0             | RECONSTRUCTED | 0           |
+| de_dust2   | 747c7a6b | 9f2b20ff  | 16     | 102,4                        | NULL → 1141                      | 71,3             | RECONSTRUCTED | 0           |
+| de_mirage  | 7d23fb53 | 42650ddd  | 23     | 123,5                        | NULL → 1726                      | 75,0             | HEALTH_AFTER  | 0           |
+| de_mirage  | 95186f3f | 9f2b20ff  | 23     | 87,4                         | NULL → 1662                      | 72,3             | RECONSTRUCTED | 0           |
+| de_nuke    | 3e9df3ed | eef31b6d  | 19     | 117,6                        | NULL → 1706                      | 89,8             | RECONSTRUCTED | 0           |
+| de_nuke    | daef42da | 42650ddd  | 24     | 111,4                        | NULL → 1998                      | 83,3             | HEALTH_AFTER  | 1 → PARCIAL |
+| de_nuke    | daef42da | 9f2b20ff  | 24     | 101,2                        | NULL → 1947                      | 81,1             | HEALTH_AFTER  | 0           |
+
+Verificações posteriores: 11/11 preenchidas; 1 parcial; Σ`adr` inalterado; `damage_enemy_hp ≤ adr × rounds` em todas; CHECK, RLS, políticas e triggers presentes; corpo da função = proposta.
+
+### 2.5 Validação do G2 em produção (2026-11-24 ~13:30, Chrome autenticado; conta de teste dona do jogador `42650ddd`)
+
+- **Build servido:** o deploy `034ce4fb…` não expõe estado pelo conector (só "pending" no pedido). Prova indireta e suficiente: o servidor responde com `playerAdr` (código que só existe a partir de `6ecce59`, #352). ADR agregado = 75,8 = 4850 ÷ 64 (o código anterior daria 106,7) e Raio-X traz `round-context-v2`. `latest_commit_sha` do Lovable = `6ecce59…`.
+- **Início e Minhas Partidas:** Mirage 75,0; Ancient 66,2; Nuke 83,3 (parcial); agregado 75,8. VALIDADO EM PRODUÇÃO.
+- **Meu Raio-X:** ADR 75,8 (4850/64); CT 36 rounds × 68,4 + TR 28 × 85,3 ≈ 4850. VALIDADO EM PRODUÇÃO.
+- **Evolução:** ADR 75,8 nas 3 partidas. VALIDADO EM PRODUÇÃO.
+- **Rounds (Mirage):** 77,32 em 22 rounds válidos = 1701 (+ 25 do round 15, fora da análise por lados incompletos = 1726). Consistente; tela usava 2 casas (corrigido para 1 no G2c).
+- **Notificações:** só "Análise pronta" (sem ADR). NÃO APLICÁVEL nesta conta.
+- **Coach:** abre; o número usado vem de `overview.adr` (testes). Sem validação por conversa real: proibido criar conversas reais.
+- **Mobile:** 360/375/390/430/768 px sem rolagem horizontal da página; ADR na tabela com rolagem própria.
+- **Dust2 73,0 (`41a04ba3`):** pertence ao jogador `9f2b20ff`, outra conta. Conferido no banco e pelo mesmo caminho de código; NÃO conferido em tela (não há sessão dessa conta, e não uso outras credenciais).
+- **Demo sem `damage_enemy_hp` → "não medido":** nenhuma linha assim existe em produção (11/11 preenchidas). Coberto por testes (`adrPartialUi.test.tsx`, `playerOverview.test.ts`); não observável em produção sem alterar dados.
+- **Defeitos achados e corrigidos no G2c:** sem marcador de parcial; numerador da fórmula em float cru no Raio-X (`24.996000000000002/43`, `49.024/64`); Rounds com 2 casas; rótulo do Score "Índice de dano (ADR ÷ 100…)" contradizia o ADR exibido (o índice usa o dano total histórico do `pro-score-v1`, inalterado).
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |

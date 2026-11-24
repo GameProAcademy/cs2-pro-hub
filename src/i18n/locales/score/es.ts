@@ -26,7 +26,7 @@ export const scoreEs = {
   "score.col.weight": "Peso",
   "score.col.points": "Puntos",
   "score.c.round_contribution": "KAST (contribución por ronda)",
-  "score.c.damage": "Índice de daño (ADR ÷ 100, tope en 100)",
+  "score.c.damage": "Índice de daño (todo el daño causado por ronda ÷ 100, tope en 100)",
   "score.c.kills": "Bajas por ronda",
   "score.c.duel_balance": "Equilibrio de bajas y muertes",
   "score.c.survival": "Supervivencia",

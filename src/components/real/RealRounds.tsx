@@ -175,7 +175,7 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
   const s = r.summary;
   const m = s.me;
   const perRound = (v: number) =>
-    m.playedRounds ? formatNumber(v / m.playedRounds, intlTag, 2) : NOT_AVAILABLE_MARK;
+    m.playedRounds ? formatNumber(v / m.playedRounds, intlTag, 1) : NOT_AVAILABLE_MARK;
   const excluded = r.rounds.filter((x) => !x.valid || !x.side);
   return (
     <div className="space-y-6">
@@ -254,6 +254,11 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
             </Row>
             <Row label={t("rounds.me.adr")}>
               <span className="font-mono">{perRound(m.damage)}</span>
+              {m.damagePartialRounds > 0 ? (
+                <span className="block text-[11px] text-amber-400" data-adr-partial="true">
+                  {fill(t("adr.partialRounds"), { n: m.damagePartialRounds })}
+                </span>
+              ) : null}
             </Row>
             <Row label={t("rounds.me.opening")}>
               <span className="font-mono" data-rate="opening">

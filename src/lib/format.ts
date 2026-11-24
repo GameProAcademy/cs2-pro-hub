@@ -43,3 +43,13 @@ export function isNotAvailable(value: unknown): boolean {
 export function fill(text: string, vars: Record<string, string | number>): string {
   return text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
 }
+
+/**
+ * Numerator / denominator of a pooled rate. Counts rebuilt from a stored percentage (HS kills =
+ * HS% × kills, KAST rounds = KAST% × rounds) carry float noise (24.996000000000002): a value
+ * within 0.05 of an integer is that integer; anything else keeps one decimal, in the locale.
+ */
+export function formatPooledPart(n: number, intlTag: string): string {
+  const r = Math.round(n);
+  return Math.abs(n - r) < 0.05 ? formatNumber(r, intlTag, 0) : formatNumber(n, intlTag, 1);
+}

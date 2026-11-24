@@ -45,6 +45,8 @@ export interface XRayObservation {
   /** For sum_ratio / win_rate: the numerator and denominator actually used. */
   numerator: number | null;
   denominator: number | null;
+  /** ADR only (enemy-hp-v1): matches of the sample whose ADR is PARTIAL. */
+  partialMatches?: number;
 }
 
 /**
@@ -213,6 +215,9 @@ export function observe(matches: OverviewMatch[], metric: string): XRayObservati
       matches: ok ? pooled.matches : 0,
       numerator: ok ? pooled.numerator : null,
       denominator: ok ? pooled.denominator : null,
+      ...(metric === "adr" && ok
+        ? { partialMatches: matches.filter((m) => m.adr !== null && m.adrPartial).length }
+        : {}),
     };
   }
   const present = matches.map((m) => value(m, metric)).filter((v): v is number => v !== null);

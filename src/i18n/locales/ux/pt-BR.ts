@@ -13,7 +13,12 @@ export const uxPtBR = {
   "glossary.adr.label": "ADR (dano médio por round)",
   "glossary.adr.short": "ADR",
   "glossary.adr.definition":
-    "Dano causado aos inimigos dividido pelo número de rounds que você jogou. Só aparece quando a demo traz os eventos de dano.",
+    "Vida que você tirou dos inimigos, dividida pelos rounds que você jogou. Cada golpe conta no máximo a vida que o inimigo ainda tinha; dano em aliados, em você mesmo, do mundo e em jogadores de lado desconhecido não entra. Só aparece quando a demo traz os eventos de dano.",
+  "adr.partial": "parcial",
+  "adr.partial.hint":
+    "ADR parcial: alguns golpes seus ficaram de fora porque a demo não registrou o lado da vítima ou não permitiu saber quanta vida o golpe tirou. O valor real é igual ou maior; nada foi estimado.",
+  "adr.partialMatches": "Parcial em {n} partida(s): o valor real é igual ou maior.",
+  "adr.partialRounds": "Parcial em {n} round(s): o valor real é igual ou maior.",
   "glossary.kast.label": "KAST",
   "glossary.kast.short": "KAST",
   "glossary.kast.definition":

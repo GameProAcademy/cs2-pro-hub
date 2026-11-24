@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MetricTerm } from "@/components/common/MetricTerm";
+import { AdrPartialMark } from "@/components/real/AdrPartialMark";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { getPlayerOverview } from "@/lib/playerData.functions";
@@ -138,7 +139,16 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
       <MetricCard showDemoTag={false} label={t("real.metric.matches")} value={a.matches} />
       <MetricCard showDemoTag={false} label={<MetricTerm id="kd" />} value={num(a.kd, 2)} />
-      <MetricCard showDemoTag={false} label={<MetricTerm id="adr" />} value={num(a.adr, 1)} />
+      <MetricCard
+        showDemoTag={false}
+        label={<MetricTerm id="adr" />}
+        value={num(a.adr, 1)}
+        hint={
+          a.adr !== null && a.adrPartialMatches > 0
+            ? fill(t("adr.partialMatches"), { n: a.adrPartialMatches })
+            : undefined
+        }
+      />
       <MetricCard
         showDemoTag={false}
         label={<MetricTerm id="kast" />}
@@ -277,6 +287,7 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
               </TableCell>
               <TableCell className="font-mono">
                 <NumberCell value={row.adr} digits={1} />
+                {row.adr !== null && row.adrPartial ? <AdrPartialMark /> : null}
               </TableCell>
               <TableCell className="font-mono">
                 <NumberCell value={row.kast} digits={1} />
@@ -301,11 +312,13 @@ function MatchTableNotes({ rows }: { rows: OverviewMatch[] }) {
   const t = useT();
   const processed = rows.some((r) => r.dateSource === "processed");
   const unresolved = rows.some((r) => r.resultStatus === "UNRESOLVED_BY_DEMO");
-  if (!processed && !unresolved) return null;
+  const partialAdr = rows.some((r) => r.adr !== null && r.adrPartial);
+  if (!processed && !unresolved && !partialAdr) return null;
   return (
     <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground" data-match-notes>
       {processed ? <p>* {t("real.date.processedNote")}</p> : null}
       {unresolved ? <p>{t("real.result.unresolvedNote")}</p> : null}
+      {partialAdr ? <p data-adr-partial-note>{t("adr.partial.hint")}</p> : null}
     </div>
   );
 }
