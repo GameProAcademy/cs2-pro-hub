@@ -17,7 +17,7 @@ type Labels = Record<string, string>;
 const PT_BR: Labels = {
   hs_rate: "Taxa de headshot",
   kills_per_round: "Abates por round",
-  damage_per_round: "Índice de dano por round (ADR ÷ 100)",
+  damage_per_round: "Índice de dano (ADR ÷ 100, teto em 100)",
   damage_efficiency: "Índice de eficiência de dano (dano causado ÷ sofrido)",
   opening_success: "Vitórias em duelos de abertura",
   opening_participation: "Participação em duelos de abertura",
@@ -58,7 +58,7 @@ const PT_PT: Labels = {
   ...PT_BR,
   hs_rate: "Taxa de headshots",
   kills_per_round: "Eliminações por ronda",
-  damage_per_round: "Índice de dano por ronda (ADR ÷ 100)",
+  damage_per_round: "Índice de dano (ADR ÷ 100, teto em 100)",
   survival_rate: "Taxa de sobrevivência",
   early_death_rate: "Mortes nos primeiros 20 s (parte das mortes)",
   damage_taken_per_round: "Índice de dano sofrido por ronda",
@@ -80,7 +80,7 @@ const PT_PT: Labels = {
 const EN: Labels = {
   hs_rate: "Headshot rate",
   kills_per_round: "Kills per round",
-  damage_per_round: "Damage per round index (ADR ÷ 100)",
+  damage_per_round: "Damage index (ADR ÷ 100, capped at 100)",
   damage_efficiency: "Damage efficiency index (dealt ÷ taken)",
   opening_success: "Opening duels won",
   opening_participation: "Opening duel participation",
@@ -120,7 +120,7 @@ const EN: Labels = {
 const ES: Labels = {
   hs_rate: "Tasa de headshot",
   kills_per_round: "Bajas por ronda",
-  damage_per_round: "Índice de daño por ronda (ADR ÷ 100)",
+  damage_per_round: "Índice de daño (ADR ÷ 100, tope en 100)",
   damage_efficiency: "Índice de eficiencia de daño (infligido ÷ recibido)",
   opening_success: "Duelos de apertura ganados",
   opening_participation: "Participación en duelos de apertura",
@@ -160,7 +160,7 @@ const ES: Labels = {
 const FR: Labels = {
   hs_rate: "Taux de headshot",
   kills_per_round: "Éliminations par manche",
-  damage_per_round: "Indice de dégâts par manche (ADR ÷ 100)",
+  damage_per_round: "Indice de dégâts (ADR ÷ 100, plafonné à 100)",
   damage_efficiency: "Indice d’efficacité des dégâts (infligés ÷ subis)",
   opening_success: "Duels d’ouverture gagnés",
   opening_participation: "Participation aux duels d’ouverture",

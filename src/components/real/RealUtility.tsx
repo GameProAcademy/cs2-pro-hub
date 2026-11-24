@@ -194,40 +194,42 @@ function UtilityReportView({ r }: { r: Extract<UtilityResponse, { status: "OK" }
       {!tel.throwsAttributed ? <Note id="LEGACY">{t("nade.note.legacy")}</Note> : null}
 
       <ChartCard title={t("nade.section.grenades")} subtitle={t("nade.section.grenades.subtitle")}>
-        <table className="w-full text-sm" data-grenades>
-          <thead className="text-left text-xs text-muted-foreground">
-            <tr>
-              <th className="py-1 font-medium">{t("nade.col.grenade")}</th>
-              <th className="py-1 font-medium">{t("nade.col.throws")}</th>
-              <th className="py-1 font-medium">{t("nade.col.detonations")}</th>
-              {PHASES.map((p) => (
-                <th key={p} className="py-1 font-medium">
-                  {t(`nade.phase.${p}` as TranslationKey)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rep.grenades.map((g) => (
-              <tr
-                key={g.grenade}
-                className="border-t border-border"
-                data-grenade={g.grenade}
-                data-throws={g.throws === null ? "NOT_OBSERVED" : String(g.throws)}
-                data-detonations={g.detonations === null ? "NOT_OBSERVED" : String(g.detonations)}
-              >
-                <td className="py-1">{t(`nade.grenade.${g.grenade}` as TranslationKey)}</td>
-                <td className="py-1 font-mono">{count(g.throws)}</td>
-                <td className="py-1 font-mono">{count(g.detonations)}</td>
+        <div className="overflow-x-auto" data-table-scroll>
+          <table className="w-full text-sm" data-grenades>
+            <thead className="text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="py-1 font-medium">{t("nade.col.grenade")}</th>
+                <th className="py-1 font-medium">{t("nade.col.throws")}</th>
+                <th className="py-1 font-medium">{t("nade.col.detonations")}</th>
                 {PHASES.map((p) => (
-                  <td key={p} className="py-1 font-mono">
-                    {g.detonations === null ? NOT_AVAILABLE_MARK : g.phases[p]}
-                  </td>
+                  <th key={p} className="py-1 font-medium">
+                    {t(`nade.phase.${p}` as TranslationKey)}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rep.grenades.map((g) => (
+                <tr
+                  key={g.grenade}
+                  className="border-t border-border"
+                  data-grenade={g.grenade}
+                  data-throws={g.throws === null ? "NOT_OBSERVED" : String(g.throws)}
+                  data-detonations={g.detonations === null ? "NOT_OBSERVED" : String(g.detonations)}
+                >
+                  <td className="py-1">{t(`nade.grenade.${g.grenade}` as TranslationKey)}</td>
+                  <td className="py-1 font-mono">{count(g.throws)}</td>
+                  <td className="py-1 font-mono">{count(g.detonations)}</td>
+                  {PHASES.map((p) => (
+                    <td key={p} className="py-1 font-mono">
+                      {g.detonations === null ? NOT_AVAILABLE_MARK : g.phases[p]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("nade.phaseNote")}</p>
       </ChartCard>
 
@@ -262,25 +264,27 @@ function UtilityReportView({ r }: { r: Extract<UtilityResponse, { status: "OK" }
             {t("nade.list.none")}
           </p>
         ) : (
-          <table className="w-full text-sm" data-flash-list="OK">
-            <thead className="text-left text-xs text-muted-foreground">
-              <tr>
-                <th className="py-1 font-medium">{t("combat.col.round")}</th>
-                <th className="py-1 font-medium">{t("nade.col.phase")}</th>
-                <th className="py-1 font-medium">{t("nade.col.enemies")}</th>
-                <th className="py-1 font-medium">{t("nade.col.teammates")}</th>
-                <th className="py-1 font-medium">{t("nade.col.blindSeconds")}</th>
-                <th className="py-1 font-medium">
-                  <span className="sr-only">{t("combat.col.replay")}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rep.flashes.map((f) => (
-                <FlashRowView key={f.id} f={f} matchId={r.matchId} />
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto" data-table-scroll>
+            <table className="w-full text-sm" data-flash-list="OK">
+              <thead className="text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="py-1 font-medium">{t("combat.col.round")}</th>
+                  <th className="py-1 font-medium">{t("nade.col.phase")}</th>
+                  <th className="py-1 font-medium">{t("nade.col.enemies")}</th>
+                  <th className="py-1 font-medium">{t("nade.col.teammates")}</th>
+                  <th className="py-1 font-medium">{t("nade.col.blindSeconds")}</th>
+                  <th className="py-1 font-medium">
+                    <span className="sr-only">{t("combat.col.replay")}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rep.flashes.map((f) => (
+                  <FlashRowView key={f.id} f={f} matchId={r.matchId} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </ChartCard>
     </div>

@@ -20,6 +20,7 @@
  */
 import type { RoundContextSummary } from "@/lib/roundContext";
 import { DIMENSION_TOPICS, needsFromPlayer } from "@/lib/catalog/catalogSelect";
+import { pooledValue, type PooledMetricKey } from "@/lib/metrics/canonicalAggregate";
 import { canonicalMetric, type UnsupportedCapability } from "@/lib/metrics/canonicalMetrics";
 import { roundHalfUp } from "@/lib/metrics/rounding";
 import { excludedMetricsFor } from "@/lib/pipeline/admissionV3";
@@ -199,6 +200,19 @@ export function observe(matches: OverviewMatch[], metric: string): XRayObservati
       matches: ok ? both.length : 0,
       numerator: ok ? k : null,
       denominator: ok ? d : null,
+    };
+  }
+  if (spec.aggregation === "pooled") {
+    const pooled = pooledValue(matches, metric as PooledMetricKey);
+    const ok = pooled.value !== null;
+    return {
+      metric,
+      status: ok ? "MEASURED" : statusWithout(matches, FIELD[metric]!.column),
+      // Rounded once, on the aggregate, to the catalog's contract precision.
+      value: ok ? roundHalfUp(pooled.value as number, spec.digits.contract) : null,
+      matches: ok ? pooled.matches : 0,
+      numerator: ok ? pooled.numerator : null,
+      denominator: ok ? pooled.denominator : null,
     };
   }
   const present = matches.map((m) => value(m, metric)).filter((v): v is number => v !== null);

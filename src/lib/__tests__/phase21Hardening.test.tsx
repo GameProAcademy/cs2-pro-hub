@@ -4,7 +4,9 @@
  * 1. Provisional DNA indexes never leave the contract (index null unless READY).
  * 2. The Dashboard DNA summary is a pure read of the persisted snapshot.
  * 3. One deterministic rounding rule (decimal half-up), on the aggregate only.
- * 4. HS% scenario of the audit: 0/2 and 5/18 → 13.9 (mean of matches), 25 only as comparison.
+ * 4. HS% scenario of the audit: 0/2 and 5/18. Fase 2.1 (`metrics-catalog-v1`) showed 13.9, the mean
+ *    of matches; UX-1.0 (`metrics-catalog-v2`) pools over kills: 5 / 20 = 25.0, the value every
+ *    screen and the AI Coach now share (src/lib/metrics/canonicalAggregate.ts).
  * 5. Cautious "enemies flashed" copy in 5 locales.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -452,12 +454,16 @@ describe("3. deterministic rounding, on the aggregate", () => {
     }
   });
 
-  it("the rating mean of the audit is 0.655 in the contract and 0,66 on screen", () => {
+  it("the audit's rating, pooled over rounds (v2), is 0.711 in the contract and 0,71 on screen", () => {
+    // metrics-catalog-v2: Σ (rating × rounds) / Σ rounds = (1.13·19 + 0.18·15) / 34 = 24.17 / 34.
+    // (v1 averaged the two matches with equal weight: 0.655.)
     const o = observe([m({ rating: 1.13 }), ancient({ rating: 0.18 })], "rating");
-    expect(o.value).toBe(0.655);
+    expect(o.value).toBe(0.711);
+    expect(o.numerator).toBeCloseTo(24.17, 9);
+    expect(o.denominator).toBe(34);
     const o2 = observe([m({ rating: 0.78 }), ancient({ rating: 0.53 })], "rating");
-    expect(o2.value).toBe(0.655);
-    expect(formatNumber(o.value, "pt-BR", canonicalMetric("rating").digits.display)).toBe("0,66");
+    expect(o2.value).toBe(0.67); // 22.77 / 34 = 0.66970… → 0.670
+    expect(formatNumber(o.value, "pt-BR", canonicalMetric("rating").digits.display)).toBe("0,71");
     const html = render(
       <XRayBody
         x={buildXRay({
@@ -467,8 +473,8 @@ describe("3. deterministic rounding, on the aggregate", () => {
         })}
       />,
     );
-    expect(html).toContain("0,66");
-    expect(html).not.toContain("0,65<");
+    expect(html).toContain("0,71");
+    expect(html).not.toContain("0,66<");
   });
 
   it("K/D keeps numerator and denominator; only the value is rounded", () => {
@@ -507,7 +513,7 @@ describe("4. HS% — the audited scenario", () => {
     expect(roundHalfUp((0 / 2) * 100, 1)).toBe(0);
     expect(canonicalMetric("hsPercent")).toMatchObject({
       unit: "percent",
-      aggregation: "mean_of_matches",
+      aggregation: "pooled",
     });
     // The engine persists exactly this formula (round1, ×100 once).
     expect(read("src/lib/pipeline/metrics.ts")).toContain(
@@ -515,25 +521,19 @@ describe("4. HS% — the audited scenario", () => {
     );
   });
 
-  it("integration: persisted rows → overview → contract = 13.9 over 2 matches", () => {
+  it("integration: persisted rows → overview → contract = 25.0 over 2 matches (5 HS kills / 20 kills)", () => {
     const shaped = shapeMatches(
       [metric("nuke", 18, "27.80"), metric("ancient", 2, "0.00")],
       [row("nuke"), row("ancient")],
     );
-    expect(aggregate(shaped)!.hsPercent).toBeCloseTo(13.9, 10);
+    // 27.8 % × 18 = 5.004 HS kills (the persisted one-decimal value), so 25.02 before rounding.
+    expect(aggregate(shaped)!.hsPercent).toBeCloseTo(25.02, 9);
     const o = observe(shaped, "hsPercent");
-    expect(o).toMatchObject({
-      status: "MEASURED",
-      value: 13.9,
-      matches: 2,
-      numerator: null,
-      denominator: null,
-    });
-    expect(o.value).not.toBe(1390);
-    // Comparison only (not the canonical rule): pooled 5 / 20 = 25 %.
-    const pooled = ((0.278 * 18 + 0 * 2) / 20) * 100;
-    expect(roundHalfUp(pooled, 0)).toBe(25);
-    expect(o.value).not.toBe(25);
+    expect(o).toMatchObject({ status: "MEASURED", value: 25, matches: 2, denominator: 20 });
+    expect(o.numerator).toBeCloseTo(5, 1); // 27.8 % × 18 kills = 5.004 headshot kills
+    expect(o.value).not.toBe(2500);
+    // v1 (mean of matches, superseded): (27.8 + 0) / 2 = 13.9.
+    expect(o.value).not.toBe(13.9);
   });
 
   it("a match without HS (no kills) is excluded, not counted as 0", () => {
@@ -541,7 +541,7 @@ describe("4. HS% — the audited scenario", () => {
       [metric("nuke", 18, "27.80"), metric("ancient", 2, "0.00"), metric("empty", 0, null)],
       [row("nuke"), row("ancient"), row("empty")],
     );
-    expect(observe(shaped, "hsPercent")).toMatchObject({ value: 13.9, matches: 2 });
+    expect(observe(shaped, "hsPercent")).toMatchObject({ value: 25, matches: 2, denominator: 20 });
     expect(observe([m({ hsPercent: null })], "hsPercent")).toMatchObject({
       status: "NOT_MEASURED",
       value: null,
@@ -550,17 +550,19 @@ describe("4. HS% — the audited scenario", () => {
     expect(observe([ancient()], "hsPercent")).toMatchObject({ status: "MEASURED", value: 0 });
   });
 
-  it("presentation: the X-ray shows 13,9% (pt) / 13.9% (en), never 36,1% or 1390", () => {
+  it("presentation: the X-ray shows the pooled HS% (v2), never 36,1% or 1390", () => {
     const x = buildXRay({
       overview: overview([m(), ancient()]),
       dna: dna("INSUFFICIENT_SAMPLE"),
       sides: [],
     });
     const pt = render(<XRayBody x={x} />);
-    expect(pt).toMatch(/13,9<!-- -->%/);
+    // 5 headshot kills / 20 kills = 25.0 %.
+    expect(pt).toMatch(/25,0<!-- -->%/);
+    expect(pt).not.toContain("13,9");
     expect(pt).not.toContain("36,1");
     expect(pt).not.toContain("1390");
-    expect(render(<XRayBody x={x} />, "en")).toMatch(/13\.9<!-- -->%/);
+    expect(render(<XRayBody x={x} />, "en")).toMatch(/25\.0<!-- -->%/);
   });
 });
 

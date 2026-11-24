@@ -13,6 +13,7 @@ import { stageTimer } from "@/lib/serverTiming";
 import {
   buildReplaySegment,
   type ReplaySegment,
+  type RosterRow,
   type StoredRoundTrajectory,
   type StoredTrajectoryPlayer,
 } from "@/lib/replay/segment";
@@ -170,7 +171,7 @@ export async function replaySegment(
   };
   if (availability !== "AVAILABLE") return { status: "ROUND_UNAVAILABLE", ...base, segment: null };
 
-  const [traj, events] = await Promise.all([
+  const [traj, events, roster] = await Promise.all([
     supabase
       .from("round_trajectories")
       .select("round_number, first_tick, end_tick, step_ticks, sample_count, players")
@@ -186,9 +187,15 @@ export async function replaySegment(
       .eq("round_number", roundNumber)
       .in("event_type", ["kill", "bomb_plant", "bomb_defuse", "bomb_explode"])
       .limit(REPLAY_EVENTS_PER_ROUND_LIMIT),
+    // UX-1.0 (D-33): the whole match roster, so each player keeps one anonymous label in every
+    // round. Read under RLS for the caller's own match; keys never leave the server.
+    supabase
+      .from("round_players")
+      .select("participant_key, round_number, side")
+      .eq("match_id", match.matchId),
   ]);
   timer.mark("segment_reads");
-  const readError = traj.error ?? events.error;
+  const readError = traj.error ?? events.error ?? roster.error;
   if (readError) throw new Error(`REPLAY_READ_FAILED:${readError.code ?? "unknown"}`);
   if (!traj.data)
     return { status: "ROUND_UNAVAILABLE", ...base, availability: "NOT_SAMPLED", segment: null };
@@ -204,6 +211,7 @@ export async function replaySegment(
     map: match.map,
     round,
     ownKey,
+    roster: (roster.data ?? []) as RosterRow[],
     events: (events.data ?? []).map((e) => ({
       id: e.id,
       tick: e.tick,

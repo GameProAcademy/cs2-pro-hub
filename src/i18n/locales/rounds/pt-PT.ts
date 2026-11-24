@@ -42,7 +42,7 @@ export const roundsPtPT: Record<keyof typeof roundsPtBR, string> = {
   "rounds.section.me.subtitle":
     "Os seus números nas rondas analisadas, separados do resultado da equipa.",
   "rounds.me.kda": "Abates / mortes / assistências",
-  "rounds.me.adr": "Dano por ronda",
+  "rounds.me.adr": "Dano em inimigos por ronda válida",
   "rounds.me.opening": "Abertura",
   "rounds.me.openingValue": "{k} abates e {d} mortes de abertura em {n} rondas",
   "rounds.me.tradeKills": "Abates de troca (vingou um colega em até 5 s)",

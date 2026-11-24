@@ -126,7 +126,7 @@ describe("AI Coach factual context", () => {
     expect(facts.observations.find((o) => o.metric === "adr")).toMatchObject({
       status: "DERIVED",
       matches: 2,
-      aggregation: "mean_of_matches",
+      aggregation: "pooled",
     });
     const json = JSON.stringify(facts);
     expect(json).not.toMatch(/nickname|fileName|steam|user_id|player_id|matchId/i);

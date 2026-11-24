@@ -306,10 +306,12 @@ describe("3.1.3 versioned contract with status, unit, sample and source", () => 
       if (o.status !== "OBSERVED" && o.status !== "DERIVED") expect(o.value).toBeNull();
     }
     expect(facts.observations.find((o) => o.metric === "deaths")!.status).toBe("OBSERVED");
+    // metrics-catalog-v2: 5 headshot kills / 20 kills, the value every screen shows.
     expect(facts.observations.find((o) => o.metric === "hsPercent")).toMatchObject({
       status: "DERIVED",
-      value: 13.9,
-      aggregation: "mean_of_matches",
+      value: 25,
+      aggregation: "pooled",
+      denominator: 20,
     });
     expect(JSON.stringify(facts)).not.toContain('"index"');
   });
@@ -382,9 +384,10 @@ describe("3.1.4/3.1.5 minimal context, sample rules and rounding", () => {
     expect(facts.totals.matches).toBe(15);
   });
 
-  it("aggregates use the deterministic rounding of Fase 2.1 (0.655, not 0.6549999)", () => {
+  it("aggregates use the deterministic rounding of Fase 2.1 on the pooled (v2) value", () => {
     const facts = buildCoachFacts(two, dna("INSUFFICIENT_SAMPLE", 2), "en");
-    expect(facts.observations.find((o) => o.metric === "rating")!.value).toBe(0.655);
+    // (1.13·19 + 0.18·15) / 34 = 0.71088… → 0.711 (v1 equal-weight mean was 0.655).
+    expect(facts.observations.find((o) => o.metric === "rating")!.value).toBe(0.711);
     expect(facts.observations.find((o) => o.metric === "kd")).toMatchObject({
       value: 0.87,
       numerator: 20,

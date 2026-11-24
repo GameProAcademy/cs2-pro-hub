@@ -25,7 +25,7 @@ export const scoreFr = {
   "score.col.weight": "Poids",
   "score.col.points": "Points",
   "score.c.round_contribution": "KAST (contribution par round)",
-  "score.c.damage": "Dégâts par round (ADR ÷ 100)",
+  "score.c.damage": "Indice de dégâts (ADR ÷ 100, plafonné à 100)",
   "score.c.kills": "Éliminations par round",
   "score.c.duel_balance": "Équilibre éliminations / morts",
   "score.c.survival": "Survie",

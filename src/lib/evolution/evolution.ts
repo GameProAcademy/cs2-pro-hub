@@ -18,6 +18,7 @@
  *   sides; flash assists are compared only within one attribution method.
  * - Description only: a change between periods is never presented as caused by anything.
  */
+import { pooledParts } from "@/lib/metrics/canonicalAggregate";
 import type { FlashAssistMethodView, OverviewMatch } from "@/lib/playerOverview";
 
 export const EVOLUTION_VERSION = "cs2.evolution.v1";
@@ -91,10 +92,11 @@ export const METRICS: readonly MetricDefinition[] = [
   {
     key: "rating",
     unit: "RATING",
-    aggregation: "MEAN_PER_MATCH",
+    aggregation: "POOLED_RATIO",
     higherIsBetter: true,
     sides: true,
-    formula: "mean of the match rating (CT / T rating with the side filter)",
+    formula:
+      "Σ (rating × rounds) / Σ rounds; with the CT / T filter, mean of the match side rating (no per-side round count is persisted)",
   },
   {
     key: "openingWinRate",
@@ -175,16 +177,22 @@ export function contribution(
   };
   if (side !== "ALL" && key !== "rating") return null;
   switch (key) {
+    // metrics-catalog-v2: the canonical per-match parts (canonicalAggregate.ts), shared with the
+    // Dashboard, the X-ray and the AI Coach so the same matches give the same value everywhere.
     case "kd":
-      return finite(m.kills) && finite(m.deaths) ? make(m.kills, m.deaths) : null;
     case "adr":
-      return finite(m.adr) && rounds ? make(m.adr * rounds, rounds) : null;
     case "kast":
-      return finite(m.kast) && rounds ? make(m.kast * rounds, rounds) : null;
-    case "hsPercent":
-      return finite(m.hsPercent) && finite(m.kills) ? make(m.hsPercent * m.kills, m.kills) : null;
+    case "hsPercent": {
+      const p = pooledParts(m, key);
+      return p ? make(p.numerator * p.scale, p.denominator) : null;
+    }
     case "rating": {
-      const r = side === "CT" ? m.ctRating : side === "T" ? m.tRating : m.rating;
+      if (side === "ALL") {
+        const p = pooledParts(m, "rating");
+        return p ? make(p.numerator, p.denominator) : null;
+      }
+      // CT / T ratings carry no persisted per-side round count: one value per match.
+      const r = side === "CT" ? m.ctRating : m.tRating;
       return finite(r) ? { numerator: r, denominator: 1, value: r, method: BASE_METHOD } : null;
     }
     case "openingWinRate":
@@ -239,10 +247,8 @@ export function aggregate(
     return { status: "INCOMPATIBLE_METHODS", value: null, numerator: 0, denominator: 0, ...base };
   const numerator = parts.reduce((s, p) => s + p.numerator, 0);
   const denominator = parts.reduce((s, p) => s + p.denominator, 0);
-  const value =
-    def.aggregation === "MEAN_PER_MATCH"
-      ? numerator / parts.length
-      : safeRatio(numerator, denominator);
+  const perMatch = def.aggregation === "MEAN_PER_MATCH" || (key === "rating" && side !== "ALL");
+  const value = perMatch ? numerator / parts.length : safeRatio(numerator, denominator);
   return { status: value === null ? "NO_SAMPLE" : "OK", value, numerator, denominator, ...base };
 }
 

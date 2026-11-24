@@ -25,6 +25,7 @@ import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
+import { replaySlotLabel } from "@/lib/replay/slotLabel";
 import { mapDisplayName } from "@/lib/cs2/maps";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
 import { getReplayMatches, getReplaySegment, type ReplayResponse } from "@/lib/replay.functions";
@@ -288,8 +289,7 @@ export function ReplayPlayer({
     setPlaying(false);
     setPos((p) => Math.min(last, Math.max(0, Math.round(p) + d)));
   };
-  const slotLabel = (slot: string | null) =>
-    slot === null ? t("replay.event.unknown") : slot === "you" ? t("replay.slot.you") : slot;
+  const slotLabel = (slot: string | null) => replaySlotLabel(slot, t);
   const background = useMemo(() => radarAsset(map, "default"), [map]);
 
   return (

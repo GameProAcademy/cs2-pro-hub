@@ -2,8 +2,12 @@
  * PM2 4.2.4 — `cs2.replay-segment.v1`: one round of the 2D replay, built from stored trajectories
  * (`cs2.round-trajectory.v1`) and the round's events. Pure.
  *
- *  - Players are labelled by side and slot ("you", "T1".."T5", "CT1".."CT5"); no SteamID, name
- *    or nickname ever leaves the server.
+ *  - Players are labelled "you", "ally:N" or "enemy:N" (UX-1.0, D-33): a neutral identity that is
+ *    STABLE for the whole match — it does not change when the teams swap sides at half time.
+ *    Ally/enemy is relative to the caller's own side in each round of the match roster; N is the
+ *    player's rank inside that group over the whole match, so the same player keeps the same N in
+ *    every round. Without a usable roster the previous per-round "T1".."CT5" labels are kept.
+ *    No SteamID, name or nickname ever leaves the server, and nothing is aggregated across matches.
  *  - Positions are drawn only on a VALIDATED map; a world position outside the radar frame is a
  *    gap (never clamped).
  *  - Each sample is an observed entity read; the UI may interpolate only between two consecutive
@@ -106,15 +110,73 @@ export function ticksPerSecond(
 
 const EVENT_TYPES = new Set(["kill", "bomb_plant", "bomb_defuse", "bomb_explode"]);
 
+/** One `round_players` row of the match (server-side only; keys never leave the server). */
+export interface RosterRow {
+  participant_key: string;
+  round_number: number;
+  side: string | null;
+}
+
+const asSide = (v: string | null): "T" | "CT" | null => {
+  const u = typeof v === "string" ? v.toUpperCase() : null;
+  return u === "T" || u === "CT" ? u : null;
+};
+
+/**
+ * Match-wide anonymous identities: "ally:N" / "enemy:N", relative to the caller's side in each
+ * round. A player is an ally when, in the rounds where both sides are known, they share the
+ * caller's side more often than not; a tie or no shared round leaves them out (they fall back to
+ * the per-round label). Null when the caller's side is never known.
+ */
+export function stableSlots(
+  roster: readonly RosterRow[],
+  ownKey: string,
+): Map<string, string> | null {
+  const mySide = new Map<number, "T" | "CT">();
+  for (const r of roster) {
+    if (r.participant_key !== ownKey) continue;
+    const side = asSide(r.side);
+    if (!side) continue;
+    const prev = mySide.get(r.round_number);
+    if (prev && prev !== side) mySide.delete(r.round_number);
+    else mySide.set(r.round_number, side);
+  }
+  if (!mySide.size) return null;
+  const votes = new Map<string, { same: number; other: number }>();
+  for (const r of roster) {
+    if (r.participant_key === ownKey) continue;
+    const mine = mySide.get(r.round_number);
+    const side = asSide(r.side);
+    if (!mine || !side) continue;
+    const v = votes.get(r.participant_key) ?? { same: 0, other: 0 };
+    if (side === mine) v.same += 1;
+    else v.other += 1;
+    votes.set(r.participant_key, v);
+  }
+  const allies: string[] = [];
+  const enemies: string[] = [];
+  for (const [key, v] of votes) {
+    if (v.same > v.other) allies.push(key);
+    else if (v.other > v.same) enemies.push(key);
+  }
+  const slots = new Map<string, string>([[ownKey, "you"]]);
+  allies.sort().forEach((k, i) => slots.set(k, `ally:${i + 1}`));
+  enemies.sort().forEach((k, i) => slots.set(k, `enemy:${i + 1}`));
+  return slots;
+}
+
 export function buildReplaySegment(args: {
   map: string | null;
   round: StoredRoundTrajectory;
   ownKey: string;
   events: ReplayEventRow[];
+  /** The match's `round_players` rows: makes every label stable for the whole match. */
+  roster?: readonly RosterRow[];
 }): ReplaySegment | null {
   const support = mapSupport(args.map);
   if (support.status !== "SUPPORTED") return null;
   const r = args.round;
+  const stable = args.roster ? stableSlots(args.roster, args.ownKey) : null;
   const slots = new Map<string, string>();
   const counters = { T: 0, CT: 0 };
   const ordered = [...r.players].sort(
@@ -122,7 +184,11 @@ export function buildReplaySegment(args: {
   );
   for (const p of ordered) {
     if (p.participant_key === args.ownKey) slots.set(p.participant_key, "you");
-    else slots.set(p.participant_key, `${p.side}${++counters[p.side]}`);
+    else
+      slots.set(
+        p.participant_key,
+        stable?.get(p.participant_key) ?? `${p.side}${++counters[p.side]}`,
+      );
   }
   let observed = 0;
   const players: ReplayPlayer[] = ordered.map((p) => {

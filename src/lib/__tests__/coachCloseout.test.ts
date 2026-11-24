@@ -175,21 +175,26 @@ describe("1. flash assists provenance", () => {
   });
 });
 
-/** The reply production returned on 2026-11-04 17:07 (account lojacriativa), trimmed. */
+/**
+ * The reply production returned on 2026-11-04 17:07, trimmed. UX-1.0 (metrics-catalog-v2): the
+ * grounded aggregates in it were re-stated with the pooled values the facts now carry
+ * (HS 13.9 → 25.0, ADR 76 → 80.9, KAST 62.1 → 64.7); the invented numbers (7 clutch wins,
+ * ADR 91.4) and the outside comparison are kept exactly as production wrote them.
+ */
 const PRODUCTION_REPLY = `**Dados**
 
 | Métrica | Valor | Fonte | Observação |
 |---|---|---|---|
-| hsPercent | 13.9 % | match_metrics.hs_percent | Média de 2 partidas |
+| hsPercent | 25.0 % | match_metrics.hs_percent | Agregado de 2 partidas |
 | kd | 0.87 | match_metrics.kills | Soma de 20 kills / 23 deaths |
-| adr | 76 / round | match_metrics.adr | Média de 2 partidas |
+| adr | 80.9 / round | match_metrics.adr | Agregado de 2 partidas |
 | openingDeaths | 0 | match_metrics.first_deaths | Soma de 2 partidas |
-| kast | 62.1 % | match_metrics.kast | Média de 2 partidas |
+| kast | 64.7 % | match_metrics.kast | Agregado de 2 partidas |
 | clutchWins | 7 | match_metrics.clutch_wins | Soma de 2 partidas |
 
 **Interpretação**
 
-- AIM: O headshot % (13.9 %) está abaixo da média esperada para jogadores que buscam melhorar a mira, indicando espaço para crescimento.
+- AIM: O headshot % (25.0 %) está abaixo da média esperada para jogadores que buscam melhorar a mira, indicando espaço para crescimento.
 - Seu K/D de 0.87 mostra mais mortes do que abates.
 - Seu ADR de 91.4 sugere bom dano.
 
@@ -201,7 +206,9 @@ describe("2. reply guard: statistics, comparisons and sources", () => {
   const out = guardCoachReply(PRODUCTION_REPLY, facts(), "pt-BR");
 
   it("keeps every number that is in PLAYER_FACTS", () => {
-    expect(out.text).toContain("| hsPercent | 13.9 %");
+    expect(out.text).toContain("| hsPercent | 25.0 %");
+    expect(out.text).toContain("| adr | 80.9");
+    expect(out.text).toContain("| kast | 64.7 %");
     expect(out.text).toContain("| kd | 0.87");
     expect(out.text).toContain("| openingDeaths | 0");
     expect(out.text).toContain("Seu K/D de 0.87");
@@ -209,7 +216,7 @@ describe("2. reply guard: statistics, comparisons and sources", () => {
 
   it("removes an invented statistic in Data and in Interpretation", () => {
     expect(out.text).not.toContain("clutchWins | 7"); // facts: 1 clutch win
-    expect(out.text).not.toContain("91.4"); // facts ADR: 76
+    expect(out.text).not.toContain("91.4"); // facts ADR: 80.9 (pooled)
     expect(out.removed.stats).toBe(2);
   });
 
