@@ -75,4 +75,7 @@ export const roomFr: Record<keyof typeof roomPtBR, string> = {
   "training.v2.unit.opening_duels": "duels d’ouverture",
   "training.v2.unit.clutches": "clutches",
   "training.v2.unit.kills_deaths": "kills et morts",
+  "training.plan.origin": "Comment ce plan a été construit (méthode {version})",
+  "training.plan.origin.hint":
+    "Priorités calculées à la création du plan. Elles sont gardées comme historique ; les priorités actuelles sont celles de la liste ci-dessus.",
 };
