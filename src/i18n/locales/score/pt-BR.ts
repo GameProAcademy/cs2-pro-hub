@@ -26,7 +26,7 @@ export const scorePtBR = {
   "score.col.weight": "Peso",
   "score.col.points": "Pontos",
   "score.c.round_contribution": "KAST (contribuição por round)",
-  "score.c.damage": "Índice de dano (ADR ÷ 100, teto em 100)",
+  "score.c.damage": "Índice de dano (todo o dano causado por round ÷ 100, teto em 100)",
   "score.c.kills": "Abates por round",
   "score.c.duel_balance": "Equilíbrio de abates e mortes",
   "score.c.survival": "Sobrevivência",

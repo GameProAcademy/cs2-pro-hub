@@ -14,7 +14,12 @@ export const uxEn: Record<keyof typeof uxPtBR, string> = {
   "glossary.adr.label": "ADR (average damage per round)",
   "glossary.adr.short": "ADR",
   "glossary.adr.definition":
-    "Damage dealt to enemies divided by the rounds you played. Shown only when the demo includes damage events.",
+    "Enemy health you removed, divided by the rounds you played. Each hit counts at most the health the enemy still had; damage to teammates, to yourself, from the world and to players of unknown side is left out. Shown only when the demo includes damage events.",
+  "adr.partial": "partial",
+  "adr.partial.hint":
+    "Partial ADR: some of your hits were left out because the demo did not record the victim's side or did not show how much health the hit removed. The real value is equal or higher; nothing was estimated.",
+  "adr.partialMatches": "Partial in {n} match(es): the real value is equal or higher.",
+  "adr.partialRounds": "Partial in {n} round(s): the real value is equal or higher.",
   "glossary.kast.label": "KAST",
   "glossary.kast.short": "KAST",
   "glossary.kast.definition":

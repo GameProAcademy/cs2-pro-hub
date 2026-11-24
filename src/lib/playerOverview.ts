@@ -173,6 +173,8 @@ export interface OverviewAggregates {
   /** Matches that carry each value; an average never includes a missing value. */
   kd: number | null;
   adr: number | null;
+  /** enemy-hp-v1: matches whose ADR is PARTIAL (some hits left out); the pooled ADR is a floor. */
+  adrPartialMatches: number;
   kast: number | null;
   hsPercent: number | null;
   rating: number | null;
@@ -265,6 +267,7 @@ export function aggregate(matches: OverviewMatch[]): OverviewAggregates | null {
     // the same function the X-ray, the AI Coach and Evolution use.
     kd: kd.value,
     adr: pooledValue(matches, "adr").value,
+    adrPartialMatches: matches.filter((m) => m.adr !== null && m.adrPartial).length,
     kast: pooledValue(matches, "kast").value,
     hsPercent: pooledValue(matches, "hsPercent").value,
     rating: pooledValue(matches, "rating").value,

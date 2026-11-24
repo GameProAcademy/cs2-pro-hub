@@ -14,7 +14,12 @@ export const uxEs: Record<keyof typeof uxPtBR, string> = {
   "glossary.adr.label": "ADR (daño medio por ronda)",
   "glossary.adr.short": "ADR",
   "glossary.adr.definition":
-    "Daño causado a los enemigos dividido entre las rondas que jugaste. Solo aparece cuando la demo incluye los eventos de daño.",
+    "Vida que quitaste a los enemigos, dividida entre las rondas que jugaste. Cada impacto cuenta como máximo la vida que le quedaba al enemigo; el daño a compañeros, a ti mismo, del entorno y a jugadores de bando desconocido no entra. Solo aparece cuando la demo incluye los eventos de daño.",
+  "adr.partial": "parcial",
+  "adr.partial.hint":
+    "ADR parcial: algunos de tus impactos quedaron fuera porque la demo no registró el bando de la víctima o no permitió saber cuánta vida quitó el impacto. El valor real es igual o mayor; no se estimó nada.",
+  "adr.partialMatches": "Parcial en {n} partida(s): el valor real es igual o mayor.",
+  "adr.partialRounds": "Parcial en {n} ronda(s): el valor real es igual o mayor.",
   "glossary.kast.label": "KAST",
   "glossary.kast.short": "KAST",
   "glossary.kast.definition":
