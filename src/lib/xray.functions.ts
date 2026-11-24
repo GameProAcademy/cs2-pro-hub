@@ -8,6 +8,7 @@
  * never used here and nothing is written (the DNA snapshot refresh stays in
  * `getRealPlayerDna`).
  */
+import { computePrioritiesV2 } from "@/lib/training/priorityV2";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -29,7 +30,7 @@ import type { DnaDimension } from "@/types";
 export const getXRay = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<XRayDiagnosis> => {
-    const [overview, { dnaV3, playerIds }] = await Promise.all([
+    const [overview, { dnaV3, playerIds, rows }] = await Promise.all([
       loadPlayerOverview(context.supabase, context.userId),
       loadPlayerDna(context.supabase, context.userId),
     ]);
@@ -39,7 +40,14 @@ export const getXRay = createServerFn({ method: "GET" })
       loadRoundContext(context.supabase, playerIds, matchIds),
     ]);
     // UX-1.6: the X-ray reads the same DNA the Player DNA page shows (dna-weighted-v3).
-    return buildXRay({ overview, dna: asRealPlayerDna(dnaV3, false), sides, roundContext });
+    // UX-1.7c: recommendations come from the single Training list (same rows, same function).
+    return buildXRay({
+      overview,
+      dna: asRealPlayerDna(dnaV3, false),
+      sides,
+      roundContext,
+      training: computePrioritiesV2(rows),
+    });
   });
 
 /**

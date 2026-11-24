@@ -75,4 +75,6 @@ export const roomFr: Record<keyof typeof roomPtBR, string> = {
   "training.v2.unit.opening_duels": "duels d’ouverture",
   "training.v2.unit.clutches": "clutches",
   "training.v2.unit.kills_deaths": "kills et morts",
+  "xray.recommendation.noneTraining":
+    "L'entraînement ne recommande encore rien : aucun signal n'a un échantillon suffisant avec tout son intervalle sous la référence. La lecture ci-dessus décrit les indices ; ce n'est pas une priorité d'entraînement.",
 };
