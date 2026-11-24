@@ -77,4 +77,7 @@ export const roomEs: Record<keyof typeof roomPtBR, string> = {
   "training.v2.unit.kills_deaths": "kills y muertes",
   "xray.recommendation.noneTraining":
     "El entrenamiento todavía no recomienda nada: ninguna señal tiene muestra suficiente con todo su intervalo por debajo de la referencia. La lectura de arriba describe los índices; no es una prioridad de entrenamiento.",
+  "training.plan.origin": "Cómo se armó este plan (método {version})",
+  "training.plan.origin.hint":
+    "Prioridades calculadas cuando se creó el plan. Se guardan como historial; las prioridades actuales son las de la lista de arriba.",
 };
