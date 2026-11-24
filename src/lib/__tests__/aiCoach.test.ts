@@ -503,8 +503,9 @@ describe("AI Coach server wiring", () => {
     const ui = readFileSync(resolve(__dirname, "../../components/coach/RealCoachChat.tsx"), "utf8");
     expect(ui).not.toMatch(/placeholderReply|getCoachHistory|setTimeout/);
     const fab = readFileSync(resolve(__dirname, "../../components/coach/CoachFab.tsx"), "utf8");
-    expect(fab).toMatch(
-      /DEMO_DATA \? <CoachChat className="flex-1" \/> : <RealCoachChat className="flex-1" \/>/,
+    // Demo build → demonstration chat; real mode → the real Coach (no fixed replies).
+    expect(fab.replace(/\s+/g, " ")).toMatch(
+      /DEMO_DATA \? \( <CoachChat className="[^"]*" \/> \) : \( <RealCoachChat className="[^"]*" \/> \)/,
     );
   });
 });

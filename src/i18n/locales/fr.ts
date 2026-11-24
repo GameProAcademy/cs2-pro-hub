@@ -409,7 +409,7 @@ export const fr: Dictionary = {
   "dna.dim.aim": "Visée",
   "dna.dim.dueling": "Duels",
   "dna.dim.survivability": "Survie",
-  "dna.dim.positioning": "Positionnement",
+  "dna.dim.positioning": "Premières morts et échanges",
   "dna.dim.utility": "Utilitaires",
   "dna.dim.decision_making": "Prise de décision",
   "dna.dim.teamplay": "Jeu en équipe",

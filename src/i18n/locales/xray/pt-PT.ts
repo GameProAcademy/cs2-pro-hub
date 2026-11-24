@@ -46,7 +46,7 @@ export const xrayPtPT: Record<keyof typeof xrayPtBR, string> = {
   "xray.layer.recommendationHint":
     "O que trabalhar, ligado ao seu plano de treino. Nenhuma aula é escolhida aqui.",
   "xray.dim.aim_duels": "Pontaria e duelos",
-  "xray.dim.survival_positioning": "Sobrevivência e posicionamento",
+  "xray.dim.survival_positioning": "Sobrevivência, primeiras mortes e trocas",
   "xray.dim.utility": "Utilitários",
   "xray.dim.impact": "Impacto na ronda",
   "xray.dim.consistency": "Consistência",

@@ -108,7 +108,7 @@ export const adaptiveFr: Record<keyof typeof adaptivePtBR, string> = {
   "training.adaptive.undo": "Annuler",
   "training.area.aim": "Visée",
   "training.area.dueling": "Duels",
-  "training.area.positioning": "Positionnement",
+  "training.area.positioning": "Premières morts et échanges",
   "training.area.survivability": "Survie",
   "training.area.utility": "Utilitaires",
   "training.area.teamplay": "Jeu d'équipe (échanges)",

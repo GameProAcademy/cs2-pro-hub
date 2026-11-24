@@ -1,3 +1,4 @@
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut, Menu, Shield, Upload, X } from "lucide-react";
@@ -125,103 +126,105 @@ export function AppShell({ children }: { children: ReactNode }) {
   const current = currentItem ? t(currentItem.labelKey) : "CS2 PRO";
 
   return (
-    <div className="min-h-screen min-w-0 overflow-x-clip bg-background">
-      {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
-        <SidebarContent />
-      </aside>
+    <DialogPrimitive.Root open={mobileOpen} onOpenChange={setMobileOpen}>
+      <div className="min-h-screen min-w-0 overflow-x-clip bg-background">
+        {/* Desktop sidebar */}
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
+          <SidebarContent />
+        </aside>
 
-      {/* Mobile drawer */}
-      {mobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={t("nav.closeMenu")}
-            className="absolute inset-0 h-auto w-auto rounded-none bg-background/80 backdrop-blur-sm hover:bg-background/80"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="absolute inset-y-0 left-0 w-[min(18rem,calc(100vw-2rem))] border-r border-sidebar-border bg-sidebar">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t("nav.closeMenu")}
-              className="absolute right-3 top-4 text-muted-foreground hover:text-foreground"
-              onClick={() => setMobileOpen(false)}
-            >
-              <X className="size-4" aria-hidden />
-            </Button>
-            <SidebarContent onNavigate={() => setMobileOpen(false)} />
-          </div>
-        </div>
-      ) : null}
-
-      <div className="lg:pl-64">
-        {/* Header */}
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur-md sm:gap-3 sm:px-6">
-          <RouteTransitionBar active={navigating} />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="shrink-0 text-muted-foreground hover:text-foreground lg:hidden"
-            aria-label={t("nav.openMenu")}
-            onClick={() => setMobileOpen(true)}
+        {/* Mobile drawer — Radix Dialog: Esc closes, focus is trapped while open and returns to
+          the menu button on close (UX-1 M-4 / R-20). */}
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden" />
+          <DialogPrimitive.Content
+            aria-describedby={undefined}
+            data-mobile-menu
+            className="fixed inset-y-0 left-0 z-50 w-[min(18rem,calc(100vw-2rem))] border-r border-sidebar-border bg-sidebar focus:outline-none lg:hidden"
           >
-            <Menu className="size-5" aria-hidden />
-          </Button>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-sm font-semibold uppercase tracking-[0.16em] text-foreground">
-              {current}
-            </p>
-          </div>
-          {DEMO_DATA ? (
-            <span className="hidden rounded-sm border border-warning/40 bg-warning/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-warning sm:inline">
-              {t("nav.demoMode")}
-            </span>
-          ) : null}
-          {DEMO_DATA ? null : <NotificationBell />}
-          <LanguageSelector compact />
-          <Button asChild size="sm" variant="outline" className="gap-2">
-            <Link to="/upload">
-              <Upload className="size-3.5" aria-hidden />
-              <span className="hidden sm:inline">{t("nav.analyze")}</span>
-              <PendingActionsBadge />
-            </Link>
-          </Button>
-        </header>
+            <DialogPrimitive.Title className="sr-only">{t("nav.mainLabel")}</DialogPrimitive.Title>
+            <DialogPrimitive.Close asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("nav.closeMenu")}
+                className="absolute right-2 top-2.5 size-11 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-4" aria-hidden />
+              </Button>
+            </DialogPrimitive.Close>
+            <SidebarContent onNavigate={() => setMobileOpen(false)} />
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
 
-        <main className="mx-auto w-full min-w-0 max-w-[1400px] px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-6 lg:pb-12">
-          {children}
-        </main>
+        <div className="lg:pl-64">
+          {/* Header */}
+          <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur-md sm:gap-3 sm:px-6">
+            <RouteTransitionBar active={navigating} />
+            <DialogPrimitive.Trigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-11 shrink-0 text-muted-foreground hover:text-foreground lg:hidden"
+                aria-label={t("nav.openMenu")}
+                aria-expanded={mobileOpen}
+              >
+                <Menu className="size-5" aria-hidden />
+              </Button>
+            </DialogPrimitive.Trigger>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-display text-sm font-semibold uppercase tracking-[0.16em] text-foreground">
+                {current}
+              </p>
+            </div>
+            {DEMO_DATA ? (
+              <span className="hidden rounded-sm border border-warning/40 bg-warning/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-warning sm:inline">
+                {t("nav.demoMode")}
+              </span>
+            ) : null}
+            {DEMO_DATA ? null : <NotificationBell />}
+            <LanguageSelector compact />
+            <Button asChild size="sm" variant="outline" className="gap-2">
+              <Link to="/upload">
+                <Upload className="size-3.5" aria-hidden />
+                <span className="hidden sm:inline">{t("nav.analyze")}</span>
+                <PendingActionsBadge />
+              </Link>
+            </Button>
+          </header>
+
+          <main className="mx-auto w-full min-w-0 max-w-[1400px] px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-6 lg:pb-12">
+            {children}
+          </main>
+        </div>
+
+        {/* Mobile bottom navigation — the Coach stays reachable here. */}
+        <nav
+          aria-label={t("nav.quickLabel")}
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        >
+          {navItems
+            .filter((i) => i.primary)
+            .map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                activeProps={{ className: "text-primary" }}
+                className={cn(
+                  "flex min-w-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
+                )}
+              >
+                <item.icon className="size-4" aria-hidden />
+                <span className="truncate">{t(item.labelKey).split(" ").at(-1)}</span>
+              </Link>
+            ))}
+        </nav>
+
+        {/* Floating Coach access at every width (UX-1 R-12 / M-10). */}
+        <CoachFab />
       </div>
-
-      {/* Mobile bottom navigation — the Coach stays reachable here. */}
-      <nav
-        aria-label={t("nav.quickLabel")}
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
-      >
-        {navItems
-          .filter((i) => i.primary)
-          .map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              activeProps={{ className: "text-primary" }}
-              className={cn(
-                "flex min-w-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
-              )}
-            >
-              <item.icon className="size-4" aria-hidden />
-              <span className="truncate">{t(item.labelKey).split(" ").at(-1)}</span>
-            </Link>
-          ))}
-      </nav>
-
-      {/* Desktop-only floating Coach access */}
-      <CoachFab />
-    </div>
+    </DialogPrimitive.Root>
   );
 }

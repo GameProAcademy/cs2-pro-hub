@@ -405,7 +405,7 @@ export const en: Dictionary = {
   "dna.dim.aim": "Aim",
   "dna.dim.dueling": "Dueling",
   "dna.dim.survivability": "Survivability",
-  "dna.dim.positioning": "Positioning",
+  "dna.dim.positioning": "First deaths and trades",
   "dna.dim.utility": "Utility",
   "dna.dim.decision_making": "Decision Making",
   "dna.dim.teamplay": "Teamplay",

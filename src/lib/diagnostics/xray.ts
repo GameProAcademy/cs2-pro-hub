@@ -355,9 +355,11 @@ export function buildXRay(args: {
     inferenceBlockedBy: blockedBy,
     roundContext: args.roundContext ?? null,
     // Kills and damage per side are measured when the round context has rounds with a side.
+    // UX-1 R-17: purchase classification is measured (Rounds, `cs2.rounds`, Xenopoulos et al.
+    // bands) whenever the demo records spending, so it is no longer listed here.
     unsupported:
       args.roundContext && args.roundContext.rounds - args.roundContext.roundsSideUnknown > 0
-        ? ["enemiesFlashed", "positions", "economyClassification"]
-        : ["enemiesFlashed", "positions", "economyClassification", "sideSplitKills"],
+        ? ["enemiesFlashed", "positions"]
+        : ["enemiesFlashed", "positions", "sideSplitKills"],
   };
 }

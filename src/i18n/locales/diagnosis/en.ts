@@ -15,6 +15,11 @@ export const diagnosisEn: Record<keyof typeof diagnosisPtBR, string> = {
   "diagnosis.noParticipant.description":
     "You could not be linked to a single player in this match, so no death is attributed to you.",
   "diagnosis.noDeaths": "No deaths of yours recorded in this match.",
+  "diagnosis.list.round": "Round",
+  "diagnosis.list.allRounds": "All rounds",
+  "diagnosis.list.count": "{shown} of {total} deaths",
+  "diagnosis.list.more": "Show {n} more",
+  "diagnosis.list.toggle": "Show death details",
   "diagnosis.death.heading": "Round {round} · tick {tick}",
   "diagnosis.death.roundUnknown": "Unknown round",
   "diagnosis.kind.ENEMY_KILL": "Killed by an opponent",

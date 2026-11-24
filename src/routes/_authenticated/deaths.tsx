@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
 
 import { RealDeathReviewPage, type DeathReviewSearch } from "@/components/real/RealDeathReview";
 import { deathReviewInput } from "@/lib/diagnosis.functions";
@@ -10,7 +11,9 @@ import { deathReviewInput } from "@/lib/diagnosis.functions";
 export const Route = createFileRoute("/_authenticated/deaths")({
   validateSearch: (search: Record<string, unknown>): DeathReviewSearch => {
     const parsed = deathReviewInput.shape.matchId.safeParse(search["matchId"]);
-    return parsed.success && parsed.data ? { matchId: parsed.data } : {};
+    if (!parsed.success || !parsed.data) return {};
+    const event = z.string().uuid().safeParse(search["event"]);
+    return event.success ? { matchId: parsed.data, event: event.data } : { matchId: parsed.data };
   },
   head: () => ({ meta: [{ title: "Mortes — CS2 PRO AI COACH" }] }),
   component: DeathsPage,

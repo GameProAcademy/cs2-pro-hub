@@ -409,7 +409,7 @@ export const ptPT: Dictionary = {
   "dna.dim.aim": "Mira",
   "dna.dim.dueling": "Duelos",
   "dna.dim.survivability": "Sobrevivência",
-  "dna.dim.positioning": "Posicionamento",
+  "dna.dim.positioning": "Primeiras mortes e trocas",
   "dna.dim.utility": "Utilitários",
   "dna.dim.decision_making": "Tomada de decisão",
   "dna.dim.teamplay": "Jogo de equipa",

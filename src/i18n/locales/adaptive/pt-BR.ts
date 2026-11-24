@@ -106,7 +106,7 @@ export const adaptivePtBR = {
   "training.adaptive.undo": "Desfazer",
   "training.area.aim": "Mira",
   "training.area.dueling": "Duelos",
-  "training.area.positioning": "Posicionamento",
+  "training.area.positioning": "Primeiras mortes e trocas",
   "training.area.survivability": "Sobrevivência",
   "training.area.utility": "Utilitários",
   "training.area.teamplay": "Jogo em equipe (trocas)",

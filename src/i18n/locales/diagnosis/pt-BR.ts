@@ -14,6 +14,11 @@ export const diagnosisPtBR = {
   "diagnosis.noParticipant.description":
     "Não foi possível ligar você a um único jogador desta partida, então nenhuma morte é atribuída a você.",
   "diagnosis.noDeaths": "Nenhuma morte sua registrada nesta partida.",
+  "diagnosis.list.round": "Round",
+  "diagnosis.list.allRounds": "Todos os rounds",
+  "diagnosis.list.count": "{shown} de {total} mortes",
+  "diagnosis.list.more": "Mostrar mais {n}",
+  "diagnosis.list.toggle": "Ver detalhes da morte",
   "diagnosis.death.heading": "Round {round} · tick {tick}",
   "diagnosis.death.roundUnknown": "Round desconhecido",
   "diagnosis.kind.ENEMY_KILL": "Abatido por um adversário",

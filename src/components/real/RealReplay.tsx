@@ -225,7 +225,7 @@ export function ReplayBody({
 }
 
 const sideClass = (side: "T" | "CT") =>
-  side === "CT" ? "fill-sky-500 stroke-sky-500" : "fill-amber-500 stroke-amber-500";
+  side === "CT" ? "fill-side-ct stroke-side-ct" : "fill-side-t stroke-side-t";
 
 export function ReplayPlayer({
   segment,
@@ -485,14 +485,14 @@ export function ReplayPlayer({
           <ul className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <li className="flex items-center gap-1.5">
               <span
-                className="inline-block size-3 rounded-full border-2 border-black bg-amber-500"
+                className="inline-block size-3 rounded-full border-2 border-black bg-side-t"
                 aria-hidden
               />
               {t("replay.legend.observed")}
             </li>
             <li className="flex items-center gap-1.5">
               <span
-                className="inline-block size-3 rounded-full border-2 border-dashed border-black bg-amber-500/45"
+                className="inline-block size-3 rounded-full border-2 border-dashed border-black bg-side-t/45"
                 aria-hidden
               />
               {t("replay.legend.interpolated")}

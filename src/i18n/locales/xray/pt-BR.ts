@@ -45,7 +45,7 @@ export const xrayPtBR = {
   "xray.layer.recommendationHint":
     "O que trabalhar, ligado ao seu plano de treino. Nenhuma aula é escolhida aqui.",
   "xray.dim.aim_duels": "Mira e duelos",
-  "xray.dim.survival_positioning": "Sobrevivência e posicionamento",
+  "xray.dim.survival_positioning": "Sobrevivência, primeiras mortes e trocas",
   "xray.dim.utility": "Utilitários",
   "xray.dim.impact": "Impacto no round",
   "xray.dim.consistency": "Consistência",
