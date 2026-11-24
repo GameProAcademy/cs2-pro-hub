@@ -85,4 +85,9 @@ export const roomPtBR = {
   "state.NOT_MEASURED": "O CS2 PRO não mede isto",
   "state.UNAVAILABLE": "Indisponível para esta partida",
   "state.UNAVAILABLE.reason": "Indisponível para esta partida: {reason}",
+  "xray.recommendation.noneTraining":
+    "O Treino ainda não recomenda nada: nenhum sinal tem amostra suficiente com o intervalo inteiro abaixo da referência. A leitura acima descreve os índices; não é uma prioridade de treino.",
+  "training.plan.origin": "Como este plano foi montado (método {version})",
+  "training.plan.origin.hint":
+    "Prioridades calculadas quando o plano foi criado. Ficam guardadas como histórico; as prioridades atuais são as da lista acima.",
 } as const;

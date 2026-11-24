@@ -96,4 +96,6 @@ export const spatialPtBR = {
   "spatial.map.aria": "Heatmap de {layer} em {map}",
   "spatial.map.cellAria": "Coluna {col}, linha {row}: {n} evento(s)",
   "spatial.version": "Método {version}; transformação {transform}.",
+  "spatial.cells.showAll": "Mostrar todas as {n} células",
+  "spatial.cells.showTop": "Mostrar só as 10 com mais eventos",
 } as const;

@@ -141,6 +141,11 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
                       <span className="text-muted-foreground" data-dna-index-status="IN_FORMATION">
                         {t("real.dna.inFormation")}
                       </span>
+                    ) : r.indexStatus === "NOT_MEASURED" || r.indexStatus === "NO_SAMPLE" ? (
+                      // UX-1.7c: same words as the Player DNA page.
+                      <span className="text-muted-foreground" data-dna-index-status={r.indexStatus}>
+                        {t(`real.dna.status.${r.indexStatus}` as TranslationKey)}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground" data-dna-index-status="NOT_OBSERVED">
                         {t("real.dna.notObserved")}
@@ -234,7 +239,18 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
             </Button>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">{t("xray.recommendation.none")}</p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground" data-xray-recommendations-none>
+              {x.trainingVersion
+                ? t("xray.recommendation.noneTraining")
+                : t("xray.recommendation.none")}
+            </p>
+            {x.trainingVersion ? (
+              <Button asChild size="sm" variant="outline">
+                <Link to="/training">{t("xray.recommendation.open")}</Link>
+              </Button>
+            ) : null}
+          </div>
         )}
       </Layer>
 

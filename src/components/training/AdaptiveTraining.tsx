@@ -357,12 +357,18 @@ function PlanPanel({ plan }: { plan: PlanView }) {
         ) : null}
       </ChartCard>
 
-      <ChartCard
-        title={t("training.adaptive.priorities")}
-        subtitle={t("training.adaptive.priorities.subtitle")}
-      >
-        <Priorities priorities={plan.content.priorities} />
-      </ChartCard>
+      {/* UX-1.7 (R-13): the current list is the one above. What the plan stored when it was
+          created is history: kept intact, shown closed and labelled with its method, never as a
+          second list of priorities. */}
+      <details className="rounded-lg border border-border px-4 py-3" data-plan-origin>
+        <summary className="cursor-pointer select-none text-sm text-muted-foreground">
+          {fill(t("training.plan.origin"), { version: plan.content.priorityVersion })}
+        </summary>
+        <p className="mt-2 text-xs text-muted-foreground">{t("training.plan.origin.hint")}</p>
+        <div className="mt-3">
+          <Priorities priorities={plan.content.priorities} />
+        </div>
+      </details>
 
       <ChartCard
         title={t("training.adaptive.goals")}
