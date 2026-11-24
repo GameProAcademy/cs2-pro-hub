@@ -18,6 +18,7 @@
  * Null is never zero: a metric no match carries is NOT_MEASURED (or EXCLUDED_BY_ADMISSION
  * when every match's admission decision excludes it), and has no value.
  */
+import type { PriorityResultV2 } from "@/lib/training/priorityV2";
 import type { RoundContextSummary } from "@/lib/roundContext";
 import { DIMENSION_TOPICS, needsFromPlayer } from "@/lib/catalog/catalogSelect";
 import { pooledValue, type PooledMetricKey } from "@/lib/metrics/canonicalAggregate";
@@ -54,7 +55,13 @@ export interface XRayObservation {
  * DNA has fewer than the minimum matches, so the index is withheld (null) — never a score.
  * NOT_OBSERVED: no signal of the dimension was observed (null, never 0).
  */
-export type DnaIndexStatus = "READY" | "IN_FORMATION" | "NOT_OBSERVED";
+export type DnaIndexStatus =
+  | "READY"
+  | "IN_FORMATION"
+  | "NOT_OBSERVED"
+  /** UX-1.7c: dna-weighted-v3 states, same words as the Player DNA page. */
+  | "NO_SAMPLE"
+  | "NOT_MEASURED";
 
 export interface XRayDnaReading {
   dimension: DnaDimension;
@@ -86,6 +93,8 @@ export interface XRayInference {
 
 export interface XRayRecommendation {
   dimension: DnaDimension;
+  /** UX-1.7c: "training-v2" when it comes from the single Training list. */
+  source?: "training-v2";
   topics: string[];
   route: "/training";
 }
@@ -121,6 +130,8 @@ export interface XRayDiagnosis {
   /** Empty unless the DNA has its minimum sample. */
   inferences: XRayInference[];
   recommendations: XRayRecommendation[];
+  /** UX-1.7c: version of the Training list the recommendations came from (null = legacy rule). */
+  trainingVersion?: string | null;
   /** Why there are no inferences (null when there are). */
   inferenceBlockedBy: "NO_DATA" | "INSUFFICIENT_SAMPLE" | "NONE_BELOW_CEILING" | null;
   unsupported: UnsupportedCapability[];
@@ -263,8 +274,15 @@ function statusWithout(matches: OverviewMatch[], column: string): ObservationSta
 function dnaReading(dna: RealPlayerDna, dimension: DnaDimension): XRayDnaReading {
   const d = dna.dimensions.find((x) => x.dimension === dimension);
   const observed = d?.value != null;
+  // v3 says why a dimension has no index (not measured in this version vs not enough sample):
+  // the X-ray repeats it instead of a generic "not observed".
+  const v3 = (d as { status?: string } | undefined)?.status;
   const indexStatus: DnaIndexStatus = !observed
-    ? "NOT_OBSERVED"
+    ? v3 === "NOT_MEASURED"
+      ? "NOT_MEASURED"
+      : v3 === "NO_SAMPLE"
+        ? "NO_SAMPLE"
+        : "NOT_OBSERVED"
     : dna.state === "READY"
       ? "READY"
       : "IN_FORMATION";
@@ -282,6 +300,11 @@ export function buildXRay(args: {
   dna: RealPlayerDna;
   sides: SideRounds[];
   roundContext?: RoundContextSummary | null;
+  /**
+   * UX-1.7c (R-13): the single Training list. When given, the recommendations ARE its
+   * priorities (possibly none), so the X-ray never recommends what Training does not.
+   */
+  training?: PriorityResultV2 | null;
 }): XRayDiagnosis {
   const { overview, dna } = args;
   const matches = overview.matches;
@@ -347,11 +370,19 @@ export function buildXRay(args: {
     },
     inferenceCeiling: PLAN_CEILING,
     inferences,
-    recommendations: inferences.map((i) => ({
-      dimension: i.dimension,
-      topics: DIMENSION_TOPICS[i.dimension] ?? [],
-      route: "/training" as const,
-    })),
+    recommendations: args.training
+      ? [...new Set(args.training.priorities.map((p) => p.dimension))].map((dimension) => ({
+          dimension,
+          topics: DIMENSION_TOPICS[dimension] ?? [],
+          route: "/training" as const,
+          source: "training-v2" as const,
+        }))
+      : inferences.map((i) => ({
+          dimension: i.dimension,
+          topics: DIMENSION_TOPICS[i.dimension] ?? [],
+          route: "/training" as const,
+        })),
+    trainingVersion: args.training ? args.training.version : null,
     inferenceBlockedBy: blockedBy,
     roundContext: args.roundContext ?? null,
     // Kills and damage per side are measured when the round context has rounds with a side.
