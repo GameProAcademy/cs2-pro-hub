@@ -140,6 +140,7 @@ const rounds = (n: number, side: (r: number) => PlayerRound["side"]): PlayerRoun
     kills: 0,
     deaths: 0,
     damage: 0,
+    damageExcludedHits: 0,
   }));
 const match = (
   events: HeatmapEventRow[],

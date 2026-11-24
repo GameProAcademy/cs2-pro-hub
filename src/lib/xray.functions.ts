@@ -21,6 +21,7 @@ import {
   summarizeRoundContext,
   type MatchRoundContext,
   type RoundContextSummary,
+  type RoundEventRow,
 } from "@/lib/roundContext";
 import type { DnaDimension } from "@/types";
 
@@ -65,7 +66,7 @@ export async function ownParticipantKeys(
 }
 
 /**
- * Marco 1 — `round-context-v1` for the caller (side and outcome of each own round, own kills,
+ * Marco 1 — `round-context-v2` for the caller (side and outcome of each own round, own kills,
  * deaths and damage per side). Read-only under the caller's session: `round_players`,
  * `match_rounds` and `round_events` are all gated by `owns_canonical_match`; the service role is
  * never used. Events are read per match and only the caller's own (actor or victim), so a match
@@ -81,7 +82,7 @@ export async function loadRoundContext(
   if (!keys.size) return null;
   const contexts: MatchRoundContext[] = await Promise.all(
     [...keys].map(async ([matchId, participantKey]) => {
-      const [rounds, roundPlayers, events] = await Promise.all([
+      const [rounds, roundPlayers, events, damage] = await Promise.all([
         supabase.from("match_rounds").select("round_number, winner_side").eq("match_id", matchId),
         supabase
           .from("round_players")
@@ -91,8 +92,10 @@ export async function loadRoundContext(
           .from("round_events")
           .select("id, round_number, event_type, actor_steam_id, victim_steam_id, damage")
           .eq("match_id", matchId)
-          .in("event_type", ["kill", "damage"])
+          .eq("event_type", "kill")
           .or(`actor_steam_id.eq.${participantKey},victim_steam_id.eq.${participantKey}`),
+        // enemy-hp-v1 needs every attacker's hits (health left on each victim); server-side only.
+        readAllDamage(supabase, matchId),
       ]);
       const failed = rounds.error ?? roundPlayers.error ?? events.error;
       if (failed) throw new Error(`XRAY_ROUND_CONTEXT_FAILED:${failed.code ?? "unknown"}`);
@@ -101,7 +104,7 @@ export async function loadRoundContext(
         participantKey,
         rounds: rounds.data ?? [],
         roundPlayers: roundPlayers.data ?? [],
-        events: events.data ?? [],
+        events: [...(events.data ?? []), ...damage],
       });
     }),
   );
@@ -292,4 +295,31 @@ export function dnaSummaryFrom(row: Record<string, unknown> | undefined): DnaSum
     createdAt: typeof row["created_at"] === "string" ? row["created_at"] : null,
     ...base,
   };
+}
+
+const DAMAGE_PAGE = 1000;
+const DAMAGE_ROW_CAP = 20000;
+
+/** Every damage event of one match, paged (PostgREST caps a response); never silently partial. */
+async function readAllDamage(
+  supabase: SupabaseClient<Database>,
+  matchId: string,
+): Promise<RoundEventRow[]> {
+  const out: RoundEventRow[] = [];
+  for (let from = 0; ; from += DAMAGE_PAGE) {
+    const { data, error } = await supabase
+      .from("round_events")
+      .select(
+        "id, round_number, tick, event_type, actor_steam_id, victim_steam_id, damage, health_after:data->health_after",
+      )
+      .eq("match_id", matchId)
+      .eq("event_type", "damage")
+      .order("id")
+      .range(from, from + DAMAGE_PAGE - 1);
+    if (error) throw new Error(`XRAY_ROUND_CONTEXT_FAILED:${error.code ?? "unknown"}`);
+    const rows = (data ?? []) as unknown as RoundEventRow[];
+    out.push(...rows);
+    if (rows.length < DAMAGE_PAGE) return out;
+    if (out.length >= DAMAGE_ROW_CAP) throw new Error("XRAY_ROUND_CONTEXT_FAILED:damage_cap");
+  }
 }

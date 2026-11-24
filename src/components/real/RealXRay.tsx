@@ -280,7 +280,7 @@ export function RealXRayPage() {
   );
 }
 
-/** Marco 1: own round outcome and own kills/damage on one side (`round-context-v1`). */
+/** Marco 1: own round outcome and own kills/damage on one side (`round-context-v2`). */
 function SideRoundContext({ s, min }: { s: SideSummary; min: number }) {
   const { t, intlTag } = useI18n();
   const n = (v: number, d = 0) => formatNumber(v, intlTag, d);

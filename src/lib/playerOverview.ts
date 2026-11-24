@@ -64,7 +64,11 @@ export interface OverviewMetricRow {
   kills: number | null;
   deaths: number | null;
   assists: number | null;
+  /** Historical (uncapped, all victims): input of pro-score-v1 / dna-weighted-v2 only. */
   adr: number | string | null;
+  /** enemy-hp-v1 (demo matches): the damage behind the ADR shown to players. */
+  damage_enemy_hp?: number | null;
+  damage_enemy_hp_excluded_hits?: number | null;
   kast: number | string | null;
   hs_percent: number | string | null;
   rating: number | string | null;
@@ -124,7 +128,16 @@ export interface OverviewMatch {
   kills: number | null;
   deaths: number | null;
   assists: number | null;
+  /**
+   * ADR shown to players (UX-1.0 `enemy-hp-v1`): demo matches = damage_enemy_hp ÷ rounds; FACEIT /
+   * Gamersclub = the source's own ADR (already enemy damage). null when not measured — the
+   * historical uncapped `match_metrics.adr` is never shown in its place.
+   */
   adr: number | null;
+  /** enemy-hp-v1 enemy health removed (demo matches), the exact ADR numerator. */
+  damageEnemyHp?: number | null;
+  /** true when some of the player's hits were left out (unknown side / undeterminable). */
+  adrPartial?: boolean;
   kast: number | null;
   hsPercent: number | null;
   rating: number | null;
@@ -216,6 +229,32 @@ function num(value: number | string | null | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * UX-1.0 — the ADR shown to players (`enemy-hp-v1`, src/lib/metrics/enemyDamage.ts). Demo rows use
+ * damage_enemy_hp ÷ rounds; rows from FACEIT/Gamersclub carry the source's own ADR. A demo row
+ * without damage_enemy_hp is NOT MEASURED (null), never the historical uncapped value.
+ */
+export function playerAdr(
+  row: Pick<
+    OverviewMetricRow,
+    "adr" | "damage_enemy_hp" | "damage_enemy_hp_excluded_hits" | "rounds_played"
+  >,
+  source: string | null,
+): { adr: number | null; damageEnemyHp: number | null; adrPartial: boolean } {
+  const hp = num(row.damage_enemy_hp);
+  const rounds = row.rounds_played;
+  if (hp !== null && rounds && rounds > 0) {
+    return {
+      adr: Math.round((hp / rounds) * 10) / 10,
+      damageEnemyHp: hp,
+      adrPartial: (num(row.damage_enemy_hp_excluded_hits) ?? 0) > 0,
+    };
+  }
+  if (source && source !== "demo")
+    return { adr: num(row.adr), damageEnemyHp: null, adrPartial: false };
+  return { adr: null, damageEnemyHp: null, adrPartial: false };
+}
+
 export function aggregate(matches: OverviewMatch[]): OverviewAggregates | null {
   if (!matches.length) return null;
   const kd = pooledValue(matches, "kd");
@@ -274,7 +313,7 @@ export function shapeMatches(
           kills: row.kills,
           deaths: row.deaths,
           assists: row.assists,
-          adr: num(row.adr),
+          ...playerAdr(row, match.data_source),
           kast: num(row.kast),
           hsPercent: num(row.hs_percent),
           rating: num(row.rating),

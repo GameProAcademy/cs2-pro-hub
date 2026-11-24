@@ -120,9 +120,12 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
   entry({
     id: "adr",
     glossary: "adr",
-    source: "match_metrics.adr",
+    // UX-1.0 enemy-hp-v1: demo matches use damage_enemy_hp (enemy health removed, each hit capped
+    // at the victim's remaining health, team/self/unknown-side excluded); match_metrics.adr is the
+    // historical uncapped input of pro-score-v1 / dna-weighted-v2 and is never shown as ADR.
+    source: "match_metrics.damage_enemy_hp",
     unit: "per_round",
-    formula: "damage dealt ÷ rounds played",
+    formula: "enemy health removed ÷ rounds played (enemy-hp-v1)",
     denominator: "rounds played (Σ over matches with ADR and rounds)",
     aggregation: "pooled",
     minMatches: 1,

@@ -201,3 +201,36 @@ export function enemyHealthDamage(
           : "MIXED";
   return out;
 }
+
+export interface RoundEnemyDamage {
+  /** Certain enemy health removed by the player in the round. */
+  enemyHp: number;
+  /** Player hits on non-teammates left out (unknown side or undeterminable removal). */
+  excludedHits: number;
+}
+
+/**
+ * enemy-hp-v1 per round — the SAME `enemyHealthDamage`, applied round by round, for round-level
+ * surfaces (Rounds, X-ray round context, Coach round facts). Hits must include EVERY attacker's
+ * damage on the victims of the round (other players' hits are needed to know the health left);
+ * they are only read server-side and never returned. Rounds where the player hit nobody are absent.
+ */
+export function enemyHpByRound(
+  hits: readonly DamageHit[],
+  playerKey: string,
+  sameSide: SameSide,
+): Map<number, RoundEnemyDamage> {
+  const byRound = new Map<number, DamageHit[]>();
+  for (const h of hits) {
+    const list = byRound.get(h.round);
+    if (list) list.push(h);
+    else byRound.set(h.round, [h]);
+  }
+  const out = new Map<number, RoundEnemyDamage>();
+  for (const [round, list] of byRound) {
+    if (!list.some((h) => h.actor === playerKey)) continue;
+    const r = enemyHealthDamage(list, playerKey, sameSide);
+    out.set(round, { enemyHp: r.enemyHp, excludedHits: r.unknownSideHits + r.uncertainHits });
+  }
+  return out;
+}

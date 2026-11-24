@@ -111,7 +111,7 @@ export interface XRayDiagnosis {
   sides: { ct: XRaySide; t: XRaySide };
   /**
    * Marco 1 (additive, optional for older readers): side and outcome of each own round, own kills,
-   * deaths and damage per side (`round-context-v1`). Null when no own participant is known.
+   * deaths and damage per side (`round-context-v2`). Null when no own participant is known.
    */
   roundContext?: RoundContextSummary | null;
   /** Index ceiling of the weakest-dimension rule (training plan `PLAN_CEILING`). */

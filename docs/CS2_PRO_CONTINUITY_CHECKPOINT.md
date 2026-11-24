@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-24 (America/Sao_Paulo) — UX-1.0 EM EXECUÇÃO (#350 `bbecff1` em produção) · por: sessão Claude
+Atualizado em: 2026-11-24 (America/Sao_Paulo) — UX-1.0 EM EXECUÇÃO (#351 `85e5929` no main; migration `20261124060000` e backfill aplicados) · por: sessão Claude
 `session_012i4uaf82YyjhPZuSt2ZHhn`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -12,21 +12,21 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                              |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                         |
-| Etapa atual                        | G2: ADR `enemy-hp-v1` (vida de inimigo removida, golpe limitado) — código e migration prontos; migration BLOQUEADA (B-1)                                                           |
-| Última etapa concluída             | #350 (`bbecff1`): `metrics-catalog-v2`, rótulos estáveis no Replay, correções de mobile — VALIDADO EM PRODUÇÃO                                                                     |
-| Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                              |
-| Processos em execução              | Nenhum                                                                                                                                                                             |
-| Branch ativa                       | `ux1.0/enemy-hp-adr`                                                                                                                                                               |
-| Último commit confirmado em `main` | `bbecff1` (merge do #350)                                                                                                                                                          |
-| Build validado em produção         | App publicado de `bbecff1` (deploy Lovable `9b1803d6…`). Worker inalterado: Railway `584ea563` (R5.8.31)                                                                           |
-| Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                 |
-| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
-| **Próxima ação exata**             | Aplicar a migration `20261124060000` (B-1), preencher `damage_enemy_hp` e trocar as telas para o ADR canônico                                                                      |
-| Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); UX-1.0 #350; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`                                                      |
-| Ações manuais necessárias          | B-1: confirmação explícita do dono para aplicar a migration `20261124060000` em produção                                                                                           |
+| Item                               | Valor                                                                                                                                                                                                                             |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                                                                        |
+| Etapa atual                        | G2b: telas, Rounds, Raio-X e Coach lendo o ADR canônico `enemy-hp-v1` (branch `ux1.0/enemy-hp-display`)                                                                                                                           |
+| Última etapa concluída             | #351 (`85e5929`): `enemy-hp-v1` na ingestão; migration `20261124060000` aplicada; 11 linhas preenchidas (1 PARCIAL) — §2.1–§2.3 do checkpoint UX-1.0                                                                              |
+| Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                                                                             |
+| Processos em execução              | Nenhum                                                                                                                                                                                                                            |
+| Branch ativa                       | `ux1.0/enemy-hp-display`                                                                                                                                                                                                          |
+| Último commit confirmado em `main` | `85e5929` (merge do #351)                                                                                                                                                                                                         |
+| Build validado em produção         | App validado de `bbecff1` (deploy `9b1803d6…`); deploy `629916bc…` de `85e5929` solicitado, pendente de validação. Worker inalterado: Railway `584ea563` (R5.8.31)                                                                |
+| Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                                                                |
+| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                                |
+| **Próxima ação exata**             | Abrir o PR de `ux1.0/enemy-hp-display`, merge com checks verdes, publicar e validar o ADR canônico em produção                                                                                                                    |
+| Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); UX-1.0 #350, #351; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`, `20261124060000`; backfill `enemy-hp-v1` (11 linhas, guardado por `damage_enemy_hp IS NULL`) |
+| Ações manuais necessárias          | Nenhuma                                                                                                                                                                                                                           |
 
 Missão ativa: UX-1.0 — `docs/checkpoints/UX1_0_CHECKPOINT.md`. Missão anterior: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
 

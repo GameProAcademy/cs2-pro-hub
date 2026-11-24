@@ -29,8 +29,10 @@
 import { TRADE_WINDOW_SECONDS } from "@/config/pipeline";
 import { WORLD_WEAPONS, type RoundPlayerRow, type Side } from "@/lib/diagnosis/deathContext";
 import { classifyRoundEconomy, type RoundEconomy } from "@/lib/rounds/economy";
+import { enemyHpByRound } from "@/lib/metrics/enemyDamage";
 
-export const ROUNDS_VERSION = "cs2.rounds.v1";
+// v2: own damage is enemy-hp-v1 (capped at the health left; unknown-side hits excluded and counted).
+export const ROUNDS_VERSION = "cs2.rounds.v2";
 
 export interface RoundInfo {
   roundNumber: number;
@@ -57,6 +59,10 @@ export interface RoundDamage {
   actor: string | null;
   victim: string | null;
   damage: number | null;
+  /** enemy-hp-v1 inputs (optional for older callers: without them a round is RECONSTRUCTED). */
+  tick?: number | null;
+  healthAfter?: number | null;
+  id?: string | null;
 }
 
 export interface RoundObjective {
@@ -84,7 +90,10 @@ export interface RoundsInput {
   rounds: RoundInfo[];
   roundPlayers: (RoundPlayerRow & RoundEconomyRow)[];
   kills: RoundKill[];
-  /** The caller's own damage rows only. */
+  /**
+   * Every player's damage rows of the match (enemy-hp-v1 needs the other attackers' hits to know
+   * how much health each victim had left). Read server-side only; never part of a report.
+   */
   damage: RoundDamage[];
   objectives: RoundObjective[];
   roundEnds: RoundEndFacts[];
@@ -143,7 +152,10 @@ export interface RoundReport {
     kills: number;
     deaths: number;
     assists: number;
+    /** enemy-hp-v1: certain enemy health removed in the round. */
     damage: number;
+    /** Hits left out of `damage` (unknown side / undeterminable); > 0 = PARTIAL. */
+    damageExcludedHits: number;
     headshotKills: number;
     tradeKills: number;
     deathTraded: boolean | null;
@@ -348,6 +360,26 @@ function buildRound(
   // The player's own facts.
   let mine: RoundReport["me"] = null;
   if (mySide) {
+    // enemy-hp-v1 (src/lib/metrics/enemyDamage.ts): the same function as the pipeline ADR.
+    const myDamage = enemyHpByRound(
+      input.damage
+        .filter((d) => d.roundNumber === n)
+        .map((d, i) => ({
+          round: n,
+          tick: d.tick ?? null,
+          order: d.id ?? i,
+          actor: d.actor,
+          victim: d.victim,
+          damage: d.damage,
+          healthAfter: d.healthAfter ?? null,
+        })),
+      me,
+      (_r, a, b) => {
+        const sa = sides.get(a);
+        const sb = sides.get(b);
+        return sa && sb ? sa === sb : null;
+      },
+    ).get(n) ?? { enemyHp: 0, excludedHits: 0 };
     const myKills = kills.filter((k) => k.actor === me && kindOf(k, sides) === "ENEMY");
     const myDeath = kills.find((k) => k.victim === me) ?? null;
     const survived = !valid || disconnected.has(me) ? null : !myDeath;
@@ -355,17 +387,8 @@ function buildRound(
       kills: myKills.length,
       deaths: myDeath ? 1 : 0,
       assists: kills.filter((k) => k.assister === me && kindOf(k, sides) === "ENEMY").length,
-      damage: input.damage
-        .filter(
-          (d) =>
-            d.roundNumber === n &&
-            d.actor === me &&
-            d.victim &&
-            finite(d.damage) &&
-            sides.get(d.victim) &&
-            sides.get(d.victim) !== mySide,
-        )
-        .reduce((s, d) => s + (d.damage as number), 0),
+      damage: myDamage.enemyHp,
+      damageExcludedHits: myDamage.excludedHits,
       headshotKills: myKills.filter((k) => k.headshot === true).length,
       tradeKills: myKills.filter((k) =>
         kills.some(
@@ -488,6 +511,8 @@ export interface RoundsSummary {
     deaths: number;
     assists: number;
     damage: number;
+    /** Rounds whose damage is PARTIAL (excluded hits > 0). */
+    damagePartialRounds: number;
     headshotKills: number;
     playedRounds: number;
     /** The player's own buy band -> rounds, kills, deaths, damage. */
@@ -523,6 +548,7 @@ export function summarizeRounds(reports: RoundReport[]): RoundsSummary {
     deaths: 0,
     assists: 0,
     damage: 0,
+    damagePartialRounds: 0,
     headshotKills: 0,
     playedRounds: 0,
     byOwnBuy: {} as Record<
@@ -569,6 +595,7 @@ export function summarizeRounds(reports: RoundReport[]): RoundsSummary {
     m.deaths += r.me.deaths;
     m.assists += r.me.assists;
     m.damage += r.me.damage;
+    if (r.me.damageExcludedHits > 0) m.damagePartialRounds += 1;
     m.headshotKills += r.me.headshotKills;
     const band = r.economy.player?.label;
     if (band?.status === "CLASSIFIED") {

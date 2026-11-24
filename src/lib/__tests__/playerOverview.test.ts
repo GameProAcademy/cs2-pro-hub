@@ -8,11 +8,13 @@ import {
   buildOverview,
   deriveState,
   jobIdentity,
+  playerAdr,
   shapeMatches,
   type OverviewJobRow,
   type OverviewMatchRow,
   type OverviewMetricRow,
 } from "../playerOverview";
+import { pooledValue } from "../metrics/canonicalAggregate";
 
 const NOW = new Date("2026-10-14T12:00:00Z");
 const job = (status: string, extra: Partial<OverviewJobRow> = {}): OverviewJobRow => ({
@@ -44,6 +46,9 @@ const metric = (matchId: string, extra: Partial<OverviewMetricRow> = {}): Overvi
   deaths: 10,
   assists: 4,
   adr: "85.50",
+  // enemy-hp-v1: 1881 enemy health removed over 22 rounds = the ADR shown (85.5).
+  damage_enemy_hp: 1881,
+  damage_enemy_hp_excluded_hits: 0,
   kast: "72.00",
   hs_percent: "48.00",
   rating: "1.21",
@@ -160,7 +165,10 @@ describe("player overview: honest states, never invented values", () => {
 
   it("averages only present values and never fills a gap", () => {
     const rows = shapeMatches(
-      [metric("a"), metric("b", { adr: null, kast: null, deaths: null, rating: "x" })],
+      [
+        metric("a"),
+        metric("b", { adr: null, damage_enemy_hp: null, kast: null, deaths: null, rating: "x" }),
+      ],
       [match("a"), match("b", { result: "loss" })],
     );
     const a = aggregate(rows)!;
@@ -271,5 +279,74 @@ describe("admission provenance (admission contract v3)", () => {
       ],
     );
     expect(shaped.map((m) => m.admission)).toEqual([null, null]);
+  });
+});
+
+describe("UX-1.0 — ADR shown to players is enemy-hp-v1", () => {
+  const row = (extra: Partial<OverviewMetricRow>): OverviewMetricRow => ({
+    match_id: "m",
+    kills: 10,
+    deaths: 10,
+    assists: 0,
+    adr: "123.50",
+    kast: null,
+    hs_percent: null,
+    rating: null,
+    rounds_played: 23,
+    ...extra,
+  });
+
+  it("demo row: damage_enemy_hp ÷ rounds, never the historical uncapped adr", () => {
+    expect(
+      playerAdr(row({ damage_enemy_hp: 1726, damage_enemy_hp_excluded_hits: 0 }), "demo"),
+    ).toEqual({ adr: 75, damageEnemyHp: 1726, adrPartial: false });
+  });
+
+  it("demo row without damage_enemy_hp is NOT MEASURED (null), not the historical value", () => {
+    expect(playerAdr(row({ damage_enemy_hp: null }), "demo").adr).toBeNull();
+    expect(playerAdr(row({}), null).adr).toBeNull();
+  });
+
+  it("excluded hits mark the value PARTIAL", () => {
+    expect(
+      playerAdr(
+        row({ damage_enemy_hp: 1998, damage_enemy_hp_excluded_hits: 1, rounds_played: 24 }),
+        "demo",
+      ),
+    ).toEqual({ adr: 83.3, damageEnemyHp: 1998, adrPartial: true });
+  });
+
+  it("FACEIT / Gamersclub rows keep the source's own ADR (already enemy damage)", () => {
+    expect(playerAdr(row({ adr: "81.2" }), "faceit").adr).toBe(81.2);
+  });
+
+  it("pooled ADR uses the exact enemy health numerator", () => {
+    expect(
+      pooledValue(
+        [
+          {
+            kills: 1,
+            deaths: 1,
+            adr: 75,
+            damageEnemyHp: 1726,
+            kast: null,
+            hsPercent: null,
+            rating: null,
+            roundsPlayed: 23,
+          },
+          {
+            kills: 1,
+            deaths: 1,
+            adr: 83.3,
+            damageEnemyHp: 1998,
+            kast: null,
+            hsPercent: null,
+            rating: null,
+            roundsPlayed: 24,
+          },
+        ],
+        "adr",
+      ).value,
+    ).toBeCloseTo(79.234, 3); // (1726 + 1998) / 47
   });
 });

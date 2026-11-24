@@ -108,6 +108,7 @@ type EventRow = {
   weapon?: string | null;
   headshot?: boolean | null;
   damage?: number | null;
+  health_after?: unknown;
   money_spent?: unknown;
   disconnected?: unknown;
 };
@@ -184,10 +185,11 @@ export async function loadRoundsInput(
     paged(
       (a, b) =>
         ev()
-          .select(`${base}, damage`)
+          // enemy-hp-v1 needs every attacker's hits on the round's victims (health left);
+          // read server-side only, never returned in the report.
+          .select(`${base}, damage, health_after:data->health_after`)
           .eq("match_id", matchId)
           .eq("event_type", "damage")
-          .eq("actor_steam_id", participantKey)
           .order("tick")
           .range(a, b),
       "damage",
@@ -253,10 +255,13 @@ export async function loadRoundsInput(
         headshot: typeof k.headshot === "boolean" ? k.headshot : null,
       })),
       damage: damage.map((d) => ({
+        id: d.id,
         roundNumber: num(d.round_number),
+        tick: num(d.tick),
         actor: d.actor_steam_id,
         victim: d.victim_steam_id,
         damage: num(d.damage),
+        healthAfter: num(d.health_after),
       })),
       objectives: objectives
         .filter((o) => OBJECTIVE[o.event_type])
