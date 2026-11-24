@@ -69,9 +69,9 @@ const matches = shapeMatches(
 describe("ADR coverage on screen", () => {
   it("shapes demo rows from enemy-hp and leaves the uncovered demo NOT MEASURED", () => {
     const byId = Object.fromEntries(matches.map((m) => [m.matchId, m]));
-    expect(byId.p).toMatchObject({ adr: 83.3, adrPartial: true });
-    expect(byId.c).toMatchObject({ adr: 75, adrPartial: false });
-    expect(byId.n!.adr).toBeNull();
+    expect(byId["p"]).toMatchObject({ adr: 83.3, adrPartial: true });
+    expect(byId["c"]).toMatchObject({ adr: 75, adrPartial: false });
+    expect(byId["n"]!.adr).toBeNull();
     const a = aggregate(matches)!;
     expect(a.adrPartialMatches).toBe(1);
     expect(a.adr).toBeCloseTo((1998 + 1726) / 47, 6);
