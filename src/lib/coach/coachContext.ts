@@ -193,7 +193,7 @@ const COACH_SOURCE: Record<string, string> = {
 };
 
 /**
- * Marco 1 (round-context-v1): the player's own rounds on one side. Counts are OBSERVED; rates are
+ * Marco 1 (round-context-v2): the player's own rounds on one side. Counts are OBSERVED; rates are
  * DERIVED only from SIDE_MIN_ROUNDS rounds on the side, otherwise null with INSUFFICIENT_SAMPLE.
  * The round outcome is the winning SIDE recorded by the demo; the match score and teams stay out.
  */
@@ -248,7 +248,7 @@ export interface CoachFacts {
   sides: {
     ct: { rounds: number | null; rating: CoachObservation; roundContext: CoachSideContext | null };
     t: { rounds: number | null; rating: CoachObservation; roundContext: CoachSideContext | null };
-    /** round-context-v1 when the own round context is known, else null. */
+    /** round-context-v2 when the own round context is known, else null. */
     roundContextVersion: string | null;
   };
   /**
@@ -566,6 +566,8 @@ export function buildCoachFacts(
     deaths: m.deaths,
     assists: m.assists,
     adr: round(m.adr, 1),
+    // enemy-hp-v1: true when some hits were left out (unknown side) — the ADR is a lower bound.
+    adrPartial: m.adrPartial ?? false,
     kastPercent: round(m.kast, 1),
     headshotPercent: round(m.hsPercent, 1),
     rating: round(m.rating, 2),

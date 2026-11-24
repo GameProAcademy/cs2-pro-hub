@@ -45,6 +45,7 @@ const rounds: PlayerRound[] = Array.from({ length: 24 }, (_, i) => ({
   kills: 0,
   deaths: 0,
   damage: 0,
+  damageExcludedHits: 0,
 }));
 let n = 0;
 const death = (round: number, data: unknown): HeatmapEventRow => ({

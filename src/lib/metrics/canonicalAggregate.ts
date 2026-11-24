@@ -42,6 +42,11 @@ export interface PooledMatchInput {
   kills: number | null;
   deaths: number | null;
   adr: number | null;
+  /**
+   * enemy-hp-v1 enemy health removed (demo matches). When present it is the exact ADR numerator,
+   * so the pooled ADR does not compound each match's one-decimal rounding.
+   */
+  damageEnemyHp?: number | null;
   kast: number | null;
   hsPercent: number | null;
   rating: number | null;
@@ -80,9 +85,12 @@ export function pooledParts(m: PooledMatchInput, key: PooledMetricKey): PooledPa
   const rounds = finite(m.roundsPlayed) && m.roundsPlayed > 0 ? m.roundsPlayed : null;
   switch (key) {
     case "adr":
-      return finite(m.adr) && rounds
-        ? { numerator: m.adr * rounds, denominator: rounds, scale: 1 }
-        : null;
+      if (!finite(m.adr) || !rounds) return null;
+      return {
+        numerator: finite(m.damageEnemyHp) ? m.damageEnemyHp : m.adr * rounds,
+        denominator: rounds,
+        scale: 1,
+      };
     case "kast":
       return finite(m.kast) && rounds
         ? { numerator: (m.kast * rounds) / 100, denominator: rounds, scale: 100 }

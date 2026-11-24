@@ -1,5 +1,5 @@
 /**
- * Marco 1 — round-context-v1: side and outcome of each own round, own kills/deaths/damage per side.
+ * Marco 1 — round-context-v2: side and outcome of each own round, own kills/deaths/damage per side.
  * The winner is never derived from kills; unknown never becomes a win, a loss or a zero; the CT+T
  * split adds up to the match totals; teams are only checked, never named; reads are RLS-only.
  */
@@ -60,8 +60,12 @@ const kill = (round: number, actor: string, victim: string, id?: string): RoundE
   victim_steam_id: victim,
   damage: null,
 });
+// enemy-hp-v1: a damage hit needs a tick (or health_after) to know the health it removed;
+// without either it is UNCERTAIN and excluded, never guessed.
+let tick = 0;
 const dmg = (round: number, actor: string, victim: string, damage: number): RoundEventRow => ({
   round_number: round,
+  tick: ++tick,
   event_type: "damage",
   actor_steam_id: actor,
   victim_steam_id: victim,
@@ -316,12 +320,13 @@ describe("surfaces", () => {
   it("Coach facts hold the same numbers, numerically, and the guard keeps them", () => {
     const xray = buildXRay({ overview, dna: buildPlayerDna([]), sides: [], roundContext: ctx });
     const facts = buildCoachFacts(overview, buildPlayerDna([]), "pt-BR", { xray });
-    expect(facts.sides.roundContextVersion).toBe("round-context-v1");
+    expect(facts.sides.roundContextVersion).toBe("round-context-v2");
     expect(facts.sides.ct.roundContext).toMatchObject({
       roundsWon: 7,
       roundsLost: 3,
       kills: 1,
-      damage: 120,
+      // enemy-hp-v1: a 120-damage hit on a 100-health victim removes 100 (was 120 in v1).
+      damage: 100,
       roundWinRatePercent: 70,
     });
     expect(facts.sides.t.roundContext).toMatchObject({

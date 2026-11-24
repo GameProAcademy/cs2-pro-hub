@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { enemyHealthDamage, type DamageHit } from "@/lib/metrics/enemyDamage";
+import { enemyHealthDamage, enemyHpByRound, type DamageHit } from "@/lib/metrics/enemyDamage";
 
 const ME = "me";
 // Round 1: me and "ally" on CT; "e1", "e2" on T; "ghost" has no side in the round.
@@ -232,5 +232,41 @@ describe("enemy-hp-v1 — enemy health removed, each hit capped", () => {
       sameSide,
     );
     expect(r).toMatchObject({ enemyHp: 0, unknownSideHits: 1, enemyHits: 0, method: null });
+  });
+});
+
+describe("enemyHpByRound (round surfaces use the same function)", () => {
+  const side = (round: number, a: string, b: string) => {
+    // P and T1 are teammates in every round; E1 is on the other side; U has no side.
+    const team = (k: string) => (k === "P" || k === "T1" ? "A" : k === "E1" ? "B" : null);
+    const ta = team(a);
+    const tb = team(b);
+    return ta && tb ? ta === tb : null;
+  };
+  const hit = (round: number, tick: number, actor: string, victim: string, damage: number) => ({
+    round,
+    tick,
+    order: tick,
+    actor,
+    victim,
+    damage,
+    healthAfter: null,
+  });
+
+  it("caps per round, resets health each round, and counts exclusions per round", () => {
+    const m = enemyHpByRound(
+      [
+        hit(1, 1, "T1", "E1", 60),
+        hit(1, 2, "P", "E1", 90), // only 40 health left
+        hit(2, 3, "P", "E1", 90), // new round: full 100
+        hit(2, 4, "P", "U", 30), // unknown side → excluded
+        hit(3, 5, "T1", "E1", 50), // the player did not hit anyone → absent
+      ],
+      "P",
+      side,
+    );
+    expect(m.get(1)).toEqual({ enemyHp: 40, excludedHits: 0 });
+    expect(m.get(2)).toEqual({ enemyHp: 90, excludedHits: 1 });
+    expect(m.has(3)).toBe(false);
   });
 });

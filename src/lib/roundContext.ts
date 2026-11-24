@@ -1,5 +1,7 @@
 /**
- * Marco 1 — competitive context per round (`round-context-v1`). Pure and deterministic.
+ * Marco 1 — competitive context per round (`round-context-v2`). Pure and deterministic.
+ * v2 (UX-1.0): own damage is enemy-hp-v1 — enemy health removed, capped at the health left, team,
+ * self and unknown-side hits excluded (`src/lib/metrics/enemyDamage.ts`, same as the match ADR).
  *
  * Sources, all already persisted by the canonical pipeline and read under RLS:
  *  - side of each participant in each round: `round_players.side` (CT | T);
@@ -14,8 +16,10 @@
  * Team identity across halves is only CHECKED (two groups that always face each other); the match
  * result, the score and team names stay out (admission limitation L04).
  */
+import { enemyHpByRound, type DamageHit } from "@/lib/metrics/enemyDamage";
 
-export const ROUND_CONTEXT_VERSION = "round-context-v1";
+export const ROUND_CONTEXT_VERSION = "round-context-v2";
+
 /**
  * Rounds on a side below which per-side RATES (round win rate, kills and damage per round) are
  * withheld as INSUFFICIENT_SAMPLE; counts are always shown. Same convention as the DNA event
@@ -43,6 +47,9 @@ export interface RoundEventRow {
   actor_steam_id: string | null;
   victim_steam_id: string | null;
   damage: number | null;
+  /** enemy-hp-v1 inputs; damage rows must include every attacker of the match. */
+  tick?: number | null;
+  health_after?: unknown;
 }
 export interface MatchRoundInput {
   matchId: string;
@@ -59,7 +66,10 @@ export interface PlayerRound {
   outcome: RoundOutcome;
   kills: number;
   deaths: number;
+  /** enemy-hp-v1 enemy health removed in the round (certain hits only). */
   damage: number;
+  /** Hits left out of `damage`; > 0 = PARTIAL. */
+  damageExcludedHits: number;
 }
 
 /** Whether the participants split into exactly two groups that face each other every round. */
@@ -83,6 +93,8 @@ export interface SideSummary {
   kills: number;
   deaths: number;
   damage: number;
+  /** Rounds whose damage is PARTIAL (enemy-hp-v1 excluded hits > 0). */
+  damagePartialRounds: number;
   /** DERIVED rates; null below SIDE_MIN_ROUNDS (status INSUFFICIENT_SAMPLE). */
   rateStatus: RateStatus;
   /** won / (won + lost), percent with one decimal. */
@@ -125,31 +137,66 @@ export function buildMatchRounds(input: MatchRoundInput): MatchRoundContext {
   }
 
   const roundNumbers = [...new Set([...mySide.keys()])].sort((a, b) => a - b);
+  // Same-side test per round from every player's observed side (halftime swaps respected).
+  const sideOf = new Map<string, SideState>();
+  for (const rp of input.roundPlayers) {
+    const k = `${rp.round_number}\u0000${rp.participant_key}`;
+    const prev = sideOf.get(k);
+    const side = asSide(rp.side);
+    sideOf.set(k, prev === undefined || prev === side ? side : "UNKNOWN");
+  }
+  const sameSide = (round: number, a: string, b: string): boolean | null => {
+    const sa = sideOf.get(`${round}\u0000${a}`);
+    const sb = sideOf.get(`${round}\u0000${b}`);
+    return sa && sb && sa !== "UNKNOWN" && sb !== "UNKNOWN" ? sa === sb : null;
+  };
   const seen = new Set<string>();
-  const tally = new Map<number, { kills: number; deaths: number; damage: number }>();
+  const tally = new Map<number, { kills: number; deaths: number }>();
+  const damageHits: DamageHit[] = [];
   for (const e of input.events) {
     if (e.round_number == null) continue;
     if (e.id) {
       if (seen.has(e.id)) continue; // the same persisted event read twice counts once
       seen.add(e.id);
     }
-    const t = tally.get(e.round_number) ?? { kills: 0, deaths: 0, damage: 0 };
     if (e.event_type === "kill") {
+      const t = tally.get(e.round_number) ?? { kills: 0, deaths: 0 };
       if (e.actor_steam_id === me) t.kills++;
       if (e.victim_steam_id === me) t.deaths++;
-    } else if (e.event_type === "damage" && e.actor_steam_id === me) {
-      t.damage += e.damage ?? 0;
+      tally.set(e.round_number, t);
+    } else if (e.event_type === "damage") {
+      damageHits.push({
+        round: e.round_number,
+        tick: typeof e.tick === "number" ? e.tick : null,
+        order: e.id ?? damageHits.length,
+        actor: e.actor_steam_id,
+        victim: e.victim_steam_id,
+        damage: e.damage,
+        healthAfter:
+          typeof e.health_after === "number" && Number.isFinite(e.health_after)
+            ? e.health_after
+            : null,
+      });
     }
-    tally.set(e.round_number, t);
   }
+  // enemy-hp-v1 (src/lib/metrics/enemyDamage.ts) — the same function as the pipeline ADR.
+  const damage = enemyHpByRound(damageHits, me, sameSide);
 
   const rounds: PlayerRound[] = roundNumbers.map((n) => {
     const side = mySide.get(n) ?? "UNKNOWN";
     const won = winner.get(n) ?? "UNKNOWN";
     const outcome: RoundOutcome =
       side === "UNKNOWN" || won === "UNKNOWN" ? "UNKNOWN" : won === side ? "WON" : "LOST";
-    const t = tally.get(n) ?? { kills: 0, deaths: 0, damage: 0 };
-    return { round: n, side, outcome, ...t };
+    const t = tally.get(n) ?? { kills: 0, deaths: 0 };
+    const d = damage.get(n);
+    return {
+      round: n,
+      side,
+      outcome,
+      ...t,
+      damage: d?.enemyHp ?? 0,
+      damageExcludedHits: d?.excludedHits ?? 0,
+    };
   });
 
   return { matchId: input.matchId, rounds, teamCheck: checkTeams(input.roundPlayers) };
@@ -209,6 +256,7 @@ function summarizeSide(side: Side, rounds: PlayerRound[]): SideSummary {
   const kills = mine.reduce((s, r) => s + r.kills, 0);
   const deaths = mine.reduce((s, r) => s + r.deaths, 0);
   const damage = mine.reduce((s, r) => s + r.damage, 0);
+  const damagePartialRounds = mine.filter((r) => r.damageExcludedHits > 0).length;
   const enough = mine.length >= SIDE_MIN_ROUNDS;
   return {
     side,
@@ -219,6 +267,7 @@ function summarizeSide(side: Side, rounds: PlayerRound[]): SideSummary {
     kills,
     deaths,
     damage,
+    damagePartialRounds,
     rateStatus: enough ? "DERIVED" : "INSUFFICIENT_SAMPLE",
     roundWinRate: enough && won + lost > 0 ? round1((won / (won + lost)) * 100) : null,
     killsPerRound: enough ? round2(kills / mine.length) : null,
