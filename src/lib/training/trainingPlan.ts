@@ -2,8 +2,9 @@
  * Personal training plan (pure). Inputs are the player's own evidence and a bounded set of
  * catalog candidates; output is codes and catalog items only (the UI renders the words).
  *
- * Priorities: the weakest OBSERVED Player DNA dimensions below 60 / 100 (at most three; a
- * null dimension is never a weakness). Each priority gets an in-game practice activity and,
+ * Priorities: the dimensions of the single Training list (`cs2.training-priority.v2`, in its
+ * order, at most three) when `focus` is given (UX-1.7d, R-13); otherwise (legacy callers) the
+ * weakest OBSERVED Player DNA dimensions below 60 / 100 (a null dimension is never a weakness). Each priority gets an in-game practice activity and,
  * when the catalog has one in the player's language, a lesson. Declared goals add needs.
  * Strategic Knowledge / Extra Skills items are added only when a need points to them (e.g.
  * teamplay → communication, consistency → productive routine, PRO_CAREER → career skills).
@@ -11,6 +12,7 @@
  */
 import type { CatalogLocale, CatalogTrack } from "../catalog/catalogCore.ts";
 import {
+  DIMENSION_TOPICS,
   needsFromPlayer,
   pickRecommendations,
   type CatalogCandidate,
@@ -31,12 +33,19 @@ export interface TrainingPlanInput {
   goals: string[];
   /** Maps the player played (de_*), for map-position lessons on a positioning priority. */
   maps: string[];
+  /**
+   * UX-1.7d: the dimensions of the single Training list, in its order. When present it alone
+   * decides the DNA priorities (an empty list → no DNA week), so the catalogue plan never
+   * focuses on something the Training list does not recommend.
+   */
+  focus?: string[];
   candidates: CatalogCandidate[];
 }
 
 export interface PlanPriority {
   dimension: string;
-  index: number;
+  /** DNA index of the dimension; null when the DNA has none (focus from the Training list). */
+  index: number | null;
 }
 
 export interface PlanWeek {
@@ -64,15 +73,32 @@ export function planTopics(input: Omit<TrainingPlanInput, "candidates">): string
 }
 
 function planNeeds(input: Omit<TrainingPlanInput, "candidates">): Need[] {
-  const needs = needsFromPlayer({
-    dimensions: input.dimensions,
-    goals: input.goals,
-    ceiling: PLAN_CEILING,
-  });
+  const needs = input.focus
+    ? [
+        ...focusDimensions(input.focus).flatMap((dimension, rank) =>
+          (DIMENSION_TOPICS[dimension] ?? []).map((topic) => ({
+            topic,
+            weight: 3 - rank,
+            source: "dna" as const,
+            detail: dimension,
+          })),
+        ),
+        ...needsFromPlayer({ dimensions: [], goals: input.goals, ceiling: PLAN_CEILING }),
+      ]
+    : needsFromPlayer({
+        dimensions: input.dimensions,
+        goals: input.goals,
+        ceiling: PLAN_CEILING,
+      });
   if (needs.some((n) => n.topic === "positioning"))
     for (const map of new Set(input.maps))
       needs.push({ topic: `map:${map}`, weight: 1, source: "map", detail: map });
   return needs;
+}
+
+/** Distinct dimensions in list order, at most three. */
+function focusDimensions(focus: string[]): string[] {
+  return [...new Set(focus)].slice(0, 3);
 }
 
 export function buildTrainingPlan(input: TrainingPlanInput): TrainingPlanModel {
@@ -80,10 +106,18 @@ export function buildTrainingPlan(input: TrainingPlanInput): TrainingPlanModel {
   if (input.dataState === "NO_MATCHES")
     return { ...base, state: "NO_DATA", priorities: [], weeks: [], complementary: [] };
 
-  const priorities: PlanPriority[] = input.dimensions
-    .filter((d): d is PlanPriority => d.index !== null && d.index < PLAN_CEILING)
-    .sort((a, b) => a.index - b.index)
-    .slice(0, 3);
+  const priorities: PlanPriority[] = input.focus
+    ? focusDimensions(input.focus).map((dimension) => ({
+        dimension,
+        index: input.dimensions.find((d) => d.dimension === dimension)?.index ?? null,
+      }))
+    : input.dimensions
+        .filter(
+          (d): d is { dimension: string; index: number } =>
+            d.index !== null && d.index < PLAN_CEILING,
+        )
+        .sort((a, b) => a.index - b.index)
+        .slice(0, 3);
   const needs = planNeeds(input);
   if (!needs.length)
     return { ...base, state: "NO_PRIORITY", priorities: [], weeks: [], complementary: [] };

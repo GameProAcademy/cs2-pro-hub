@@ -103,7 +103,7 @@ function PlanView({
     if (r.need.source === "dna")
       return fill(t("training.real.why.dna"), {
         dimension: dimLabel(r.need.detail),
-        value: index === undefined ? "—" : `${index} / 100`,
+        value: index == null ? "—" : `${index} / 100`,
       });
     if (r.need.source === "goal")
       return fill(t("training.real.why.goal"), { goal: goalLabel(r.need.detail) });
