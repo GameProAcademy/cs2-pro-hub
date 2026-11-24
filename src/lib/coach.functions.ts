@@ -33,6 +33,7 @@ import {
   contextChars,
   fitHistory,
   type CoachFacts,
+  type CoachScreenFact,
 } from "@/lib/coach/coachContext";
 import type { CoachProviderError } from "@/lib/coach/coachProvider.server";
 import { fetchCatalogCandidates } from "@/lib/catalog/catalogData.server";
@@ -398,6 +399,20 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             conversationId,
             preferredName,
           );
+          // UX-1.8 / R-11: a match id from the client is used ONLY when it is one of the caller's
+          // own matches (overview is read with the caller's session and RLS); anything else is
+          // ignored, so the Coach never reads or names another player's match.
+          const focus = input.screen?.matchId
+            ? (overview.matches.find((m) => m.matchId === input.screen!.matchId) ?? null)
+            : null;
+          const screenFact: CoachScreenFact | null = input.screen
+            ? {
+                area: input.screen.area,
+                tab: focus ? input.screen.tab : null,
+                matchInFocus: Boolean(focus),
+                match: focus ? coachMatchLabel(focus) : null,
+              }
+            : null;
           // The same X-ray contract the /analysis page renders: the Coach never recomputes it.
           const coachMatchIds = overview.matches.map((m) => m.matchId);
           const [
@@ -415,9 +430,9 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             // PM2: same numbers as the death review page; a read failure only drops the block.
             loadDeathPatterns(db, context.userId, overview.matches).catch(() => null),
             // PM3: same reports as /duels and /utility, for the most recent match only.
-            loadLatestMatchPlay(db, context.userId, overview).catch(() => null),
+            loadLatestMatchPlay(db, context.userId, overview, focus?.matchId).catch(() => null),
             // PM4: same report as /rounds, for the most recent match only.
-            loadLatestMatchRounds(db, context.userId, overview).catch(() => null),
+            loadLatestMatchRounds(db, context.userId, overview, focus?.matchId).catch(() => null),
             // PM5: own open training plan and saved moments (RLS); a read failure drops the block.
             loadOpenTrainingPlan(db as never)
               .then((p) => compactTrainingPlan(p, input.locale))
@@ -440,6 +455,7 @@ export const sendCoachMessage = createServerFn({ method: "POST" })
             trainingPlan,
             savedMoments,
             externalAccounts,
+            screen: screenFact,
             // PM4: same pure report as /evolution (last 10 eligible matches, all maps).
             evolution: overview.matches.length
               ? compactEvolution(
@@ -615,8 +631,10 @@ export async function loadLatestMatchRounds(
   db: SupabaseClient<Database>,
   userId: string,
   overview: PlayerOverview,
+  /** UX-1.8: an own match to use instead of the latest (ignored when not in overview). */
+  focusMatchId?: string | null,
 ): Promise<CoachLatestRounds | null> {
-  const latest = [...overview.matches].sort((a, b) => b.playedAt.localeCompare(a.playedAt))[0];
+  const latest = pickCoachMatch(overview, focusMatchId);
   if (!latest) return null;
   const loaded = await loadRoundsInput(db, userId, latest.matchId);
   if (!loaded) return null;
@@ -628,8 +646,10 @@ export async function loadLatestMatchPlay(
   db: SupabaseClient<Database>,
   userId: string,
   overview: PlayerOverview,
+  /** UX-1.8: an own match to use instead of the latest (ignored when not in overview). */
+  focusMatchId?: string | null,
 ): Promise<LatestMatchPlay | null> {
-  const latest = [...overview.matches].sort((a, b) => b.playedAt.localeCompare(a.playedAt))[0];
+  const latest = pickCoachMatch(overview, focusMatchId);
   if (!latest) return null;
   const [combat, utility] = await Promise.all([
     loadCombatInput(db, userId, latest.matchId),
@@ -651,4 +671,18 @@ export async function loadLatestMatchPlay(
         }
       : null,
   );
+}
+
+/** UX-1.8: the focus match when it is one of the caller's own, else the most recent. */
+export function pickCoachMatch(
+  overview: PlayerOverview,
+  focusMatchId?: string | null,
+): PlayerOverview["matches"][number] | undefined {
+  const own = focusMatchId ? overview.matches.find((m) => m.matchId === focusMatchId) : undefined;
+  return own ?? [...overview.matches].sort((a, b) => b.playedAt.localeCompare(a.playedAt))[0];
+}
+
+/** Map and date of a match as the Coach facts already label matches (no id). */
+function coachMatchLabel(m: PlayerOverview["matches"][number]): CoachScreenFact["match"] {
+  return { map: m.map ?? null, date: m.playedAt.slice(0, 10), dateBasis: m.dateSource };
 }

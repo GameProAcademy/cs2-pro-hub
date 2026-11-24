@@ -4,6 +4,7 @@
  * no local or fixed reply. Text is rendered as React text nodes, never as HTML.
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import { Bot, Plus, RotateCcw, Send, Sparkles, User } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 
@@ -35,6 +36,7 @@ import {
   type CoachState,
 } from "@/lib/coach.functions";
 import { COACH_MAX_MESSAGE_CHARS } from "@/lib/coach/coachContext";
+import { coachScreenFrom } from "@/lib/coach/coachScreen";
 import { getCoachConversation, getCoachPreferences } from "@/lib/coachSession.functions";
 import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
@@ -194,6 +196,9 @@ export function RealCoachChat({ className }: { className?: string | undefined })
   const state = useQuery({ queryKey: COACH_STATE_KEY, queryFn: () => getCoachState() });
   const prefs = useQuery({ queryKey: COACH_PREFERENCES_KEY, queryFn: () => getCoachPreferences() });
   const [draft, setDraft] = useState("");
+  // UX-1.8: the page behind the drawer (or /coach itself) goes with each question.
+  const location = useRouterState({ select: (st) => st.location });
+  const screen = coachScreenFrom(location.pathname, location.search as Record<string, unknown>);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<CoachErrorCode | null>(null);
   /** undefined: the latest conversation; null: a new one; string: one picked from the list. */
@@ -269,7 +274,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
           : globalThis.crypto.randomUUID();
       requestRef.current = { id: requestId, message, conversationId };
       const result = await sendCoachMessage({
-        data: { message, locale, conversationId, requestId },
+        data: { message, locale, conversationId, requestId, screen },
       });
       if (result.ok) {
         requestRef.current = null;

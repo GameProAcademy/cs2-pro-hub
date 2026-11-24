@@ -94,6 +94,8 @@ describe("AI Coach input validation", () => {
       locale: "pt-PT",
       conversationId: null,
       requestId: null,
+      // UX-1.8: no screen sent → null (never a default screen).
+      screen: null,
     });
   });
 });
