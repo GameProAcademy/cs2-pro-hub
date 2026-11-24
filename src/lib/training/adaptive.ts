@@ -108,8 +108,11 @@ export interface Priority {
   exercises: string[];
 }
 
+/** UX-1.7: plans are built from cs2.training-priority.v2 (priorityV2.ts) from now on. */
+export type PriorityVersion = typeof PRIORITY_VERSION | "cs2.training-priority.v2";
+
 export interface PriorityResult {
-  version: typeof PRIORITY_VERSION;
+  version: PriorityVersion;
   state: "READY" | "NO_EVIDENCE" | "INSUFFICIENT_SAMPLE";
   matches: number;
   priorities: Priority[];
@@ -263,7 +266,7 @@ export interface PlanGoal {
 
 export interface PlanContent {
   version: typeof PLAN_VERSION;
-  priorityVersion: typeof PRIORITY_VERSION;
+  priorityVersion: PriorityVersion;
   exercisesVersion: typeof EXERCISES_VERSION;
   horizon: Horizon;
   availability: Availability;
@@ -349,7 +352,8 @@ export function buildPlan(
   ];
   return {
     version: PLAN_VERSION,
-    priorityVersion: PRIORITY_VERSION,
+    // The priorities' own version (v1 plans stay v1; plans created from v2 say v2).
+    priorityVersion: result.version,
     exercisesVersion: EXERCISES_VERSION,
     horizon,
     availability: { sessionsPerWeek: perWeek, minutesPerSession: minutes },

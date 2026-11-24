@@ -4,6 +4,7 @@ import { ExternalLink } from "lucide-react";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AdaptiveTraining } from "@/components/training/AdaptiveTraining";
+import { TrainingPrioritiesV2 } from "@/components/training/TrainingPrioritiesV2";
 import { AppShell } from "@/components/layout/AppShell";
 import { useI18n, useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
@@ -42,7 +43,6 @@ export function RealTrainingPlan() {
     queryKey: ["training-plan", locale],
     queryFn: () => getTrainingPlan({ data: { locale } }),
   });
-
   return (
     <AppShell>
       <div className="space-y-8">
@@ -51,7 +51,13 @@ export function RealTrainingPlan() {
           title={t("training.title")}
           description={t("training.description")}
         />
+        {/* UX-1.7 / R-13: one list, one engine (cs2.training-priority.v2); the adaptive plan
+            below is built from it. The catalogue plan (trainingPlan.ts) is no longer a second
+            list on this page. */}
+        <TrainingPrioritiesV2 />
         <AdaptiveTraining />
+        {/* GamePro catalogue content (practice and lessons by week) stays available; its own
+            priority box, a second list, is no longer shown (UX-1.7). */}
         <h2 className="pt-2 text-lg font-semibold">{t("training.adaptive.catalogHeading")}</h2>
         {query.isLoading ? (
           <LoadingState label={t("common.loading")} />
@@ -124,7 +130,7 @@ function PlanView({
         </p>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4">
         <div className="rounded-lg border border-border bg-card p-4">
           <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
             {t("training.real.goals")}
@@ -132,20 +138,6 @@ function PlanView({
           <p className="mt-2 text-sm text-foreground">
             {plan.goals.length ? plan.goals.map(goalLabel).join(" · ") : t("training.real.noGoals")}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            {t("training.real.priorities")}
-          </h2>
-          <ul className="mt-2 space-y-1 text-sm">
-            {plan.priorities.map((p) => (
-              <li key={p.dimension} className="flex justify-between gap-2">
-                <span>{dimLabel(p.dimension)}</span>
-                <span className="font-mono text-muted-foreground">{`${p.index} / 100`}</span>
-              </li>
-            ))}
-            {!plan.priorities.length ? <li className="text-muted-foreground">—</li> : null}
-          </ul>
         </div>
       </section>
 

@@ -43,4 +43,36 @@ export const roomFr: Record<keyof typeof roomPtBR, string> = {
   "real.dna.selected": "{dimension} : {value}, {n} signaux",
   "real.dna.pick": "Touchez un axe ou une dimension pour voir ses signaux.",
   "real.dna.clutchAttempts": "{n} sur {min} tentatives de clutch",
+  "training.v2.title": "Priorités d’entraînement",
+  "training.v2.subtitle":
+    "Une seule liste. Un signal y entre avec un échantillon suffisant et tout son intervalle sous la référence fixe de CS2 PRO ; 3 au maximum.",
+  "training.v2.none":
+    "Pas encore de recommandation : aucun signal n’a un échantillon suffisant avec tout son intervalle sous la référence.",
+  "training.v2.observing": "En observation ({n})",
+  "training.v2.value": "{v} % · intervalle {a}–{b} % · référence {r} %",
+  "training.v2.sample": "{n} {unit} sur {m} match(s)",
+  "training.v2.reason.BELOW_SHOW_MINIMUM": "Échantillon insuffisant pour afficher la valeur",
+  "training.v2.reason.BELOW_RECOMMEND_MINIMUM": "Pas encore de recommandation",
+  "training.v2.reason.INTERVAL_CONTAINS_REFERENCE":
+    "L’intervalle contient la référence : impossible d’affirmer qu’il est en dessous",
+  "training.v2.reason.ABOVE_REFERENCE": "Au-dessus de la référence",
+  "training.v2.reason.ONE_MATCH_DOMINATES": "Un match concentre plus de la moitié de l’échantillon",
+  "training.v2.reason.DEPENDS_ON_ONE_MATCH":
+    "Sans le match le plus lourd, le signal ne respecte plus le critère",
+  "training.v2.reason.NEVER_RECOMMENDS":
+    "Trop rare pour être recommandé (clutch par type pas encore mesuré)",
+  "training.v2.missing": "il manque {parts}",
+  "training.v2.missing.sample": "{n} {unit}",
+  "training.v2.missing.matches": "{n} match(s)",
+  "training.v2.method":
+    "Méthode cs2.training-priority.v2 · référence fixe de CS2 PRO, pas une comparaison avec d’autres joueurs.",
+  "training.v2.open": "Voir les preuves",
+  "training.v2.waiting":
+    "Également sous la référence ; en attente d’une place (3 priorités au maximum)",
+  "training.v2.unit.rounds": "rounds",
+  "training.v2.unit.kills": "kills",
+  "training.v2.unit.deaths": "morts",
+  "training.v2.unit.opening_duels": "duels d’ouverture",
+  "training.v2.unit.clutches": "clutches",
+  "training.v2.unit.kills_deaths": "kills et morts",
 };

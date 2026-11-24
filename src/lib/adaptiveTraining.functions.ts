@@ -13,22 +13,22 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { buildEvolution } from "@/lib/evolution/evolution";
-import { loadPlayerDna, loadPlayerOverview, ownPlayerIds } from "@/lib/playerData.functions";
+import { loadPlayerDna } from "@/lib/playerData.functions";
 import {
+  AREA_PAGE,
   AVAILABILITY_LIMITS,
   HORIZONS,
   PLAN_VERSION,
   adherence,
   buildPlan,
-  computePriorities,
   diffPlans,
   type Horizon,
   type PlanContent,
   type PlanDiff,
   type PriorityResult,
 } from "@/lib/training/adaptive";
-import type { SkillArea } from "@/lib/training/exercises";
+import { exercisesFor, type SkillArea } from "@/lib/training/exercises";
+import { asPriorityResult, computePrioritiesV2 } from "@/lib/training/priorityV2";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyDb = SupabaseClient<any>;
@@ -54,30 +54,15 @@ const fail = (label: string, e: { code?: string } | null): never => {
   throw new Error(`TRAINING_${label}_FAILED:${e?.code ?? "unknown"}`);
 };
 
-/** Evidence of the caller, read with the caller's session. */
+/**
+ * Evidence of the caller, read with the caller's session. UX-1.7: the plan's priorities come
+ * from the ONE list, cs2.training-priority.v2 (same rows as the Player DNA v3); the v1 engine
+ * (`computePriorities`) is kept, unchanged, for the plans already created with it.
+ */
 async function evidence(context: { supabase: unknown; userId: string }): Promise<PriorityResult> {
   const db = context.supabase as SupabaseClient<import("@/integrations/supabase/types").Database>;
-  const playerIds = await ownPlayerIds(db, context.userId, "TRAINING");
-  const [overview, { dna }, goals] = await Promise.all([
-    loadPlayerOverview(db, context.userId),
-    loadPlayerDna(db, context.userId),
-    playerIds.length === 1
-      ? db.from("player_profile_goals").select("goal_code").eq("player_id", playerIds[0]!)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-  if (goals.error) fail("GOALS_READ", goals.error);
-  const evolution = overview.matches.length
-    ? buildEvolution(overview.matches, { window: 10, map: null, side: "ALL" })
-    : null;
-  return computePriorities(
-    {
-      state: dna.state === "EMPTY" ? "NO_DATA" : dna.state,
-      matches: dna.matches,
-      dimensions: dna.dimensions.map((d) => ({ dimension: d.dimension, value: d.value })),
-    },
-    evolution,
-    (goals.data ?? []).map((g) => g.goal_code as string),
-  );
+  const { rows } = await loadPlayerDna(db, context.userId);
+  return asPriorityResult(computePrioritiesV2(rows), exercisesFor, (area) => AREA_PAGE[area]);
 }
 
 const todayIso = () => new Date().toISOString().slice(0, 10);

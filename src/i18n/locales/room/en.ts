@@ -43,4 +43,34 @@ export const roomEn: Record<keyof typeof roomPtBR, string> = {
   "real.dna.selected": "{dimension}: {value}, {n} signals",
   "real.dna.pick": "Tap an axis or a dimension to see its signals.",
   "real.dna.clutchAttempts": "{n} of {min} clutch attempts",
+  "training.v2.title": "Training priorities",
+  "training.v2.subtitle":
+    "One list. A signal enters with enough sample and its whole interval below the CS2 PRO fixed reference; at most 3.",
+  "training.v2.none":
+    "No recommendation yet: no signal has enough sample with its whole interval below the reference.",
+  "training.v2.observing": "In observation ({n})",
+  "training.v2.value": "{v}% · interval {a}–{b}% · reference {r}%",
+  "training.v2.sample": "{n} {unit} in {m} match(es)",
+  "training.v2.reason.BELOW_SHOW_MINIMUM": "Not enough sample to show the value",
+  "training.v2.reason.BELOW_RECOMMEND_MINIMUM": "No recommendation yet",
+  "training.v2.reason.INTERVAL_CONTAINS_REFERENCE":
+    "The interval contains the reference: it cannot be said to be below",
+  "training.v2.reason.ABOVE_REFERENCE": "Above the reference",
+  "training.v2.reason.ONE_MATCH_DOMINATES": "One match holds more than half of the sample",
+  "training.v2.reason.DEPENDS_ON_ONE_MATCH":
+    "Without the heaviest match the signal no longer meets the rule",
+  "training.v2.reason.NEVER_RECOMMENDS": "Too rare to recommend (clutch per type not measured yet)",
+  "training.v2.missing": "{parts} missing",
+  "training.v2.missing.sample": "{n} {unit}",
+  "training.v2.missing.matches": "{n} match(es)",
+  "training.v2.method":
+    "Method cs2.training-priority.v2 · CS2 PRO fixed reference, not a comparison with other players.",
+  "training.v2.open": "See evidence",
+  "training.v2.waiting": "Also below the reference; waiting for a slot (at most 3 priorities)",
+  "training.v2.unit.rounds": "rounds",
+  "training.v2.unit.kills": "kills",
+  "training.v2.unit.deaths": "deaths",
+  "training.v2.unit.opening_duels": "opening duels",
+  "training.v2.unit.clutches": "clutches",
+  "training.v2.unit.kills_deaths": "kills and deaths",
 };

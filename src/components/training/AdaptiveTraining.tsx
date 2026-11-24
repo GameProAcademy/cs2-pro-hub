@@ -169,7 +169,8 @@ function CreatePanel({ v }: { v: TrainingView }) {
       title={t("training.adaptive.create.title")}
       subtitle={t("training.adaptive.create.subtitle")}
     >
-      <Priorities priorities={v.evidence.priorities} />
+      {/* UX-1.7: the priorities are the ONE list shown above (TrainingPrioritiesV2); the plan
+          is built from it. A plan keeps showing the priorities it was created with. */}
       {v.evidence.excluded.length ? (
         <p className="mt-2 text-xs text-muted-foreground" data-excluded-areas>
           {t("training.adaptive.excluded")}{" "}
