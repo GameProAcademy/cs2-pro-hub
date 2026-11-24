@@ -3,6 +3,7 @@ import { catalogFr } from "./catalog/fr";
 import { demoFlowFr } from "./demoFlow/fr";
 import { guidanceFr } from "./guidance/fr";
 import { uxFr } from "./ux/fr";
+import { roomFr } from "./room/fr";
 import { xrayFr } from "./xray/fr";
 import { coach2Fr } from "./coach2/fr";
 import { notifyFr } from "./notify/fr";
@@ -38,6 +39,7 @@ export const fr: Dictionary = {
   ...demoFlowFr,
   ...guidanceFr,
   ...uxFr,
+  ...roomFr,
   ...xrayFr,
   ...coach2Fr,
   ...notifyFr,

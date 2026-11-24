@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { RealHeatmapPage, type HeatmapSearch } from "@/components/real/RealHeatmap";
 import { spatialHeatmapInput } from "@/lib/spatial.functions";
@@ -17,6 +17,25 @@ export const Route = createFileRoute("/_authenticated/maps")({
       if (parsed.success) out[key] = parsed.data;
     }
     return out as HeatmapSearch;
+  },
+  // UX-1.5: a link to one match opens that match's room on the equivalent tab (old deep links
+  // keep working); without a match this page still works on its own.
+  beforeLoad: ({ search }) => {
+    if (search.matchId)
+      throw redirect({
+        to: "/matches/$matchId",
+        params: { matchId: search.matchId },
+        search: {
+          tab: "map",
+          ...{
+            ...(search.layer ? { layer: search.layer } : {}),
+            ...(search.side ? { side: search.side } : {}),
+            ...(search.level ? { level: search.level } : {}),
+            ...(search.weapon ? { weapon: search.weapon } : {}),
+          },
+        },
+        replace: true,
+      });
   },
   head: () => ({ meta: [{ title: "Mapas — CS2 PRO AI COACH" }] }),
   component: MapsPage,

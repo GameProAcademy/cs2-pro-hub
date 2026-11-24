@@ -7,6 +7,7 @@ import { catalogPtBR } from "./catalog/pt-BR";
 import { demoFlowPtBR } from "./demoFlow/pt-BR";
 import { guidancePtBR } from "./guidance/pt-BR";
 import { uxPtBR } from "./ux/pt-BR";
+import { roomPtBR } from "./room/pt-BR";
 import { xrayPtBR } from "./xray/pt-BR";
 import { coach2PtBR } from "./coach2/pt-BR";
 import { notifyPtBR } from "./notify/pt-BR";
@@ -42,6 +43,7 @@ export const ptBR = {
   ...demoFlowPtBR,
   ...guidancePtBR,
   ...uxPtBR,
+  ...roomPtBR,
   ...xrayPtBR,
   ...coach2PtBR,
   ...notifyPtBR,

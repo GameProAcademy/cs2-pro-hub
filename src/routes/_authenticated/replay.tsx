@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { RealReplayPage, type ReplaySearch } from "@/components/real/RealReplay";
@@ -22,6 +22,23 @@ export const Route = createFileRoute("/_authenticated/replay")({
         (out as Record<string, unknown>)[key] = parsed.data;
     }
     return out;
+  },
+  // UX-1.5: a link to one match opens that match's room on the equivalent tab (old deep links
+  // keep working); without a match this page still works on its own.
+  beforeLoad: ({ search }) => {
+    if (search.matchId)
+      throw redirect({
+        to: "/matches/$matchId",
+        params: { matchId: search.matchId },
+        search: {
+          tab: "replay",
+          ...{
+            ...(search.round !== undefined ? { round: search.round } : {}),
+            ...(search.tick !== undefined ? { tick: search.tick } : {}),
+          },
+        },
+        replace: true,
+      });
   },
   head: () => ({ meta: [{ title: "Replay 2D — CS2 PRO AI COACH" }] }),
   component: ReplayPage,

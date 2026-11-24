@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { RealDeathReviewPage, type DeathReviewSearch } from "@/components/real/RealDeathReview";
@@ -14,6 +14,17 @@ export const Route = createFileRoute("/_authenticated/deaths")({
     if (!parsed.success || !parsed.data) return {};
     const event = z.string().uuid().safeParse(search["event"]);
     return event.success ? { matchId: parsed.data, event: event.data } : { matchId: parsed.data };
+  },
+  // UX-1.5: a link to one match opens that match's room on the equivalent tab (old deep links
+  // keep working); without a match this page still works on its own.
+  beforeLoad: ({ search }) => {
+    if (search.matchId)
+      throw redirect({
+        to: "/matches/$matchId",
+        params: { matchId: search.matchId },
+        search: { tab: "deaths", ...(search.event ? { event: search.event } : {}) },
+        replace: true,
+      });
   },
   head: () => ({ meta: [{ title: "Mortes — CS2 PRO AI COACH" }] }),
   component: DeathsPage,

@@ -13,32 +13,93 @@ import { UserAvatar } from "@/components/common/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { DEMO_DATA } from "@/config/app";
 import { NotificationBell } from "@/components/notifications/NotificationComponents";
-import { navItems, uploadNavItem } from "@/config/navigation";
+import { areaOf, navAreas, navItems, uploadNavItem } from "@/config/navigation";
 import { useT } from "@/i18n";
 import { useAdminSession } from "@/hooks/useAdminSession";
 import { useAccount } from "@/hooks/useAccount";
 import { signOutEverywhere } from "@/lib/auth";
+import { fill } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   const t = useT();
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const active = areaOf(pathname);
   return (
     <nav className="space-y-1" aria-label={t("nav.mainLabel")}>
-      {navItems.map((item) => (
-        <Link
-          key={item.to}
-          to={item.to}
-          onClick={onNavigate}
-          activeProps={{
-            className:
-              "border-primary/40 bg-sidebar-accent text-sidebar-accent-foreground [&_svg]:text-primary",
-          }}
-          className="flex items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <item.icon className="size-4 shrink-0" aria-hidden />
-          <span className="truncate">{t(item.labelKey)}</span>
-        </Link>
-      ))}
+      {navAreas.map((area) => {
+        const isActive = active?.id === area.id;
+        return (
+          <div key={area.id} data-nav-area={area.id}>
+            <Link
+              to={area.to}
+              onClick={onNavigate}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "flex min-h-11 items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isActive &&
+                  "border-primary/40 bg-sidebar-accent text-sidebar-accent-foreground [&_svg]:text-primary",
+              )}
+            >
+              <area.icon className="size-4 shrink-0" aria-hidden />
+              <span className="truncate">{t(area.labelKey)}</span>
+            </Link>
+            {isActive && area.sections ? (
+              <ul className="mb-1 ml-7 mt-1 space-y-0.5 border-l border-sidebar-border pl-2">
+                {area.sections.map((sec) => (
+                  <li key={sec.to}>
+                    <Link
+                      to={sec.to}
+                      onClick={onNavigate}
+                      activeOptions={{ exact: false }}
+                      activeProps={{ className: "text-foreground", "aria-current": "page" }}
+                      className="flex min-h-9 items-center rounded px-2 text-[13px] text-muted-foreground hover:text-foreground"
+                    >
+                      {t(sec.labelKey)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * The sections of the current area as a bar on top of the page (mobile: the second tap; the
+ * sidebar lists them on desktop). Absent for one-page areas and account pages.
+ */
+function AreaSections() {
+  const t = useT();
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const area = areaOf(pathname);
+  if (!area?.sections) return null;
+  return (
+    <nav
+      aria-label={fill(t("nav.areaSections"), { area: t(area.labelKey) })}
+      className="-mx-3 mb-4 overflow-x-auto px-3 sm:-mx-6 sm:px-6 lg:hidden"
+      data-area-sections={area.id}
+    >
+      <ul className="flex min-w-max gap-1">
+        {area.sections.map((sec) => (
+          <li key={sec.to}>
+            <Link
+              to={sec.to}
+              activeOptions={{ exact: false }}
+              activeProps={{
+                className: "border-primary/50 bg-primary/10 text-foreground",
+                "aria-current": "page",
+              }}
+              className="inline-flex min-h-11 items-center rounded-full border border-border px-3 text-xs font-medium text-muted-foreground"
+            >
+              {t(sec.labelKey)}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </nav>
   );
 }
@@ -123,7 +184,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigating = useRouterState({ select: (s) => s.status === "pending" });
   const currentItem = [...navItems, uploadNavItem].find((i) => i.to === pathname);
-  const current = currentItem ? t(currentItem.labelKey) : "CS2 PRO";
+  const currentArea = areaOf(pathname);
+  const current = currentItem
+    ? t(currentItem.labelKey)
+    : currentArea
+      ? t(currentArea.labelKey)
+      : "CS2 PRO";
 
   return (
     <DialogPrimitive.Root open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -200,26 +266,29 @@ export function AppShell({ children }: { children: ReactNode }) {
           </main>
         </div>
 
-        {/* Mobile bottom navigation — the Coach stays reachable here. */}
+        {/* Mobile bottom navigation — the five areas, full labels (UX-1 M-3). */}
         <nav
           aria-label={t("nav.quickLabel")}
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
         >
-          {navItems
-            .filter((i) => i.primary)
-            .map((item) => (
+          {navAreas.map((area) => {
+            const isActive = areaOf(pathname)?.id === area.id;
+            return (
               <Link
-                key={item.to}
-                to={item.to}
-                activeProps={{ className: "text-primary" }}
+                key={area.id}
+                to={area.to}
+                aria-current={isActive ? "page" : undefined}
+                data-bottom-area={area.id}
                 className={cn(
-                  "flex min-w-0 flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors",
+                  "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center text-[11px] font-medium leading-tight text-muted-foreground transition-colors",
+                  isActive && "text-primary",
                 )}
               >
-                <item.icon className="size-4" aria-hidden />
-                <span className="truncate">{t(item.labelKey).split(" ").at(-1)}</span>
+                <area.icon className="size-5" aria-hidden />
+                <span className="break-words">{t(area.labelKey)}</span>
               </Link>
-            ))}
+            );
+          })}
         </nav>
 
         {/* Floating Coach access at every width (UX-1 R-12 / M-10). */}

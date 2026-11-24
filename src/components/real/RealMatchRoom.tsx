@@ -1,0 +1,329 @@
+/**
+ * UX-1.5 — Sala da Partida (`/matches/$matchId`, Doc. 2 §3 and §11).
+ *
+ * The match is a place: a context header ("Mirage · 17 nov", date source, rounds, result) and
+ * tabs. Every tab is the existing per-match page rendered inside `EmbeddedScope` (no own shell,
+ * header or match selector) with the same server function and the same cache key — nothing is
+ * recalculated here. The Summary reads the match row the overview already loaded and the round
+ * report the Rounds tab already loads.
+ */
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, Film, UserX } from "lucide-react";
+
+import { MetricTerm } from "@/components/common/MetricTerm";
+import { MetricCard } from "@/components/common/MetricCard";
+import { ChartCard } from "@/components/common/ChartCard";
+import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
+import { AppShell } from "@/components/layout/AppShell";
+import { EmbeddedScope } from "@/components/real/MatchScope";
+import { RealCombatPage } from "@/components/real/RealCombat";
+import { PLAYER_OVERVIEW_QUERY_KEY } from "@/components/real/RealData";
+import { RealDeathReviewPage } from "@/components/real/RealDeathReview";
+import { RealHeatmapPage, type HeatmapSearch } from "@/components/real/RealHeatmap";
+import { RealReplayPage } from "@/components/real/RealReplay";
+import { RealRoundsPage, roundsQueryKey } from "@/components/real/RealRounds";
+import { RealUtilityPage } from "@/components/real/RealUtility";
+import { useI18n, useT, type TranslationKey } from "@/i18n";
+import { mapDisplayName } from "@/lib/cs2/maps";
+import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
+import { getPlayerOverview } from "@/lib/playerData.functions";
+import type { OverviewMatch } from "@/lib/playerOverview";
+import { getMatchRounds } from "@/lib/rounds.functions";
+import { cn } from "@/lib/utils";
+
+export const MATCH_ROOM_TABS = [
+  "summary",
+  "rounds",
+  "duels",
+  "deaths",
+  "utility",
+  "map",
+  "replay",
+] as const;
+export type MatchRoomTab = (typeof MATCH_ROOM_TABS)[number];
+
+export interface MatchRoomSearch {
+  tab?: MatchRoomTab | undefined;
+  round?: number | undefined;
+  tick?: number | undefined;
+  event?: string | undefined;
+  layer?: HeatmapSearch["layer"];
+  side?: HeatmapSearch["side"];
+  level?: HeatmapSearch["level"];
+  weapon?: string | undefined;
+}
+
+const noop = () => {};
+
+export function RealMatchRoomPage({
+  matchId,
+  search,
+  onSearch,
+}: {
+  matchId: string;
+  search: MatchRoomSearch;
+  onSearch: (next: MatchRoomSearch) => void;
+}) {
+  const t = useT();
+  const overview = useQuery({
+    queryKey: PLAYER_OVERVIEW_QUERY_KEY,
+    queryFn: () => getPlayerOverview(),
+  });
+  const match = overview.data?.matches.find((m) => m.matchId === matchId) ?? null;
+  const tab = search.tab ?? "summary";
+  const go = (next: MatchRoomSearch) => onSearch({ ...search, ...next });
+
+  return (
+    <AppShell>
+      <div className="space-y-6" data-match-room={matchId}>
+        <Link
+          to="/matches"
+          className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" aria-hidden />
+          {t("room.back")}
+        </Link>
+        {overview.isPending ? (
+          <LoadingState />
+        ) : overview.isError ? (
+          <ErrorState
+            title={t("real.error.title")}
+            description={t("real.error.description")}
+            onRetry={() => void overview.refetch()}
+          />
+        ) : !match ? (
+          <EmptyState
+            icon={<UserX className="size-5" aria-hidden />}
+            title={t("room.notFound.title")}
+            description={t("room.notFound.description")}
+          />
+        ) : (
+          <>
+            <RoomHeader m={match} />
+            <RoomTabs matchId={matchId} active={tab} />
+            <div role="tabpanel" aria-label={t(`room.tab.${tab}` as TranslationKey)}>
+              <EmbeddedScope>
+                {tab === "summary" ? (
+                  <RoomSummary m={match} />
+                ) : tab === "rounds" ? (
+                  <RealRoundsPage search={{ matchId }} onSearch={noop} />
+                ) : tab === "duels" ? (
+                  <RealCombatPage search={{ matchId }} onSearch={noop} />
+                ) : tab === "deaths" ? (
+                  <RealDeathReviewPage search={{ matchId, event: search.event }} onSearch={noop} />
+                ) : tab === "utility" ? (
+                  <RealUtilityPage search={{ matchId }} onSearch={noop} />
+                ) : tab === "map" ? (
+                  <RealHeatmapPage
+                    search={{
+                      matchId,
+                      ...(match.map ? { map: match.map } : {}),
+                      layer: search.layer,
+                      side: search.side,
+                      level: search.level,
+                      weapon: search.weapon,
+                    }}
+                    onSearch={(s) =>
+                      go({ layer: s.layer, side: s.side, level: s.level, weapon: s.weapon })
+                    }
+                  />
+                ) : (
+                  <RealReplayPage
+                    search={{ matchId, round: search.round, tick: search.tick }}
+                    onSearch={(s) => go({ round: s.round, tick: s.tick })}
+                  />
+                )}
+              </EmbeddedScope>
+            </div>
+          </>
+        )}
+      </div>
+    </AppShell>
+  );
+}
+
+/** "Mirage · 17 nov": the visible title is the match itself; "Sala da Partida" is internal. */
+export function roomTitle(m: Pick<OverviewMatch, "map" | "playedAt">, intlTag: string): string {
+  return `${m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK} · ${formatDate(m.playedAt, intlTag)}`;
+}
+
+function RoomHeader({ m }: { m: OverviewMatch }) {
+  const t = useT();
+  const { intlTag } = useI18n();
+  const result =
+    m.resultStatus === "UNRESOLVED_BY_DEMO"
+      ? t("room.result.unresolved")
+      : m.result
+        ? `${t(`real.result.${m.result}` as TranslationKey)}${
+            m.scorePlayer !== null && m.scoreOpponent !== null
+              ? ` ${m.scorePlayer}–${m.scoreOpponent}`
+              : ""
+          }`
+        : t("room.result.unresolved");
+  return (
+    <header className="space-y-1" data-room-header>
+      <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
+        {roomTitle(m, intlTag)}
+      </h1>
+      <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        <span data-date-source={m.dateSource}>
+          {m.dateSource === "processed" ? t("room.date.processed") : t("room.date.played")}
+        </span>
+        {m.roundsPlayed !== null ? (
+          <span>{fill(t("room.rounds"), { n: m.roundsPlayed })}</span>
+        ) : null}
+        <span data-room-result={m.resultStatus}>{result}</span>
+      </p>
+    </header>
+  );
+}
+
+function RoomTabs({ matchId, active }: { matchId: string; active: MatchRoomTab }) {
+  const t = useT();
+  return (
+    <nav aria-label={t("room.tabsLabel")} className="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
+      <ul className="flex min-w-max gap-1 border-b border-border">
+        {MATCH_ROOM_TABS.map((tab) => (
+          <li key={tab}>
+            <Link
+              to="/matches/$matchId"
+              params={{ matchId }}
+              search={tab === "summary" ? {} : { tab }}
+              aria-current={tab === active ? "page" : undefined}
+              data-room-tab={tab}
+              className={cn(
+                "inline-flex min-h-11 items-center border-b-2 px-3 text-sm font-medium transition-colors",
+                tab === active
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t(`room.tab.${tab}` as TranslationKey)}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+function RoomSummary({ m }: { m: OverviewMatch }) {
+  const t = useT();
+  const { intlTag } = useI18n();
+  const num = (v: number | null, d: number) => (v === null ? null : formatNumber(v, intlTag, d));
+  const kd = m.kills !== null && m.deaths ? m.kills / m.deaths : null;
+  return (
+    <div className="space-y-6" data-room-summary>
+      <section aria-label={t("room.kpis")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricCard
+          showDemoTag={false}
+          label={<MetricTerm id="adr" />}
+          value={num(m.adr, 1)}
+          hint={m.adr !== null && m.adrPartial ? t("adr.partial.hint") : undefined}
+        />
+        <MetricCard
+          showDemoTag={false}
+          label={<MetricTerm id="kast" />}
+          value={num(m.kast, 1)}
+          unit="%"
+        />
+        <MetricCard
+          showDemoTag={false}
+          label={<MetricTerm id="hsPercent" />}
+          value={num(m.hsPercent, 1)}
+          unit="%"
+        />
+        <MetricCard showDemoTag={false} label={<MetricTerm id="kd" />} value={num(kd, 2)} />
+      </section>
+      <RoundStrip matchId={m.matchId} />
+      <Link
+        to="/matches/$matchId"
+        params={{ matchId: m.matchId }}
+        search={{ tab: "replay" }}
+        className="inline-flex min-h-11 items-center gap-2 rounded-md border border-border px-4 text-sm font-medium text-foreground hover:border-primary/60"
+      >
+        <Film className="size-4 text-primary" aria-hidden />
+        {t("room.openReplay")}
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * One square per round from the Rounds report (`cs2.rounds`, same query as the Rounds tab):
+ * the player's side and whether that side won. Rounds without a winner or a side show "?" —
+ * never a loss — and nothing is turned into a match result or a percentage (R-07).
+ */
+function RoundStrip({ matchId }: { matchId: string }) {
+  const t = useT();
+  const q = useQuery({
+    queryKey: roundsQueryKey({ matchId }),
+    queryFn: () => getMatchRounds({ data: { matchId } }),
+  });
+  if (q.isPending) return <LoadingState />;
+  if (q.isError || !q.data || q.data.status !== "OK") return null;
+  const rounds = q.data.rounds;
+  return (
+    <ChartCard
+      title={t("room.strip.title")}
+      subtitle={t("room.strip.subtitle")}
+      showDemoTag={false}
+    >
+      <ol className="flex flex-wrap gap-1.5" data-round-strip>
+        {rounds.map((r) => {
+          const state = r.side && r.won !== null ? (r.won ? "won" : "lost") : "unknown";
+          const label = fill(t("room.strip.round"), {
+            n: r.roundNumber,
+            side: r.side ?? NOT_AVAILABLE_MARK,
+            outcome: t(`room.strip.${state}` as TranslationKey),
+          });
+          return (
+            <li key={r.roundNumber}>
+              <Link
+                to="/matches/$matchId"
+                params={{ matchId }}
+                search={{ tab: "replay", round: r.roundNumber }}
+                title={label}
+                aria-label={label}
+                data-round={r.roundNumber}
+                data-outcome={state}
+                className={cn(
+                  "flex size-8 items-center justify-center rounded border font-mono text-[10px]",
+                  state === "unknown"
+                    ? "border-dashed border-border text-muted-foreground"
+                    : r.side === "CT"
+                      ? "border-side-ct text-side-ct"
+                      : "border-side-t text-side-t",
+                  state === "won" && (r.side === "CT" ? "bg-side-ct/25" : "bg-side-t/25"),
+                )}
+              >
+                {state === "unknown" ? "?" : r.roundNumber}
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+      <ul className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+        <li className="flex items-center gap-1.5">
+          <span
+            className="inline-block size-3 rounded border border-side-ct bg-side-ct/25"
+            aria-hidden
+          />
+          {t("room.strip.won")}
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="inline-block size-3 rounded border border-side-ct" aria-hidden />
+          {t("room.strip.lost")}
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span
+            className="inline-block size-3 rounded border border-dashed border-border"
+            aria-hidden
+          />
+          {t("room.strip.unknown")}
+        </li>
+      </ul>
+    </ChartCard>
+  );
+}

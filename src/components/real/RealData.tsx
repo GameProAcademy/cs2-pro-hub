@@ -27,6 +27,7 @@ import { AdrPartialMark } from "@/components/real/AdrPartialMark";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { getPlayerOverview } from "@/lib/playerData.functions";
+import { mapDisplayName } from "@/lib/cs2/maps";
 import type {
   OverviewJob,
   OverviewMatch,
@@ -240,7 +241,16 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.matchId} className="border-border">
+            <TableRow
+              key={row.matchId}
+              className="cursor-pointer border-border hover:bg-secondary/40"
+              data-match-row={row.matchId}
+              // UX-1.5: the whole row opens the Match Room; the map link is the keyboard path.
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest("a,button")) return;
+                e.currentTarget.querySelector<HTMLAnchorElement>("a[data-room-link]")?.click();
+              }}
+            >
               <TableCell className="whitespace-nowrap font-mono text-xs">
                 {row.dateSource === "processed" ? (
                   <span className="sr-only">{t("real.date.processed")} </span>
@@ -254,7 +264,16 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
                   </span>
                 ) : null}
               </TableCell>
-              <TableCell>{row.map ?? "—"}</TableCell>
+              <TableCell>
+                <Link
+                  to="/matches/$matchId"
+                  params={{ matchId: row.matchId }}
+                  data-room-link
+                  className="inline-flex min-h-11 items-center font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                >
+                  {row.map ? mapDisplayName(row.map) : NOT_AVAILABLE_MARK}
+                </Link>
+              </TableCell>
               <TableCell>
                 {row.result ? (
                   t(RESULT_KEY[row.result])
