@@ -157,7 +157,7 @@ describe("combat page states", () => {
       expect(html).toMatch(
         /data-metric="duel_win_rate"[^>]*data-metric-status="INSUFFICIENT_SAMPLE"/,
       );
-      expect(html).toContain(esc(dictionaries[loc]["combat.status.INSUFFICIENT_SAMPLE"]));
+      expect(html).toContain(esc(dictionaries[loc]["state.INSUFFICIENT_SAMPLE"]));
       expect(html).not.toMatch(/data-metric="duel_win_rate"[^>]*>[^<]*0\s?%/);
       expect(html).toContain("data-provenance-method=");
       expect(html).not.toContain('data-telemetry="LEGACY"');

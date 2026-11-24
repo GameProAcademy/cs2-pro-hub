@@ -17,6 +17,7 @@ import { getMatchCombat, type CombatResponse } from "@/lib/combat.functions";
 import { DUEL_GAP_SECONDS, BURST_GAP_SECONDS, type Duel } from "@/lib/combat/duels";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
 import type { MetricEnvelope } from "@/lib/metrics/metricContract";
+import { DataStateText } from "@/components/common/DataState";
 
 export interface CombatSearch {
   matchId?: string | undefined;
@@ -89,7 +90,7 @@ export function MetricTile({ m, label }: { m: MetricEnvelope; label: string }) {
         {valued ? `${formatNumber(m.value! * 100, intlTag, 1)}%` : NOT_AVAILABLE_MARK}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {t(`combat.status.${m.status}` as TranslationKey)}
+        <DataStateText status={m.status} coverage={m.coverage} />
         {m.sample_size
           ? ` · ${fill(t("combat.sample"), {
               n: m.sample_size.n,
@@ -114,9 +115,11 @@ function Rate({ m }: { m: MetricEnvelope }) {
   const { intlTag } = useI18n();
   return (
     <span data-metric-status={m.status}>
-      {VALUED.has(m.status) && m.value !== null
-        ? `${formatNumber(m.value * 100, intlTag, 1)}%`
-        : t(`combat.status.${m.status}` as TranslationKey)}
+      {VALUED.has(m.status) && m.value !== null ? (
+        `${formatNumber(m.value * 100, intlTag, 1)}%`
+      ) : (
+        <DataStateText status={m.status} coverage={m.coverage} />
+      )}
     </span>
   );
 }
