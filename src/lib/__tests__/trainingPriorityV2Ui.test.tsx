@@ -68,3 +68,15 @@ describe("training v2 list", () => {
     expect(html).not.toMatch(/fraco|ruim|weak|bad/i);
   });
 });
+
+describe("UX-1.7 production fix: stored plan priorities are history, not a second list", () => {
+  it("the active plan renders its stored priorities inside a closed, method-labelled details", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync("src/components/training/AdaptiveTraining.tsx", "utf8");
+    expect(src).toContain("data-plan-origin");
+    expect(src).not.toMatch(/title=\{t\("training\.adaptive\.priorities"\)\}/);
+    expect(src).toContain(
+      'fill(t("training.plan.origin"), { version: plan.content.priorityVersion })',
+    );
+  });
+});
