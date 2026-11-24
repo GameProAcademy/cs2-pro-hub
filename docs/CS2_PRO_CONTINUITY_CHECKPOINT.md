@@ -4,8 +4,8 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-18 (America/Sao_Paulo) — PM5 ENCERRADO (C6, #342 `10da2e7f`); integração Steam ENCERRADA (#343–#348) · por: sessão Claude
-`session_012aG79D5h8yCsYxNjWpDaHG`
+Atualizado em: 2026-11-24 (America/Sao_Paulo) — UX-1.0 EM EXECUÇÃO (#350 `bbecff1` em produção) · por: sessão Claude
+`session_012i4uaf82YyjhPZuSt2ZHhn`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
 PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro de uma data passada, não o estado atual).
@@ -14,21 +14,21 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 
 | Item                               | Valor                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | Nenhuma missão ativa. **Integração Steam/Valve ENCERRADA** (2026-11-18) — `docs/steam/STEAM_CHECKPOINT.md`                                                                         |
-| Etapa atual                        | Steam encerrada: vínculo/sync/desvínculo/reconexão validados em produção; identificação real em demo não validada por falta de demo nova                                           |
-| Última etapa concluída             | #347 (`f5fc22b1`): correção do vínculo Steam (constraint de locator) e overlay de sucesso; #348: overlay 6 s e checkpoints                                                         |
+| Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                         |
+| Etapa atual                        | G2: ADR `enemy-hp-v1` (vida de inimigo removida, golpe limitado) — código e migration prontos; migration BLOQUEADA (B-1)                                                           |
+| Última etapa concluída             | #350 (`bbecff1`): `metrics-catalog-v2`, rótulos estáveis no Replay, correções de mobile — VALIDADO EM PRODUÇÃO                                                                     |
 | Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                              |
 | Processos em execução              | Nenhum                                                                                                                                                                             |
-| Branch ativa                       | nenhuma além de `main`                                                                                                                                                             |
-| Último commit confirmado em `main` | `462929e7` (merge do #345)                                                                                                                                                         |
-| Build validado em produção         | App publicado de `462929e7` (bundle `index-DdHe30Q3.js`). Worker inalterado: Railway `584ea563` (R5.8.31); a mudança de identificação roda no app, não no worker                   |
+| Branch ativa                       | `ux1.0/enemy-hp-adr`                                                                                                                                                               |
+| Último commit confirmado em `main` | `bbecff1` (merge do #350)                                                                                                                                                          |
+| Build validado em produção         | App publicado de `bbecff1` (deploy Lovable `9b1803d6…`). Worker inalterado: Railway `584ea563` (R5.8.31)                                                                           |
 | Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                 |
 | Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6) |
-| **Próxima ação exata**             | Aguardar instrução do dono. Opcional: validar o critério 22 da Steam com uma demo nova                                                                                             |
-| Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`                                                                   |
-| Ações manuais necessárias          | Opcional: demo nova da conta Steam vinculada. Limitações do PM5 inalteradas                                                                                                        |
+| **Próxima ação exata**             | Aplicar a migration `20261124060000` (B-1), preencher `damage_enemy_hp` e trocar as telas para o ADR canônico                                                                      |
+| Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); UX-1.0 #350; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`                                                      |
+| Ações manuais necessárias          | B-1: confirmação explícita do dono para aplicar a migration `20261124060000` em produção                                                                                           |
 
-Missão ativa: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
+Missão ativa: UX-1.0 — `docs/checkpoints/UX1_0_CHECKPOINT.md`. Missão anterior: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
 
 ## 1. Identificação
 
@@ -292,7 +292,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 ## 23. Checkpoints individuais
 
-`docs/pm3/PM3_CHECKPOINT.md` (fase ativa) · `docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
+`docs/checkpoints/UX1_0_CHECKPOINT.md` (fase ativa: UX-1.0) · `docs/pm3/PM3_CHECKPOINT.md` · `docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
 `docs/checkpoints/PHASE_{1..5}_CHECKPOINT.md` · protocolo em `docs/checkpoints/README.md`.
 Preexistente e preservado: `docs/A9_1_CONTINUITY_CHECKPOINT.md`.
 Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,

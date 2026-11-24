@@ -25,6 +25,7 @@
  * source_rating is a transparent, documented composite derived ONLY from this
  * match. It is explicitly NOT the CS2 PRO Score (later phase).
  */
+import { enemyHealthDamage } from "@/lib/metrics/enemyDamage";
 import {
   EARLY_DEATH_SECONDS,
   FLASH_ASSIST_WINDOW_SECONDS,
@@ -550,7 +551,15 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   const kills = collectKills(match);
   const opening = openingDuels(kills);
 
-  const playerKills = kills.filter((k) => k.attacker === eventPlayerKey);
+  // UX-1.0: a kill is the player's kill of SOMEONE ELSE who is not provably a teammate.
+  // Suicides (attacker = victim) and proven team kills are not kills; a victim whose side is
+  // unknown in that round stays a kill (the game attributed it; nothing proves a team kill).
+  const playerKills = kills.filter(
+    (k) =>
+      k.attacker === eventPlayerKey &&
+      k.victim !== eventPlayerKey &&
+      !(k.victim && sameTeamInRound(match, eventPlayerKey, k.victim, k.round) === true),
+  );
   const playerDeaths = kills.filter((k) => k.victim === eventPlayerKey);
   const assists = kills.filter((k) => k.assister === eventPlayerKey).length;
   const flashAssists = kills.filter(
@@ -798,8 +807,33 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
   };
 
   // Damage-derived signals require damage events; otherwise they are unknown.
+  // `adr` keeps its historical meaning (every dmg_health the player dealt, uncapped) for the
+  // versioned indexes built on it (pro-score-v1, dna-weighted-v2). The ADR shown to players is
+  // `adrEnemyHp` (enemy-hp-v1, src/lib/metrics/enemyDamage.ts).
   const adr =
     availability.damageEvents && roundsPlayed > 0 ? round1(damageGiven / roundsPlayed) : null;
+  // enemy-hp-v1 needs every round extracted: over a partial extraction it is UNAVAILABLE (null),
+  // never a partial number presented as complete.
+  const enemyDamage =
+    availability.damageEvents && availability.completeCoverage
+      ? enemyHealthDamage(
+          damageEvents.map((e, i) => ({
+            round: e.roundNumber,
+            tick: e.tick,
+            order: i,
+            actor: e.actorSteamId,
+            victim: e.victimSteamId,
+            damage: e.damage,
+            healthAfter:
+              typeof e.data?.["health_after"] === "number"
+                ? (e.data["health_after"] as number)
+                : null,
+          })),
+          eventPlayerKey,
+          (round, a, b) => sameTeamInRound(match, a, b, round),
+        )
+      : null;
+  const damageEnemyHp = enemyDamage && roundsPlayed > 0 ? enemyDamage.enemyHp : null;
 
   return {
     participantKey,
@@ -815,6 +849,14 @@ export function computeMetrics(match: CanonicalMatch, participantKey: string): C
     damageGiven: availability.damageEvents ? round1(damageGiven) : null,
     damageTaken: availability.damageEvents ? round1(damageTaken) : null,
     adr,
+    damageEnemyHp,
+    damageEnemyHpMethod: damageEnemyHp === null ? null : (enemyDamage?.method ?? null),
+    damageEnemyHpExcludedHits:
+      damageEnemyHp === null
+        ? null
+        : (enemyDamage?.unknownSideHits ?? 0) + (enemyDamage?.uncertainHits ?? 0),
+    adrEnemyHp:
+      damageEnemyHp === null || roundsPlayed <= 0 ? null : round1(damageEnemyHp / roundsPlayed),
     kast: kastAvailable ? round1((kastRounds / roundsPlayed) * 100) : null,
     firstKills,
     firstDeaths,
