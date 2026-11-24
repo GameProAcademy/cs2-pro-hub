@@ -7,6 +7,7 @@
  * plan's topics. The plan is computed on request (deterministic for the same data), so it
  * follows every new demo and every catalog change without a republish.
  */
+import { computePrioritiesV2 } from "@/lib/training/priorityV2";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -44,7 +45,7 @@ export const getTrainingPlan = createServerFn({ method: "GET" })
         catalogUnavailable: false,
       };
 
-    const [overview, { dna }, goals] = await Promise.all([
+    const [overview, { dna, rows }, goals] = await Promise.all([
       loadPlayerOverview(db, context.userId),
       loadPlayerDna(db, context.userId),
       db
@@ -70,6 +71,8 @@ export const getTrainingPlan = createServerFn({ method: "GET" })
         .sort((a, b) => Number(b.is_primary) - Number(a.is_primary))
         .map((g) => g.goal_code),
       maps: overview.matches.map((m) => m.map).filter((m): m is string => !!m),
+      // UX-1.7d (R-13): the weeks focus on what the single Training list recommends.
+      focus: computePrioritiesV2(rows).priorities.map((p) => p.dimension),
     };
 
     let candidates: Awaited<ReturnType<typeof fetchCatalogCandidates>> = [];
