@@ -334,7 +334,7 @@ describe("idempotency of sends", () => {
 
   it("the chat reuses the request id when the same question is retried", () => {
     expect(ui).toMatch(/prior\.message === message && prior\.conversationId === conversationId/);
-    expect(ui).toContain("data: { message, locale, conversationId, requestId }");
+    expect(ui).toContain("data: { message, locale, conversationId, requestId, screen }");
     expect(ui).toMatch(/if \(result\.ok\) \{\s*requestRef\.current = null;/);
   });
 
