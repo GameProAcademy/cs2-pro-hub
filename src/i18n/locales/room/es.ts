@@ -87,4 +87,7 @@ export const roomEs: Record<keyof typeof roomPtBR, string> = {
   "state.NOT_MEASURED": "CS2 PRO no mide esto",
   "state.UNAVAILABLE": "No disponible para esta partida",
   "state.UNAVAILABLE.reason": "No disponible para esta partida: {reason}",
+  "training.plan.origin": "Cómo se armó este plan (método {version})",
+  "training.plan.origin.hint":
+    "Prioridades calculadas cuando se creó el plan. Se guardan como historial; las prioridades actuales son las de la lista de arriba.",
 };
