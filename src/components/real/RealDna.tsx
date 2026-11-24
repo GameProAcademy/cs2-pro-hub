@@ -6,9 +6,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { DnaRadarChart } from "@/components/charts/DnaRadarChart";
+import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
 import { ChartCard } from "@/components/common/ChartCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -22,13 +22,31 @@ import { signalLabel } from "@/lib/dnaSignalLabels";
 import { NOT_AVAILABLE_MARK, fill, formatDateTime } from "@/lib/format";
 import { getRealPlayerDna, refreshOwnDnaSnapshot } from "@/lib/playerData.functions";
 import { getDnaHistory, getDnaSummary } from "@/lib/xray.functions";
-import { DNA_MIN_EVENT_SAMPLE, DNA_VERSION, type RealPlayerDna } from "@/lib/playerDna";
+import { DNA_MIN_EVENT_SAMPLE, type RealPlayerDna } from "@/lib/playerDna";
+import { DNA_VERSION_V3 } from "@/lib/playerDnaV3";
+import { cn } from "@/lib/utils";
+import type { DnaDimension } from "@/types";
 
 export const PLAYER_DNA_QUERY_KEY = ["player", "dna"] as const;
 
 export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const { t, intlTag, locale } = useI18n();
   const observed = dna.dimensions.filter((d) => d.value !== null);
+  const [selected, setSelected] = useState<DnaDimension | null>(null);
+  const axes: RadarAxis[] = dna.dimensions.map((d) => ({
+    dimension: d.dimension,
+    value: d.value === null ? null : Math.round(d.value * 100),
+    status: d.status ?? (d.value === null ? "NO_SAMPLE" : "MEASURED"),
+  }));
+  const selectedDim = dna.dimensions.find((d) => d.dimension === selected) ?? null;
+  // The selected dimension's signals come first (the "bars" of the selection).
+  const ordered = selectedDim
+    ? [selectedDim, ...dna.dimensions.filter((d) => d !== selectedDim)]
+    : dna.dimensions;
+  const clutchAttempts =
+    dna.dimensions
+      .find((d) => d.dimension === "clutch")
+      ?.signals.find((x) => x.name === "clutch_win_rate")?.sample ?? null;
   // Below the minimum sample, dimension indexes are not a profile: no radar, no "N / 100".
   const stable = dna.state === "READY";
   return (
@@ -71,31 +89,73 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
           title={t("dna.radarTitle")}
           subtitle={fill(t("real.dna.radarSub"), { min: DNA_MIN_EVENT_SAMPLE })}
         >
-          <DnaRadarChart
-            showAverage={false}
-            data={observed.map((d) => ({
-              dimension: d.dimension,
-              value: Math.round((d.value as number) * 100),
-              average: 0,
-            }))}
-          />
+          {/* UX-1.6 / R-14: radar A — ten axes always, empty axes dashed, one selection. */}
+          <DnaRadarA axes={axes} selected={selected} onSelect={setSelected} />
+          <div
+            role="group"
+            aria-label={t("real.dna.select")}
+            className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1"
+            data-dna-chips
+          >
+            {axes.map((a) => (
+              <button
+                key={a.dimension}
+                type="button"
+                aria-pressed={selected === a.dimension}
+                onClick={() => setSelected(a.dimension)}
+                className={cn(
+                  "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs",
+                  selected === a.dimension
+                    ? "border-primary/60 bg-primary/10 text-foreground"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                {t(dnaLabelKey(a.dimension))}
+                <span className="font-mono">{a.value === null ? NOT_AVAILABLE_MARK : a.value}</span>
+              </button>
+            ))}
+          </div>
+          <p className="sr-only" aria-live="polite" data-dna-announce>
+            {selectedDim
+              ? fill(t("real.dna.selected"), {
+                  dimension: t(dnaLabelKey(selectedDim.dimension)),
+                  value:
+                    selectedDim.value === null
+                      ? t(
+                          `real.dna.status.${selectedDim.status === "NOT_MEASURED" ? "NOT_MEASURED" : "NO_SAMPLE"}` as TranslationKey,
+                        )
+                      : `${Math.round(selectedDim.value * 100)} / 100`,
+                  n: selectedDim.signals.length,
+                })
+              : ""}
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-dna-legend>
+            {t("real.dna.legend")} {selected ? null : t("real.dna.pick")}
+          </p>
         </ChartCard>
       ) : null}
       <div className="grid gap-5 lg:grid-cols-2">
-        {dna.dimensions.map((d) => (
+        {ordered.map((d) => (
           <ChartCard
             key={d.dimension}
             showDemoTag={false}
+            className={cn(selected === d.dimension && "ring-1 ring-primary/50")}
             title={t(dnaLabelKey(d.dimension))}
             subtitle={
-              d.value === null && !d.observed
-                ? t("real.dna.notObserved")
-                : stable && d.value !== null
-                  ? `${Math.round(d.value * 100)} / 100`
-                  : fill(t("real.dna.inFormationIndex"), {
-                      matches: dna.matches,
-                      minimum: dna.minimumMatches,
-                    })
+              d.status === "NOT_MEASURED"
+                ? t("real.dna.status.NOT_MEASURED")
+                : d.status === "NO_SAMPLE" && !d.observed
+                  ? d.dimension === "clutch" && clutchAttempts !== null
+                    ? `${t("real.dna.status.NO_SAMPLE")} · ${fill(t("real.dna.clutchAttempts"), { n: clutchAttempts, min: DNA_MIN_EVENT_SAMPLE })}`
+                    : t("real.dna.status.NO_SAMPLE")
+                  : d.value === null && !d.observed
+                    ? t("real.dna.notObserved")
+                    : stable && d.value !== null
+                      ? `${Math.round(d.value * 100)} / 100`
+                      : fill(t("real.dna.inFormationIndex"), {
+                          matches: dna.matches,
+                          minimum: dna.minimumMatches,
+                        })
             }
           >
             <ul className="divide-y divide-border">
@@ -104,7 +164,9 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                   <span className="text-xs text-muted-foreground">
                     {signalLabel(s.name, locale)}
                     {s.mean !== null &&
-                    (s.notFolded === "COMPLEMENT" || s.notFolded === "THIN_SAMPLE") ? (
+                    (s.notFolded === "COMPLEMENT" ||
+                      s.notFolded === "THIN_SAMPLE" ||
+                      s.notFolded === "DUPLICATE") ? (
                       <span className="block text-[11px]" data-dna-not-folded={s.notFolded}>
                         {fill(t(`real.dna.notFolded.${s.notFolded}`), {
                           min: DNA_MIN_EVENT_SAMPLE,
@@ -126,7 +188,9 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                       {t("real.dna.inMatches").replace("{n}", String(s.matches))}
                       {s.mean !== null &&
                       s.sample != null &&
-                      (s.sampleUnit === "opening_duels" || s.sampleUnit === "clutches")
+                      (s.sampleUnit === "opening_duels" ||
+                        s.sampleUnit === "clutches" ||
+                        s.sampleUnit === "kills")
                         ? ` · ${fill(t(`real.dna.sample.${s.sampleUnit}`), { n: s.sample })}`
                         : ""}
                     </span>
@@ -153,7 +217,7 @@ function DnaHistory() {
     <ChartCard
       showDemoTag={false}
       title={t("real.dna.history.title")}
-      subtitle={`${t("real.dna.history.description")} ${fill(t("real.dna.history.versionNote"), { version: DNA_VERSION })}`}
+      subtitle={`${t("real.dna.history.description")} ${fill(t("real.dna.history.versionNote"), { version: DNA_VERSION_V3 })}`}
     >
       {query.isPending ? (
         <LoadingState />

@@ -54,7 +54,14 @@ export const DNA_COMPLEMENT_OF: Record<string, string> = {
   "positioning.first_death_avoidance": "positioning.first_death_rate",
 };
 
-export type DnaNotFoldedReason = "NEUTRAL" | "NOT_UNIT_INTERVAL" | "COMPLEMENT" | "THIN_SAMPLE";
+export type DnaNotFoldedReason =
+  | "NEUTRAL"
+  | "NOT_UNIT_INTERVAL"
+  | "COMPLEMENT"
+  | "THIN_SAMPLE"
+  /** dna-weighted-v3 only (playerDnaV3.ts). */
+  | "DUPLICATE"
+  | "NOT_DERIVABLE";
 
 export interface DnaFeatureRow {
   match_id: string;
@@ -76,7 +83,7 @@ export interface DnaSignal {
   /** Pooled denominator behind `mean` (rounds / opening duels / clutches); null when unknown. */
   sample?: number | null;
   /** Unit of `sample`. */
-  sampleUnit?: "rounds" | "opening_duels" | "clutches";
+  sampleUnit?: "rounds" | "opening_duels" | "clutches" | "kills";
   /** Why an observed signal does not shape the dimension value (absent when folded). */
   notFolded?: DnaNotFoldedReason;
 }
@@ -90,9 +97,13 @@ export interface DnaDimensionSummary {
    * "withheld while in formation" (value null, observed true) from "not observed".
    */
   observed?: boolean;
+  /** dna-weighted-v3: MEASURED, NO_SAMPLE (measurable, too little) or NOT_MEASURED. */
+  status?: "MEASURED" | "NO_SAMPLE" | "NOT_MEASURED";
 }
 
 export interface RealPlayerDna {
+  /** Aggregation version (absent = dna-weighted-v2, `buildPlayerDna`). */
+  version?: string;
   state: "EMPTY" | "INSUFFICIENT_SAMPLE" | "READY";
   matches: number;
   rounds: number | null;
