@@ -370,8 +370,9 @@ describe("surfaces", () => {
     expect(fn).not.toMatch(
       /service_role|client\.server|supabaseAdmin|\.(insert|update|upsert|delete|rpc)\(/,
     );
-    expect(read("src/lib/coach.functions.ts")).toContain(
-      "buildXRay({ overview, dna, sides, roundContext })",
+    // UX-1.7c: the Coach's X-ray also receives the Training list; roundContext is still passed.
+    expect(read("src/lib/coach.functions.ts")).toMatch(
+      /buildXRay\(\{\s*overview,\s*dna,\s*sides,\s*roundContext,\s*training: computePrioritiesV2\(dnaRows\),?\s*\}\)/,
     );
   });
 
