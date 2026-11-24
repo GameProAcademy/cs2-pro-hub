@@ -75,6 +75,8 @@ describe("UX-1.7 production fix: stored plan priorities are history, not a secon
     const src = readFileSync("src/components/training/AdaptiveTraining.tsx", "utf8");
     expect(src).toContain("data-plan-origin");
     expect(src).not.toMatch(/title=\{t\("training\.adaptive\.priorities"\)\}/);
-    expect(src).toContain('fill(t("training.plan.origin"), { version: plan.content.priorityVersion })');
+    expect(src).toContain(
+      'fill(t("training.plan.origin"), { version: plan.content.priorityVersion })',
+    );
   });
 });
