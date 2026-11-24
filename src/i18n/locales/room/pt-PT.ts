@@ -37,7 +37,8 @@ export const roomPtPT: Record<keyof typeof roomPtBR, string> = {
   "real.dna.notFolded.DUPLICATE": "não entra no índice: repete outro sinal, que já é contado",
   "real.dna.notFolded.NOT_DERIVABLE": "não medido: a demo não fornece este dado",
   "real.dna.sample.kills": "{n} kill(s)",
-  "real.dna.legend": "Índice CS2 PRO com referências fixas. Não é percentil nem comparação com outros jogadores. Eixos diferentes usam referências diferentes.",
+  "real.dna.legend":
+    "Índice CS2 PRO com referências fixas. Não é percentil nem comparação com outros jogadores. Eixos diferentes usam referências diferentes.",
   "real.dna.select": "Dimensões do Player DNA",
   "real.dna.selected": "{dimension}: {value}, {n} sinais",
   "real.dna.pick": "Toque num eixo ou numa dimensão para ver os sinais.",
