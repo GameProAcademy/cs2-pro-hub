@@ -16,6 +16,7 @@ import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { mapDisplayName } from "@/lib/cs2/maps";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
 import type { MetricEnvelope } from "@/lib/metrics/metricContract";
+import { DataStateText } from "@/components/common/DataState";
 import { getMatchUtility, type UtilityResponse } from "@/lib/utility.functions";
 import { PHASES, type FlashRow } from "@/lib/utility/utility";
 
@@ -92,7 +93,7 @@ function Tile({ m }: { m: MetricEnvelope }) {
       </p>
       <p className="mt-2 font-mono text-2xl font-semibold text-foreground">{display(m, intlTag)}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {t(`combat.status.${m.status}` as TranslationKey)}
+        <DataStateText status={m.status} coverage={m.coverage} />
         {m.sample_size
           ? ` · ${fill(t("combat.sample"), {
               n: m.sample_size.n,
