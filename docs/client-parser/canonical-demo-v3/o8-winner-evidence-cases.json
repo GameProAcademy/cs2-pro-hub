@@ -1,0 +1,21 @@
+{
+  "schema": "round-winner-evidence-v1",
+  "note": "Shared O8 cases: src/lib/rounds/winnerEvidence.ts and scripts/canonical_v3/harness.py must agree on every one.",
+  "cases": [
+    {"name": "confirmed_both", "ok": true, "side": "CT", "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "confirmed", "method": "both", "sources": {"roundEndEvent": "CT", "gameState": "CT"}}}},
+    {"name": "confirmed_event", "ok": true, "side": "T", "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "confirmed", "method": "round_end_event", "sources": {"roundEndEvent": "T", "gameState": null}}}},
+    {"name": "confirmed_state", "ok": true, "side": "CT", "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "confirmed", "method": "game_state", "sources": {"roundEndEvent": null, "gameState": "CT"}}}},
+    {"name": "conflicting", "ok": true, "side": null, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "conflicting", "method": "both", "sources": {"roundEndEvent": "T", "gameState": "CT"}}}},
+    {"name": "inconclusive", "ok": true, "side": null, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "inconclusive", "method": "game_state", "sources": {"roundEndEvent": null, "gameState": null}}}},
+    {"name": "absent", "ok": true, "side": null, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "absent", "method": null, "sources": {"roundEndEvent": null, "gameState": null}}}},
+    {"name": "conflict_presented_as_confirmed", "ok": false, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "confirmed", "method": "both", "sources": {"roundEndEvent": "T", "gameState": "CT"}}}},
+    {"name": "confirmed_without_source", "ok": false, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "confirmed", "method": "game_state", "sources": {"roundEndEvent": null, "gameState": null}}}},
+    {"name": "absent_with_a_source", "ok": false, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "absent", "method": null, "sources": {"roundEndEvent": "CT", "gameState": null}}}},
+    {"name": "extra_key", "ok": false, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "absent", "method": null, "sources": {"roundEndEvent": null, "gameState": null}, "winner": "CT"}}},
+    {"name": "extra_metadata_key", "ok": false, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "absent", "method": null, "sources": {"roundEndEvent": null, "gameState": null}}, "x": 1}},
+    {"name": "wrong_version", "ok": false, "metadata": {"winnerEvidence": {"version": "v0", "status": "absent", "method": null, "sources": {"roundEndEvent": null, "gameState": null}}}},
+    {"name": "bad_side_token", "ok": false, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "confirmed", "method": "round_end_event", "sources": {"roundEndEvent": "TERRORIST", "gameState": null}}}},
+    {"name": "unknown_status", "ok": false, "metadata": {"winnerEvidence": {"version": "round-winner-evidence-v1", "status": "tie", "method": null, "sources": {"roundEndEvent": null, "gameState": null}}}},
+    {"name": "empty_metadata", "ok": false, "metadata": {}}
+  ]
+}

@@ -349,6 +349,68 @@ def resolve_event_round(
 
     return None
 
+# R-07 round-winner-evidence-v1: one winner per round only from evidence, with its origin.
+ROUND_WINNER_EVIDENCE_VERSION = "round-winner-evidence-v1"
+# The game-state end fires on the same tick as round_end; a 2-tick margin absorbs sub-tick order.
+_AUDIT_TICK_MARGIN = 2
+
+
+def _audit_end(audit_by_tick: dict[int, Record], end: int | None) -> Record | None:
+    if end is None or not audit_by_tick:
+        return None
+    for delta in range(_AUDIT_TICK_MARGIN + 1):
+        for tick in (end - delta, end + delta):
+            if tick in audit_by_tick:
+                return audit_by_tick[tick]
+    return None
+
+
+def _event_side(source: Record) -> str | None:
+    side = _side(_pick(source, "winner", "winner_side"))
+    if side is not None:
+        return side
+    token = _text(_pick(source, "winner_team"))
+    return {"CT": "CT", "TERRORIST": "T"}.get(token or "")
+
+
+def round_winner_evidence(source: Record | None, audit: Record | None) -> Record:
+    """Winner, method, status and per-source sides of one round (never a guess).
+
+    Sources: the demo's ``round_end`` event and the game-state reading (``round_win_status`` and
+    the team whose ``team_rounds_total`` rose by one, which must agree). Both and equal =
+    confirmed; both and different = conflicting with no winner; one = confirmed by that one; a
+    game-state reading whose two observations disagree = inconclusive; none = absent.
+    """
+    event_side: str | None = None
+    state_side: str | None = None
+    state_check: str | None = None
+    if source is not None:
+        if str(_pick(source, "derived_from") or "").startswith("game_state"):
+            state_side = _side(_pick(source, "winner"))
+            state_check = _text(_pick(source, "winner_check"))
+        else:
+            event_side = _event_side(source)
+            if audit is not None:
+                state_side = _side(_pick(audit, "winner"))
+                state_check = _text(_pick(audit, "winner_check"))
+    sources: Record = {"round_end_event": event_side, "game_state": state_side}
+    if event_side is not None and state_side is not None:
+        if event_side == state_side:
+            return {"winner_side": event_side, "winner_method": "both",
+                    "winner_status": "confirmed", "winner_sources": sources}
+        return {"winner_method": "both", "winner_status": "conflicting", "winner_sources": sources}
+    if event_side is not None:
+        return {"winner_side": event_side, "winner_method": "round_end_event",
+                "winner_status": "confirmed", "winner_sources": sources}
+    if state_side is not None:
+        return {"winner_side": state_side, "winner_method": "game_state",
+                "winner_status": "confirmed", "winner_sources": sources}
+    if state_check == "disagree":
+        return {"winner_method": "game_state", "winner_status": "inconclusive",
+                "winner_sources": sources}
+    return {"winner_status": "absent", "winner_sources": sources}
+
+
 def normalize_rounds(
     round_starts: Sequence[Record],
     round_ends: Sequence[Record],
@@ -357,6 +419,7 @@ def normalize_rounds(
     tickrate: float | None,
     warnings: list[str],
     freeze_ends: Sequence[Record] | None = None,
+    state_audit: Sequence[Record] | None = None,
 ) -> list[Record]:
     """-> RawParserRound[]: one entry per observed round, ordered by number.
 
@@ -387,6 +450,11 @@ def normalize_rounds(
         bomb_rounds[key] = hits
 
     freeze_ticks = _sorted_ticks(freeze_ends or [])
+    audit_by_tick: dict[int, Record] = {}
+    for row in state_audit or []:
+        tick = _int(_pick(row, "tick"))
+        if tick is not None and tick not in audit_by_tick:
+            audit_by_tick[tick] = row
     rounds: list[Record] = []
     for number, start, end in intervals:
         entry: Record = {"number": number}
@@ -407,12 +475,10 @@ def normalize_rounds(
 
         source = ends_by_tick.get(end) if end is not None else None
         if source is not None:
-            side = _side(_pick(source, "winner", "winner_side"))
-            if side is not None:
-                entry["winner_side"] = side
             team = _text(_pick(source, "winner_team", "winner_clan_name"))
-            if team is not None:
+            if team is not None and team not in ("CT", "TERRORIST"):
                 entry["winner_team"] = team
+        entry.update(round_winner_evidence(source, _audit_end(audit_by_tick, end)))
 
         for key, field in (
             ("planted", "bomb_planted"),
@@ -697,6 +763,7 @@ def build_raw_parser_output(raw: Record) -> Record:
         tickrate=header["tickrate"],
         warnings=warnings,
         freeze_ends=list(raw.get("round_freeze_ends") or []),
+        state_audit=list(((raw.get("round_state_audit") or {}).get("round_ends")) or []),
     )
     intervals = build_round_intervals(round_starts, round_ends)
 

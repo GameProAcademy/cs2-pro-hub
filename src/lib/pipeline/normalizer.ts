@@ -5,6 +5,7 @@
  * parser, a database or a network. The database never sees parser-internal
  * field names.
  */
+import { confirmedSide, winnerEvidenceFromParser } from "@/lib/rounds/winnerEvidence";
 import { MIN_VALID_ROUNDS, SCHEMA_VERSION } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { hasUtilityEvidence } from "@/lib/pipeline/evidence";
@@ -245,24 +246,38 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
   const rounds: CanonicalRound[] = [...raw.rounds]
     .filter((r) => Number.isInteger(r.number) && r.number > 0)
     .sort((a, b) => a.number - b.number)
-    .map((r) => ({
-      roundNumber: r.number,
-      winnerTeam: r.winner_team ?? null,
-      winnerSide: toSide(r.winner_side),
-      startTick: num(r.start_tick),
-      endTick: num(r.end_tick),
-      freezeEndTick: num(r.freeze_end_tick),
-      freezeEndTimeSeconds: num(r.freeze_end_time_seconds),
-      durationSeconds: num(r.duration_seconds),
-      bombPlanted: bool(r.bomb_planted),
-      bombDefused: bool(r.bomb_defused),
-      bombExploded: bool(r.bomb_exploded),
+    .map((r) => {
+      // R-07 / O8: with evidence, the winner is the confirmed side and nothing else (never a source
+      // picked in a conflict); a malformed evidence fails closed (no winner, no evidence); a parser
+      // before the contract keeps its winner_side as before.
+      const parsed = winnerEvidenceFromParser(r);
+      const winnerEvidence = parsed.kind === "valid" ? parsed.evidence : null;
+      const winnerSide =
+        parsed.kind === "legacy"
+          ? toSide(r.winner_side)
+          : parsed.kind === "valid" && toSide(r.winner_side) === confirmedSide(parsed.evidence)
+            ? confirmedSide(parsed.evidence)
+            : null;
+      return {
+        roundNumber: r.number,
+        winnerTeam: r.winner_team ?? null,
+        winnerSide,
+        winnerEvidence,
+        startTick: num(r.start_tick),
+        endTick: num(r.end_tick),
+        freezeEndTick: num(r.freeze_end_tick),
+        freezeEndTimeSeconds: num(r.freeze_end_time_seconds),
+        durationSeconds: num(r.duration_seconds),
+        bombPlanted: bool(r.bomb_planted),
+        bombDefused: bool(r.bomb_defused),
+        bombExploded: bool(r.bomb_exploded),
 
-      moneyStart: r.money_start ?? {},
-      moneyEnd: r.money_end ?? {},
-      equipmentValue: r.equipment_value ?? {},
-      sides: mapSides(r.sides),
-    }));
+        moneyStart: r.money_start ?? {},
+        moneyEnd: r.money_end ?? {},
+        equipmentValue: r.equipment_value ?? {},
+        sides: mapSides(r.sides),
+      };
+    });
 
   let unsupportedEvents = 0;
   const events: CanonicalEvent[] = [];

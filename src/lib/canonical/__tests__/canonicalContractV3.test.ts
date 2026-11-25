@@ -121,25 +121,41 @@ describe("canonical-demo-v3 server policy", () => {
     (input.match.coverage as unknown as Record<string, unknown>)["participantsExpected"] = 10;
     (input.roundPlayers[0] as unknown as Record<string, unknown>)["kills"] = 0;
     (input.rounds[0] as unknown as Record<string, unknown>)["winReason"] = "elimination";
-    (input.rounds[0] as unknown as Record<string, unknown>)["metadata"] = { x: 1 };
+    (input.roundPlayers[0] as unknown as Record<string, unknown>)["metadata"] = { x: 1 };
     const { bundle: out, withheld } = applyServerPolicyV3(input);
     expect(out.match.durationSeconds).toBeNull();
     expect(out.match.coverage.participantsExpected).toBeNull();
     expect(out.roundPlayers[0]!.kills).toBeNull(); // a 0 is not a fact the bundle may carry
     expect(out.rounds[0]!.winReason).toBe("unknown");
-    expect(out.rounds[0]!.metadata).toEqual({});
+    expect(out.roundPlayers[0]!.metadata).toEqual({});
     expect(withheld).toEqual({
       "CanonicalMatch.durationSeconds": 1,
       "CanonicalMatch.coverage.participantsExpected": 1,
       "CanonicalRoundPlayer.kills": 1,
       "CanonicalRound.winReason": 1,
-      "CanonicalRound.metadata": 1,
+      "CanonicalRoundPlayer.metadata": 1,
     });
     expect(out.observation.metadata["canonical_v3_withheld"]).toEqual(withheld);
   });
 
-  it("covers exactly the 34 non-available server fields of the contract", () => {
-    expect(SERVER_FIXED_FIELDS_V3).toHaveLength(34);
-    expect(new Set(SERVER_FIXED_FIELDS_V3.map((f) => f.id)).size).toBe(34);
+  it("O8: the round winnerEvidence passes the policy untouched (no longer withheld)", () => {
+    const input = bundle();
+    const winnerEvidence = {
+      version: "round-winner-evidence-v1",
+      status: "confirmed",
+      method: "game_state",
+      sources: { roundEndEvent: null, gameState: "CT" },
+    };
+    (input.rounds[0] as unknown as Record<string, unknown>)["metadata"] = { winnerEvidence };
+    const { bundle: out, withheld } = applyServerPolicyV3(input);
+    expect(out.rounds[0]!.metadata).toEqual({ winnerEvidence });
+    expect(withheld["CanonicalRound.metadata"]).toBeUndefined();
+    expect(out.observation.metadata["canonical_v3_withheld"]).toBeUndefined();
+  });
+
+  it("covers exactly the 33 representation-fixed server fields of the contract (O8: round metadata left the list)", () => {
+    expect(SERVER_FIXED_FIELDS_V3).toHaveLength(33);
+    expect(new Set(SERVER_FIXED_FIELDS_V3.map((f) => f.id)).size).toBe(33);
+    expect(SERVER_FIXED_FIELDS_V3.some((f) => f.id === "CanonicalRound.metadata")).toBe(false);
   });
 });

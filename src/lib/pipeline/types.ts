@@ -8,6 +8,7 @@
  */
 
 export type Side = "CT" | "T";
+import type { WinnerEvidence } from "@/lib/rounds/winnerEvidence";
 
 export type CanonicalEventType =
   | "kill"
@@ -53,6 +54,10 @@ export interface RawParserRound {
   number: number;
   winner_team?: string | undefined;
   winner_side?: string | undefined;
+  /** R-07 round-winner-evidence-v1 (parser adapter `round_winner_evidence`). */
+  winner_method?: string | undefined;
+  winner_status?: string | undefined;
+  winner_sources?: { round_end_event?: string | null; game_state?: string | null } | undefined;
   start_tick?: number | undefined;
   end_tick?: number | undefined;
   /** D36: tick of the round's own round_freeze_end (the round becomes live). */
@@ -318,7 +323,10 @@ export interface CanonicalPlayer {
 export interface CanonicalRound {
   roundNumber: number;
   winnerTeam: string | null;
+  /** Only when the winner evidence is confirmed (or, without evidence, as the parser recorded). */
   winnerSide: Side | null;
+  /** R-07: how the winner was determined; null when the parser did not report it. */
+  winnerEvidence?: WinnerEvidence | null;
   startTick: number | null;
   endTick: number | null;
   /**

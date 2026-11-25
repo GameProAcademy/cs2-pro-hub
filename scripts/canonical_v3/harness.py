@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import json
 import math
+from decimal import Decimal
 import re
 import sys
 from typing import Any, Iterable
@@ -38,7 +39,11 @@ ROUND_TRIP_EXCLUDED = {
     "CanonicalMatch.playedAt": "persisted as matches.played_at only when non-null (COALESCE)",
 }
 EVENT_TYPES = {"kill", "damage", "flash", "he", "smoke", "molotov", "decoy", "weapon_fire", "bomb_plant",
-               "bomb_defuse", "bomb_explode", "round_start", "round_end", "grenade"}
+               "bomb_defuse", "bomb_explode", "round_start", "round_end", "grenade",
+               # O8-A (owner, 2026-11-25): the parser's inferno_startburn, aliased to `incendiary` by the
+               # app normalizer (src/lib/pipeline/normalizer.ts EVENT_ALIASES) and accepted by the
+               # round_events.event_type CHECK. Only this type was added.
+               "incendiary"}
 STEAM = re.compile(r"^7656119\d{10}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -65,6 +70,27 @@ def _num(x: float | int) -> str:
     return f"{x:.6f}".rstrip("0").rstrip(".")
 
 
+def jsonb_number_text(x: int | float) -> str:
+    """O8-A item 2: the exact text PostgreSQL prints for a number stored in jsonb.
+
+    The app sends the bundle with JSON.stringify, which writes a double as its shortest round-trip
+    decimal (the same digits as Python's repr); jsonb keeps that numeric exactly and prints it in
+    plain notation, without exponent and without trailing zeros it never had. So the number is
+    printed from those digits, exactly: no rounding, no truncation, no tolerance. -0 is written
+    "0" by JSON.stringify. A non-finite value cannot be in JSON and is refused.
+    """
+    if isinstance(x, bool):
+        raise TypeError("bool is not a jsonb number")
+    if isinstance(x, int):
+        return str(x)
+    if not math.isfinite(x):
+        raise ValueError("non-finite numbers are not representable in jsonb")
+    text = format(Decimal(repr(x)), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return "0" if text in ("-0", "") else text
+
+
 def jsonb_text(value: Any) -> str:
     """The text PostgreSQL prints for a jsonb value (key order: length, then bytes)."""
     if value is None:
@@ -72,7 +98,7 @@ def jsonb_text(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, (int, float)):
-        return _num(value)
+        return jsonb_number_text(value)
     if isinstance(value, str):
         return json.dumps(value, ensure_ascii=False)
     if isinstance(value, list):
@@ -112,6 +138,9 @@ def run_check(name: str, field: str, vals: list[Any], b: dict) -> tuple[bool, st
     if name.startswith("equals:"):
         want = name.split(":", 1)[1]
         return all(canon(v) == want for v in vals), want
+    if name.startswith("in_or_null:"):
+        allowed = set(name.split(":", 1)[1].split(","))
+        return all(v is None or v in allowed for v in vals), ",".join(sorted(allowed)) + ",null"
     if name.startswith("in:"):
         allowed = set(name.split(":", 1)[1].split(","))
         return all(v in allowed for v in vals), ",".join(sorted(allowed))
@@ -193,7 +222,65 @@ def run_check(name: str, field: str, vals: list[Any], b: dict) -> tuple[bool, st
             rows.sort()
             bad += sum(1 for (t1, s1), (t2, s2) in zip(rows, rows[1:]) if t2 > t1 and s2 < s1)
         return bad == 0, f"time decreases with tick: {bad}"
+    if name == "winner_evidence_schema":
+        bad = [i for i, v in enumerate(vals) if winner_evidence_errors(v)]
+        return not bad, f"rounds with a malformed winnerEvidence: {len(bad)}"
+    if name == "winner_side_matches_evidence":
+        bad = 0
+        for r in b["rounds"]:
+            ev = (r.get("metadata") or {}).get("winnerEvidence") if isinstance(r.get("metadata"), dict) else None
+            want = confirmed_side(ev) if isinstance(ev, dict) else None
+            bad += r.get("winningSide") != want
+        return bad == 0, f"winningSide differs from the confirmed evidence side: {bad}"
     raise KeyError(f"unknown check {name}")
+
+
+# --------------------------------------------------------------------------------------------- #
+# O8: round-winner-evidence-v1, the closed schema of CanonicalRound.metadata.winnerEvidence.
+# Mirrors src/lib/rounds/winnerEvidence.ts (winnerEvidenceErrors); both are tested on the same cases.
+# --------------------------------------------------------------------------------------------- #
+WINNER_EVIDENCE_VERSION = "round-winner-evidence-v1"
+_SIDES = (None, "CT", "T")
+
+
+def winner_evidence_errors(metadata: Any) -> list[str]:
+    """[] when metadata is exactly {"winnerEvidence": <valid evidence>}; otherwise the reasons."""
+    if not isinstance(metadata, dict) or set(metadata) != {"winnerEvidence"}:
+        return ["metadata_keys"]
+    ev = metadata["winnerEvidence"]
+    if not isinstance(ev, dict) or set(ev) != {"version", "status", "method", "sources"}:
+        return ["evidence_keys"]
+    src = ev["sources"]
+    if not isinstance(src, dict) or set(src) != {"roundEndEvent", "gameState"}:
+        return ["sources_keys"]
+    errors = []
+    if ev["version"] != WINNER_EVIDENCE_VERSION:
+        errors.append("version")
+    event, state = src["roundEndEvent"], src["gameState"]
+    if event not in _SIDES or state not in _SIDES:
+        errors.append("source_side")
+    status, method = ev["status"], ev["method"]
+    rule = {
+        "confirmed": (method == "both" and event is not None and event == state)
+        or (method == "round_end_event" and event is not None and state is None)
+        or (method == "game_state" and state is not None and event is None),
+        "conflicting": method == "both" and event is not None and state is not None and event != state,
+        "inconclusive": method == "game_state" and event is None and state is None,
+        "absent": method is None and event is None and state is None,
+    }
+    if status not in rule:
+        errors.append("status")
+    elif not rule[status]:
+        errors.append(f"incoherent_{status}")
+    return errors
+
+
+def confirmed_side(evidence: dict) -> str | None:
+    """The winner a confirmed evidence names; None for every other status (never a guess)."""
+    if winner_evidence_errors({"winnerEvidence": evidence}) or evidence["status"] != "confirmed":
+        return None
+    src = evidence["sources"]
+    return src["roundEndEvent"] if src["roundEndEvent"] is not None else src["gameState"]
 
 
 def representation_holds(field: str, vals: list[Any]) -> tuple[bool, str]:
