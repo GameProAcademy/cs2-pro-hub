@@ -1,9 +1,9 @@
 {
-  "digest": "6538cfa8abd50b6ae5b2ec59c4a06ce231c624a9b1cacc909e7ea518f4720649",
-  "generatorCommit": "b8f28d95399ec32bb324141ecbf0331d97f8d8fe",
+  "digest": "cf0549c2dfbdc4df25b42ce8204edf8705071c586e99696e9ef596c1e742d7b1",
+  "generatorCommit": "e83c70eaca70a2c34be5375c4f1b62c453b2e477",
   "generatorRevision": "scripts/canonical_mapping_gate.py:v2",
   "inventoryVersion": "canonical-demo-v2",
-  "matrixDigest": "eaa33f7bca80818b55ee2154ca845fe1e84d27892abd93d1008ac3b09f1814cd",
+  "matrixDigest": "a276b0306c05ca6a2555db8b3c055bff2df6262b3e2bafccf6d1b5cca8425702",
   "rows": [
     {
       "blockReason": "IDENTITY_BLOCKED",
