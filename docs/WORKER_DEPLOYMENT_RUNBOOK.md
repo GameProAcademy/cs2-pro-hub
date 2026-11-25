@@ -248,6 +248,26 @@ If any health/version/preflight/bridge/ledger check fails:
 
 **Current decision:** do not perform the production cutover merely because PR #89 and CI are green. The database writer migration and positive durable-identity proof are mandatory release gates.
 
+## Controlled re-pin release (R5.8.x) — what R5.8.32 confirmed
+
+Order (each step has its own evidence; app publish and worker release are separate steps):
+
+1. Queue idle (no queued or processing jobs).
+2. Merge the parser change with the service source pinned and the watch-pattern freeze in place: nothing deploys.
+3. `PARSER_REVISION`/`PARSER_BUILD_REVISION` set with skipped deploys; `connect-service-source` to the merge commit
+   (the resulting deployment must be SKIPPED); exactly one deployment through the Railway agent; `/version` on both
+   hosts.
+4. Re-pin migration generated from the previous one, with a production dry run that ends in a final `RAISE` and a
+   disposable-database run of migration, rerun, rollback and reapply against the exact production function text.
+5. Merge the re-pin PR with "Main required gates" green, then **check the function md5 in production**. Lovable
+   synced R5.8.32 without applying it; apply the committed file verbatim (it is idempotent and fails closed).
+6. App identity values: in the Lovable Secrets panel, "Add secret" with an existing name overwrites it in place (no
+   delete gap). Changes reach the live app only after publishing.
+7. Dispatch `parser-runtime-attestation.yml` on `main`. The provenance assertion accepts only rows under 24 h old,
+   so without a fresh attestation every demo fails closed.
+8. Verify `/api/public/parser-attestation-runtime` without printing values (`source` = `env`, enforced), then
+   validate with one new demo and a pre-demo md5 baseline of the analytic tables.
+
 ## Controlled smoke-test protocol (post-deploy)
 
 **Never send a synthetic execution event to the production ledger.** A fake job ID would still create durable audit data. Production smoke tests below are read-only; the positive bridge write must run against a homologation app/bridge connected to disposable PostgreSQL. This avoids contaminating production metrics, RAW, Canonical, queue, or Attempt 9.
