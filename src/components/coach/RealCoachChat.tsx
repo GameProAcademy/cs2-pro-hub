@@ -40,6 +40,7 @@ import { coachScreenFrom } from "@/lib/coach/coachScreen";
 import { getCoachConversation, getCoachPreferences } from "@/lib/coachSession.functions";
 import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
+import { GameIcon } from "@/components/common/GameIcon";
 
 function Inline({ text }: { text: string }) {
   return (
@@ -50,7 +51,10 @@ function Inline({ text }: { text: string }) {
         ) : part.kind === "italic" ? (
           <em key={i}>{part.text}</em>
         ) : part.kind === "code" ? (
-          <code key={i} className="rounded bg-muted px-1 font-mono text-xs">
+          <code
+            key={i}
+            className="rounded border border-border bg-elevated px-1 py-0.5 font-mono text-xs text-foreground"
+          >
             {part.text}
           </code>
         ) : (
@@ -67,31 +71,38 @@ function Inline({ text }: { text: string }) {
  */
 export function CoachText({ content }: { content: string }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2" data-coach-text>
       {coachBlocks(content).map((block, i) => {
         if (block.kind === "space") return <div key={i} className="h-1" />;
         if (block.kind === "heading")
           return (
-            <p key={i} className="pt-1 font-semibold text-foreground">
+            <p
+              key={i}
+              className="mt-1 border-l-2 border-primary/60 pl-2.5 pt-0.5 font-display font-semibold tracking-wide text-foreground"
+              data-coach-heading
+            >
               <Inline text={block.text} />
             </p>
           );
         if (block.kind === "bullet")
           return (
-            <p key={i} className="pl-4 -indent-3">
-              • <Inline text={block.text} />
+            <p key={i} className="flex gap-2.5" data-coach-bullet>
+              <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/80" />
+              <span className="min-w-0">
+                <Inline text={block.text} />
+              </span>
             </p>
           );
         if (block.kind === "table")
           return (
-            <div key={i} className="overflow-x-auto">
-              <table className="my-1 w-full border-collapse text-xs">
+            <div key={i} className="my-1 overflow-x-auto rounded-md border border-border">
+              <table className="w-full border-collapse text-xs tabular-nums" data-coach-table>
                 <thead>
-                  <tr>
+                  <tr className="bg-elevated/60">
                     {block.header.map((cell, c) => (
                       <th
                         key={c}
-                        className="border-b border-border px-2 py-1 text-left font-semibold"
+                        className="border-b border-border px-2.5 py-1.5 text-left font-mono font-semibold uppercase tracking-wider text-muted-foreground"
                       >
                         <Inline text={cell} />
                       </th>
@@ -100,9 +111,12 @@ export function CoachText({ content }: { content: string }) {
                 </thead>
                 <tbody>
                   {block.rows.map((row, r) => (
-                    <tr key={r}>
+                    <tr key={r} className="even:bg-elevated/20">
                       {row.map((cell, c) => (
-                        <td key={c} className="border-b border-border/50 px-2 py-1">
+                        <td
+                          key={c}
+                          className="border-b border-border/50 px-2.5 py-1.5 last:border-b-0"
+                        >
                           <Inline text={cell} />
                         </td>
                       ))}
@@ -139,7 +153,10 @@ function Bubble({
     minute: "2-digit",
   });
   return (
-    <div className={cn("flex gap-3", isCoach ? "justify-start" : "justify-end")}>
+    <div
+      className={cn("flex gap-3", isCoach ? "justify-start" : "justify-end")}
+      data-message-role={message.role}
+    >
       {isCoach ? (
         <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
           <Bot className="size-4" aria-hidden />
@@ -147,23 +164,27 @@ function Bubble({
       ) : null}
       <div
         className={cn(
-          "max-w-[85%] rounded-lg border px-4 py-3 text-sm leading-relaxed",
+          "min-w-0 text-sm leading-relaxed",
           isCoach
-            ? "border-border bg-card text-foreground"
-            : "border-primary/25 bg-primary/10 text-foreground",
+            ? "surface-panel relative max-w-[min(100%,46rem)] flex-1 overflow-hidden rounded-lg border border-border px-4 py-3 pl-5 text-foreground"
+            : "max-w-[85%] rounded-2xl rounded-br-md border border-primary/25 bg-primary/10 px-4 py-2.5 text-foreground",
         )}
       >
         {isCoach ? (
-          <p className="mb-1.5 font-mono text-xs uppercase tracking-[0.16em] text-primary">
-            {aiLabel}
-          </p>
-        ) : null}
-        {isCoach ? (
-          <CoachText content={message.content} />
+          <>
+            <span aria-hidden className="absolute inset-y-0 left-0 w-0.5 bg-primary/60" />
+            <p className="mb-2 flex items-center justify-between gap-3 font-mono text-xs uppercase tracking-[0.16em] text-primary">
+              <span>{aiLabel}</span>
+              <span className="normal-case tracking-normal text-muted-foreground">{time}</span>
+            </p>
+            <CoachText content={message.content} />
+          </>
         ) : (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <>
+            <p className="whitespace-pre-wrap">{message.content}</p>
+            <p className="mt-1.5 text-right font-mono text-xs text-muted-foreground">{time}</p>
+          </>
         )}
-        <p className="mt-2 font-mono text-xs text-muted-foreground">{time}</p>
       </div>
       {!isCoach ? (
         <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
@@ -318,10 +339,12 @@ export function RealCoachChat({ className }: { className?: string | undefined })
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/40 px-4 py-2.5">
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            <Bot className="size-3.5 text-primary" aria-hidden />
+          <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
+              <Bot className="size-3.5" aria-hidden />
+            </span>
             {t("coach2.persona.identity")}
           </p>
           <p className="text-xs leading-snug text-muted-foreground">
@@ -365,93 +388,103 @@ export function RealCoachChat({ className }: { className?: string | undefined })
         <PreferencesPanel onClose={() => setShowPrefs(false)} />
       ) : null}
       {data.dataState === "INSUFFICIENT_SAMPLE" ? (
-        <p className="border-b border-warning/20 bg-warning/8 px-4 py-2 text-xs text-muted-foreground">
+        <p className="flex items-start gap-2 border-b border-warning/20 bg-warning/8 px-4 py-2 text-xs text-muted-foreground">
+          <GameIcon name="alert" className="mt-0.5 size-3.5 shrink-0 text-warning" />
           {t("real.aicoach.insufficient")}
         </p>
       ) : null}
-      <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6" aria-live="polite">
-        {loadingOther ? <LoadingState /> : null}
-        {otherFailed ? (
-          <p role="alert" className="text-sm text-destructive">
-            {t("coach2.loadError")}
-          </p>
-        ) : null}
-        {!loadingOther && !otherFailed && messages.length === 0 && pending === null ? (
-          <div className="space-y-6">
-            <EmptyState
-              title={
-                data.playerName
-                  ? t("coach2.persona.greetingNamed").replace("{name}", data.playerName)
-                  : t("coach2.persona.greeting")
-              }
-              description={`${t("coach2.persona.intro")} ${t("real.aicoach.emptyDescription")}`}
-              icon={<Sparkles className="size-5" aria-hidden />}
-            />
-            {showOnboarding ? (
-              <div
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-info/30 bg-info/5 px-4 py-3 text-xs text-muted-foreground"
-                data-coach-onboarding
-              >
-                <span className="min-w-0 flex-1">{t("coach2.onboarding.hint")}</span>
-                <span className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => setShowPrefs(true)}>
-                    {t("coach2.personalize")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      writeDismissed();
-                      setDismissed(true);
-                    }}
-                  >
-                    {t("coach2.onboarding.dismiss")}
-                  </Button>
-                </span>
-              </div>
-            ) : null}
-            <SuggestedQuestions onPick={(text) => setDraft(text)} />
-          </div>
-        ) : null}
-        {messages.map((m) => (
-          <Bubble key={m.id} message={m} aiLabel={t("real.aicoach.aiLabel")} intlTag={intlTag} />
-        ))}
-        {pending !== null ? (
-          <>
-            <div className="flex justify-end">
-              <p className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-primary/25 bg-primary/5 px-4 py-3 text-sm opacity-70">
-                {pending}
-              </p>
-            </div>
-            <p className="font-mono text-xs text-muted-foreground" role="status">
-              {t("coach.thinking")}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6" aria-live="polite">
+        <div className="mx-auto w-full max-w-4xl space-y-5" data-coach-thread>
+          {loadingOther ? <LoadingState /> : null}
+          {otherFailed ? (
+            <p role="alert" className="text-sm text-destructive">
+              {t("coach2.loadError")}
             </p>
-          </>
-        ) : null}
-        {error ? (
-          <div
-            role="alert"
-            className="rounded-lg border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm"
-          >
-            <p className="font-medium text-destructive">{t("coach.errorTitle")}</p>
-            <p className="mt-1 text-muted-foreground">{t(coachErrorKey(error))}</p>
-            {error === "COACH_CONVERSATION_NOT_FOUND" ? null : (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => void send()}
-                disabled={!draft.trim()}
+          ) : null}
+          {!loadingOther && !otherFailed && messages.length === 0 && pending === null ? (
+            <div className="space-y-6">
+              <EmptyState
+                title={
+                  data.playerName
+                    ? t("coach2.persona.greetingNamed").replace("{name}", data.playerName)
+                    : t("coach2.persona.greeting")
+                }
+                description={`${t("coach2.persona.intro")} ${t("real.aicoach.emptyDescription")}`}
+                icon={<Sparkles className="size-5" aria-hidden />}
+              />
+              {showOnboarding ? (
+                <div
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-info/30 bg-info/5 px-4 py-3 text-xs text-muted-foreground"
+                  data-coach-onboarding
+                >
+                  <span className="min-w-0 flex-1">{t("coach2.onboarding.hint")}</span>
+                  <span className="flex gap-1">
+                    <Button size="sm" variant="outline" onClick={() => setShowPrefs(true)}>
+                      {t("coach2.personalize")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        writeDismissed();
+                        setDismissed(true);
+                      }}
+                    >
+                      {t("coach2.onboarding.dismiss")}
+                    </Button>
+                  </span>
+                </div>
+              ) : null}
+              <SuggestedQuestions onPick={(text) => setDraft(text)} />
+            </div>
+          ) : null}
+          {messages.map((m) => (
+            <Bubble key={m.id} message={m} aiLabel={t("real.aicoach.aiLabel")} intlTag={intlTag} />
+          ))}
+          {pending !== null ? (
+            <>
+              <div className="flex justify-end">
+                <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md border border-primary/25 bg-primary/5 px-4 py-2.5 text-sm opacity-70">
+                  {pending}
+                </p>
+              </div>
+              <p
+                className="flex items-center gap-2 font-mono text-xs text-muted-foreground"
+                role="status"
               >
-                <RotateCcw className="size-3.5" aria-hidden />
-                {t("real.aicoach.retry")}
-              </Button>
-            )}
-          </div>
-        ) : null}
+                <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-primary" />
+                {t("coach.thinking")}
+              </p>
+            </>
+          ) : null}
+          {error ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm"
+            >
+              <p className="flex items-center gap-2 font-medium text-destructive">
+                <GameIcon name="alert" className="size-4 shrink-0" />
+                {t("coach.errorTitle")}
+              </p>
+              <p className="mt-1 text-muted-foreground">{t(coachErrorKey(error))}</p>
+              {error === "COACH_CONVERSATION_NOT_FOUND" ? null : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => void send()}
+                  disabled={!draft.trim()}
+                >
+                  <RotateCcw className="size-3.5" aria-hidden />
+                  {t("real.aicoach.retry")}
+                </Button>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
       <form
-        className="border-t border-border p-3"
+        className="border-t border-border bg-elevated/30 p-3"
         onSubmit={(e) => {
           e.preventDefault();
           void send();
