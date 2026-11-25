@@ -312,6 +312,27 @@ Limites declarados:
 - 0 textos abaixo de 12 px, salvo os chips de código do Coach, corrigidos no PR seguinte;
 - Rating 0,91 inalterado.
 
+### 2.15 R-07 / O8 concluído (2026-11-25)
+
+Substitui o rascunho do #382, que descrevia o estado antes da aprovação do O8-A.
+
+- **Contrato e evidência:** #379 (O8), #381 (harness com 2 demos reais), #383 (decisão O8-A), `incendiary` só esse
+  tipo na allowlist e serialização exata de números no jsonb (sem arredondar nem tolerância). Gate v3 server e browser
+  **PASS**; inventário v2, digests e âncoras intactos; os três testes de autoridade v2 passam. Merge `4f7466ec`.
+- **Worker R5.8.32:** Railway `c372485e` (único build; `19343205` SKIPPED), `/version` nos dois hosts com
+  `git:4f7466ec`, `declared_revision_matches` true.
+- **Banco:** #387 (merge `9e6d6e5f`), recorder `e477fc60`, assertion `dd1f25cc`, workflow `f74d8af9` inalterado. O
+  Lovable não aplicou a migração sozinho; foi aplicada a partir do arquivo commitado depois de dry run em produção.
+- **App:** três valores de identidade do worker trocados no painel Secrets e publicados (deploy `c0d4290c`);
+  endpoint de attestation com origem `env` e enforcement ligado. Attestation nova `3ee7f9e8` VERIFIED.
+- **Demo de validação** (Nuke, job `12903805`, jogador `xeedo` escolhido pelo dono): 20/20 rounds `confirmed` por
+  `game_state`, iguais à conferência independente por eliminação/bomba; 13–7; sem `canonical_v3_withheld`;
+  K/D 28/11 igual aos eventos; as 6 tabelas analíticas históricas idênticas (md5) ao baseline.
+- **Limite conhecido, anterior ao R-07:** o placar no nível da partida continua excluído pela admissão (L04) em
+  todas as demos.
+
+Evidência completa: `docs/r07/R07_PRODUCTION_EVIDENCE.md`. **Estado:** validado em produção.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
@@ -322,8 +343,7 @@ Limites declarados:
 
 Dependem do dono:
 
-1. R-07: revisar e aprovar a nova versão do inventário de mapeamento; definir os segredos de revisão para a release do worker (R5.8.31).
-2. Experimento B (R-15) com 3 a 5 jogadores reais.
-3. Uma demo de teste que fique pendente de identificação, para o teste controlado de seleção do #368.
+1. Experimento B (R-15) com 3 a 5 jogadores reais.
+2. Uma demo de teste que fique pendente de identificação, para o teste controlado de seleção do #368.
 
 Executáveis: continuar a fase visual (Início, Treino, Raio-X e Coach com os novos componentes), uma etapa por PR.
