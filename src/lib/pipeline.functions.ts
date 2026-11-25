@@ -320,7 +320,7 @@ function toView(
     attachmentSource: row.attachment_source,
     attachmentConfidence: row.attachment_confidence_label,
     attachmentConfirmationStatus: row.attachment_confirmation_status,
-    attachmentParticipantKey: row.attachment_participant_key,
+    // #368c: the participant key is a SteamID64; the job list never sends it to the browser.
     observedNickname: row.observed_nickname,
     map: match?.map ?? null,
     result: match?.result ?? null,
