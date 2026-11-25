@@ -204,7 +204,7 @@ function RegisterPage() {
         </div>
 
         <div className="rounded-lg border border-border p-4">
-          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
             {t("register.optional")}
           </p>
           <div className="grid gap-4 sm:grid-cols-2">

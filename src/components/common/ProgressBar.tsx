@@ -29,7 +29,7 @@ export function ProgressBar({
       {label || showValue ? (
         <div className="mb-1.5 flex items-center justify-between gap-2">
           {label ? (
-            <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {label}
             </span>
           ) : null}

@@ -42,7 +42,7 @@ export function PendingActionsBanner({ className }: { className?: string }) {
                 <span className="min-w-0 truncate text-sm text-foreground" title={job.fileName}>
                   {job.fileName || t("pending.unnamed")}
                   {job.map ? (
-                    <span className="ml-2 font-mono text-[11px] uppercase text-muted-foreground">
+                    <span className="ml-2 font-mono text-xs uppercase text-muted-foreground">
                       {job.map}
                     </span>
                   ) : null}
@@ -56,7 +56,7 @@ export function PendingActionsBanner({ className }: { className?: string }) {
             ))}
           </ul>
           {count > MAX_LISTED ? (
-            <p className="mt-2 text-[11px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               {t("pending.more").replace("{count}", String(count - MAX_LISTED))}
             </p>
           ) : null}
@@ -75,7 +75,7 @@ export function PendingActionsBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex min-w-5 items-center justify-center rounded-full bg-warning px-1.5 font-mono text-[10px] font-semibold leading-5 text-background",
+        "inline-flex min-w-5 items-center justify-center rounded-full bg-warning px-1.5 font-mono text-xs font-semibold leading-5 text-background",
         className,
       )}
       aria-label={label}

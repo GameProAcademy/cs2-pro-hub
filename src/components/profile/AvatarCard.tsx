@@ -63,7 +63,7 @@ export function AvatarCard({ embedded = false }: { embedded?: boolean }) {
   const body = (
     <div className="space-y-3">
       {embedded ? (
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+        <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
           {t("avatar.title")}
         </p>
       ) : null}

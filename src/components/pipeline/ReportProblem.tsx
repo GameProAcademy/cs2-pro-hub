@@ -80,7 +80,7 @@ export function ReportProblem({ jobId, className }: { jobId: string; className?:
           {sent ? <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" aria-hidden /> : null}
           {t(sent ? "report.sent" : "report.recorded")}
         </p>
-        <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+        <p className="mt-1 font-mono text-xs text-muted-foreground">
           {t("report.protocol")}: {view.protocol}
         </p>
         {!sent ? (
@@ -118,7 +118,7 @@ export function ReportProblem({ jobId, className }: { jobId: string; className?:
         placeholder={t("report.detailsPlaceholder")}
         className="text-sm"
       />
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         {t("report.privacy")} · {details.length}/{MAX_REPORT_DETAILS}
       </p>
       {view.kind === "error" ? (

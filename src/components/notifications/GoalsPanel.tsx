@@ -120,7 +120,7 @@ export function GoalsPanel() {
           ))}
         </ul>
       )}
-      <p className="text-[11px] text-muted-foreground">{t("goals.progress.source")}</p>
+      <p className="text-xs text-muted-foreground">{t("goals.progress.source")}</p>
       <section aria-label={t("goals.achievements")} className="space-y-2">
         <h2 className="text-sm font-semibold">{t("goals.achievements")}</h2>
         {!data.achievements.length ? (
@@ -180,7 +180,7 @@ function GoalCard({ goal, onEdit }: { goal: GoalView; onEdit: () => void }) {
         </div>
         <span
           className={cn(
-            "rounded-sm border px-2 py-0.5 font-mono text-[10px] uppercase",
+            "rounded-sm border px-2 py-0.5 font-mono text-xs uppercase",
             p.status === "REACHED"
               ? "border-success/40 text-success"
               : "border-border text-muted-foreground",
@@ -249,7 +249,7 @@ function GoalCard({ goal, onEdit }: { goal: GoalView; onEdit: () => void }) {
           </>
         )}
         {failed ? (
-          <span role="alert" className="text-[11px] text-destructive">
+          <span role="alert" className="text-xs text-destructive">
             {t("goals.error")}
           </span>
         ) : null}

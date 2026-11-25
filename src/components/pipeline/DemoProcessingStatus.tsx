@@ -180,13 +180,11 @@ export function DemoProcessingStatus({ job }: { job: DemoJobView }) {
             ) : null}
           </div>
         </div>
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          {t("pipeline.processing.estimated")}
-        </p>
+        <p className="mt-1.5 text-xs text-muted-foreground">{t("pipeline.processing.estimated")}</p>
       </div>
 
       <div className="mt-4">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="mb-2 font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
           {t("pipeline.processing.currentStage")}
         </p>
         <ol className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">

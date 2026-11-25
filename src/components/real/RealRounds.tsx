@@ -4,6 +4,7 @@
  * "numerator of denominator" with its N, and an empty denominator is "no eligible rounds", never
  * 0 %. Unknown buys are never shown as eco. Each round and each event opens the 2D replay.
  */
+import { SideBadge, ToneBadge } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info, UserX } from "lucide-react";
@@ -256,7 +257,7 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
             <Row label={t("rounds.me.adr")}>
               <span className="font-mono">{perRound(m.damage)}</span>
               {m.damagePartialRounds > 0 ? (
-                <span className="block text-[11px] text-amber-400" data-adr-partial="true">
+                <span className="block text-xs text-warning" data-adr-partial="true">
                   {fill(t("adr.partialRounds"), { n: m.damagePartialRounds })}
                 </span>
               ) : null}
@@ -354,7 +355,11 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
       <details>
         <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className="font-mono">{fill(t("rounds.roundN"), { n: round.roundNumber })}</span>
-          <span className="text-muted-foreground">{side ?? NOT_AVAILABLE_MARK}</span>
+          {side ? (
+            <SideBadge side={side} />
+          ) : (
+            <span className="text-muted-foreground">{NOT_AVAILABLE_MARK}</span>
+          )}
           <span className={round.won ? "font-medium" : ""}>{result}</span>
           <span className="text-muted-foreground">
             {`${buyText(t, own)} × ${buyText(t, enemy)}`}
@@ -363,19 +368,16 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
             <span className="font-mono text-muted-foreground">{`${round.me.kills}K ${round.me.deaths}D`}</span>
           ) : null}
           {round.opening.status === "OK" && (round.opening.byMe || round.opening.onMe) ? (
-            <span className="rounded bg-muted px-1.5 text-xs">
+            <ToneBadge tone={round.opening.byMe ? "brand" : "attention"} icon="crosshair">
               {t(round.opening.byMe ? "rounds.tag.openingKill" : "rounds.tag.openingDeath")}
-            </span>
+            </ToneBadge>
           ) : null}
           {round.clutch ? (
-            <span
-              className="rounded bg-muted px-1.5 text-xs"
-              data-clutch={`1v${round.clutch.opponents}`}
-            >
+            <ToneBadge tone="context" icon="target" data-clutch={`1v${round.clutch.opponents}`}>
               {`1v${round.clutch.opponents}`}
-            </span>
+            </ToneBadge>
           ) : null}
-          {round.overtime ? <span className="rounded bg-muted px-1.5 text-xs">OT</span> : null}
+          {round.overtime ? <ToneBadge tone="neutral">OT</ToneBadge> : null}
           {!round.valid ? (
             <span className="text-xs text-muted-foreground">
               {t(`rounds.invalid.${round.invalidReason ?? "NO_SIDE"}` as TranslationKey)}

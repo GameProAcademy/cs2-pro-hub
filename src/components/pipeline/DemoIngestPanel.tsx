@@ -472,7 +472,7 @@ export function DemoIngestPanel({
                     <p className="break-words text-sm font-semibold text-foreground">
                       {job.fileName || job.uploadId}
                     </p>
-                    <p className="mt-1 break-words font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <p className="mt-1 break-words font-mono text-xs uppercase tracking-wider text-muted-foreground">
                       {t("pipeline.history.attempt").replace("{number}", String(job.attemptNumber))}
                       {job.roundsValid != null
                         ? ` · ${job.roundsValid} ${t("pipeline.rounds")}`
@@ -484,7 +484,7 @@ export function DemoIngestPanel({
                   </div>
                   <span
                     className={cn(
-                      "w-fit shrink-0 rounded-sm border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
+                      "w-fit shrink-0 rounded-sm border px-2 py-1 font-mono text-xs uppercase tracking-wider",
                       job.status === "processed" && "border-success/30 bg-success/8 text-success",
                       // Red only for a definitive failure; a review or a recoverable
                       // failure is amber (same severity as the guidance block).

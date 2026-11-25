@@ -70,7 +70,7 @@ function formatBytes(bytes: number): string {
 function EvidenceRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1 border-b border-border py-3 last:border-b-0 md:grid-cols-[180px_1fr]">
-      <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+      <dt className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </dt>
       <dd className="break-all font-mono text-xs text-foreground">{value}</dd>
@@ -215,7 +215,7 @@ function R5ForensicPage() {
                 <FileLock2 className="size-5" aria-hidden />
               </div>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
                   Current status
                 </p>
                 <p
@@ -237,7 +237,7 @@ function R5ForensicPage() {
         <section className="space-y-4 border-t border-border pt-5" aria-labelledby="r58-title">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-primary">
                 R5.8 read-only preflight
               </p>
               <h2 id="r58-title" className="mt-1 font-display text-xl font-semibold">
@@ -257,12 +257,12 @@ function R5ForensicPage() {
               {diagnostic.data?.items.map((item) => (
                 <div key={item.key} className="min-w-0 bg-card p-3">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-mono text-[10px] uppercase text-muted-foreground">
+                    <p className="font-mono text-xs uppercase text-muted-foreground">
                       {item.key.replaceAll("_", " ")}
                     </p>
                     <span
                       className={cn(
-                        "font-mono text-[10px]",
+                        "font-mono text-xs",
                         item.state === "CONFIGURED"
                           ? "text-success"
                           : item.state === "BLOCKED" || item.state === "MISSING"
@@ -290,7 +290,7 @@ function R5ForensicPage() {
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <section className="space-y-4 border-t border-border pt-5">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-primary">
                 Authorized identity
               </p>
               <h2 className="mt-1 font-display text-xl font-semibold">Cache match DEM</h2>
@@ -328,7 +328,7 @@ function R5ForensicPage() {
 
           <section className="space-y-4 border-t border-border pt-5">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+              <p className="font-mono text-xs uppercase tracking-[0.16em] text-primary">
                 Controlled transport
               </p>
               <h2 className="mt-1 font-display text-xl font-semibold">Resumable upload</h2>
@@ -358,7 +358,7 @@ function R5ForensicPage() {
                 </div>
                 <Progress value={progress?.percent ?? hashPercent} />
                 {progress ? (
-                  <div className="grid grid-cols-2 gap-2 font-mono text-[11px] text-muted-foreground">
+                  <div className="grid grid-cols-2 gap-2 font-mono text-xs text-muted-foreground">
                     <span>{formatBytes(progress.bytesSent)} sent</span>
                     <span>{formatBytes(progress.bytesTotal)} total</span>
                     <span>{formatBytes(progress.bytesPerSecond)}/s</span>

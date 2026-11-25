@@ -202,7 +202,7 @@ export function PasswordCard() {
               disabled={loading}
             />
             {next ? (
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 {t("security.strengthLabel")}:{" "}
                 <span
                   className={cn(
@@ -252,7 +252,7 @@ export function PasswordCard() {
         </form>
       ) : (
         <form className="mt-4 space-y-4" onSubmit={handleConfirm} noValidate>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-primary">
             {t("security.confirmTitle")}
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">

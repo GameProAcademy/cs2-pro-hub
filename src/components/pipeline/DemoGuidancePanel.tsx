@@ -77,7 +77,7 @@ export function DemoGuidancePanel(props: DemoGuidancePanelProps) {
       )}
       <p
         className={cn(
-          "text-[11px] font-semibold uppercase tracking-wider text-foreground",
+          "text-xs font-semibold uppercase tracking-wider text-foreground",
           props.hideHeader ? null : "mt-2.5",
         )}
       >
@@ -87,7 +87,7 @@ export function DemoGuidancePanel(props: DemoGuidancePanelProps) {
         {t(keys.todo as TranslationKey)}
       </p>
       {reference ? (
-        <p className="mt-2 break-all font-mono text-[10px] uppercase tracking-wider text-muted-foreground/80">
+        <p className="mt-2 break-all font-mono text-xs uppercase tracking-wider text-muted-foreground/80">
           {t("guidance.reference")}: {reference}
         </p>
       ) : null}

@@ -20,13 +20,18 @@ export function ChartCard({
 }) {
   return (
     <section
-      className={cn("surface-panel flex flex-col rounded-lg border border-border", className)}
+      className={cn(
+        "surface-panel flex flex-col overflow-hidden rounded-lg border border-border",
+        className,
+      )}
     >
-      <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+      <header className="flex items-start justify-between gap-3 border-b border-border bg-elevated/40 px-5 py-4">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">{title}</h2>
+          <h2 className="font-display text-base font-semibold tracking-wide text-foreground">
+            {title}
+          </h2>
           {subtitle ? (
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{subtitle}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">

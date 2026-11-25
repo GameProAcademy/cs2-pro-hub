@@ -39,13 +39,13 @@ export function SourcesPanel() {
                 <p className="truncate text-sm font-medium text-foreground">
                   {t(sourceKey(source))}
                 </p>
-                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   {t(`sources.quality.${descriptor.quality}` as TranslationKey)}
                 </p>
               </div>
               <span
                 className={cn(
-                  "shrink-0 rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
+                  "shrink-0 rounded-md border px-2 py-1 font-mono text-xs uppercase tracking-wider",
                   descriptor.implemented
                     ? "border-success/30 bg-success/10 text-success"
                     : "border-border bg-secondary text-muted-foreground",

@@ -136,7 +136,7 @@ export function SteamPanel({ callback }: SteamPanelProps) {
               <p className="text-sm font-medium text-foreground">
                 {view?.personaName ?? t("identity.source.steam")}
               </p>
-              <p className="truncate font-mono text-[11px] text-muted-foreground">
+              <p className="truncate font-mono text-xs text-muted-foreground">
                 {connected
                   ? revealed
                     ? (view?.steamId64 ?? DASH)

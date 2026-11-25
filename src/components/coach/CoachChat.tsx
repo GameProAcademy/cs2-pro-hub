@@ -27,12 +27,12 @@ function Bubble({ message, exampleLabel }: { message: CoachMessage; exampleLabel
         )}
       >
         {isCoach ? (
-          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-warning">
+          <p className="mb-1.5 font-mono text-xs uppercase tracking-[0.16em] text-warning">
             {exampleLabel}
           </p>
         ) : null}
         <p>{message.content}</p>
-        <p className="mt-2 font-mono text-[10px] text-muted-foreground">{message.time}</p>
+        <p className="mt-2 font-mono text-xs text-muted-foreground">{message.time}</p>
       </div>
       {!isCoach ? (
         <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
@@ -88,7 +88,7 @@ export function CoachChat({ className }: { className?: string | undefined }) {
           <p
             role="status"
             aria-live="polite"
-            className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground"
+            className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground"
           >
             {t("coach.thinking")}
           </p>

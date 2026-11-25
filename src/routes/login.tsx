@@ -215,7 +215,7 @@ function LoginPage() {
               {t("login.faceit.continue")}
             </a>
           </Button>
-          <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+          <p className="text-center text-xs leading-relaxed text-muted-foreground">
             {t("login.faceit.note")}
           </p>
         </div>

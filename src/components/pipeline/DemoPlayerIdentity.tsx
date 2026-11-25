@@ -232,7 +232,7 @@ export function DemoPlayerIdentity({
                 </div>
               ) : participants.length > 0 ? (
                 <fieldset className="space-y-2">
-                  <legend className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <legend className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     {t("pipeline.identify.selectLabel")}
                   </legend>
                   {participants.map((participant, index) => (

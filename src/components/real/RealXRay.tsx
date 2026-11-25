@@ -53,15 +53,15 @@ function ObservationValue({ o }: { o: XRayObservation }) {
         {unit}
       </span>
       {o.numerator !== null && o.denominator !== null ? (
-        <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+        <span className="ml-2 font-mono text-xs text-muted-foreground">
           ({formatPooledPart(o.numerator, intlTag)}/{formatPooledPart(o.denominator, intlTag)})
         </span>
       ) : null}
-      <span className="ml-2 text-[11px] text-muted-foreground">
+      <span className="ml-2 text-xs text-muted-foreground">
         {fill(t("xray.inMatches"), { n: o.matches })}
       </span>
       {o.partialMatches ? (
-        <span className="mt-0.5 block text-[11px] text-amber-400" data-adr-partial="true">
+        <span className="mt-0.5 block text-xs text-warning" data-adr-partial="true">
           {fill(t("adr.partialMatches"), { n: o.partialMatches })}
         </span>
       ) : null}
@@ -345,7 +345,7 @@ function SideRoundContext({ s, min }: { s: SideSummary; min: number }) {
             <dd className="font-mono">
               {s.damagePerRound === null ? NOT_AVAILABLE_MARK : n(s.damagePerRound, 1)}
               {s.damagePerRound !== null && s.damagePartialRounds > 0 ? (
-                <span className="block text-[11px] text-amber-400" data-adr-partial="true">
+                <span className="block text-xs text-warning" data-adr-partial="true">
                   {fill(t("adr.partialRounds"), { n: s.damagePartialRounds })}
                 </span>
               ) : null}

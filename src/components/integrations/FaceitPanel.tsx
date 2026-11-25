@@ -119,7 +119,7 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
         <p className="text-sm leading-relaxed text-muted-foreground">{t("faceit.notice")}</p>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-border/70 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="rounded-full border border-border/70 px-3 py-1 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
             {t(`faceit.state.${state}`)}
           </span>
           {data?.nickname ? (
@@ -228,7 +228,7 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+      <dt className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </dt>
       <dd className="mt-1 text-sm text-foreground">{value}</dd>

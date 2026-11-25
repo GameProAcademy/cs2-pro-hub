@@ -54,12 +54,12 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
     <div className="grid gap-5 lg:grid-cols-3">
       <div className="space-y-5 lg:col-span-2">
         <ChartCard title={t(horizonKeys[plan.horizon] ?? "training.horizon30")}>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
             {t("training.objective")}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{plan.goal}</p>
 
-          <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="mt-6 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
             {t("training.steps")}
           </p>
           <ul className="mt-3 space-y-3">
@@ -67,7 +67,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
               <li key={task.title} className="rounded-lg border border-border bg-card/50 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold text-foreground">{task.title}</h3>
-                  <span className="rounded-sm bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <span className="rounded-sm bg-secondary px-2 py-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     {task.frequency}
                   </span>
                 </div>
@@ -85,7 +85,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
                 className="flex flex-col rounded-lg border border-border bg-card/50 p-4"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                  <p className="font-mono text-xs uppercase tracking-wider text-primary">
                     {t("training.lessonModule")}: {lesson.module}
                   </p>
                   {lesson.isDemoLink ? <DemoTag /> : null}
@@ -98,7 +98,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
                   {lesson.relatedSkills.map((skill) => (
                     <span
                       key={skill}
-                      className="rounded-sm border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+                      className="rounded-sm border border-border bg-secondary px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground"
                     >
                       {t(dnaLabelKey(skill))}
                     </span>
@@ -106,7 +106,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-2">
                   {lesson.duration ? (
-                    <span className="font-mono text-[11px] text-muted-foreground">
+                    <span className="font-mono text-xs text-muted-foreground">
                       {t("training.lessonDuration")}: {lesson.duration}
                     </span>
                   ) : (
@@ -146,7 +146,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
           label={t("training.progress")}
           showValue
         />
-        <p className="mt-6 mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="mt-6 mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
           {t("training.focus")}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -159,7 +159,7 @@ function PlanPanel({ plan }: { plan: TrainingPlan }) {
             </span>
           ))}
         </div>
-        <p className="mt-6 mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="mt-6 mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
           {t("training.exercises")}
         </p>
         <p className="text-sm leading-relaxed text-muted-foreground">

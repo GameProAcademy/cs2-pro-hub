@@ -38,10 +38,10 @@ export function AdminShell({ session, children }: { session: AdminSession; child
         <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-3">
             <Brand />
-            <span className="rounded-sm border border-primary/40 bg-primary/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+            <span className="rounded-sm border border-primary/40 bg-primary/10 px-2 py-1 font-mono text-xs uppercase tracking-[0.18em] text-primary">
               {t("admin.area")}
             </span>
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:inline">
+            <span className="hidden font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground sm:inline">
               {t(session.isMaster ? "admin.role.admin_master" : "admin.role.admin")}
             </span>
           </div>

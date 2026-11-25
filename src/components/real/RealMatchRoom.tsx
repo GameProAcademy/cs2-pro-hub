@@ -7,6 +7,8 @@
  * recalculated here. The Summary reads the match row the overview already loaded and the round
  * report the Rounds tab already loads.
  */
+import { MapBadge, SideBadge } from "@/components/common/VisualBadges";
+import { GameIcon } from "@/components/common/GameIcon";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Film, UserX } from "lucide-react";
@@ -162,16 +164,29 @@ function RoomHeader({ m }: { m: OverviewMatch }) {
           }`
         : t("room.result.unresolved");
   return (
-    <header className="space-y-1" data-room-header>
-      <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
-        {roomTitle(m, intlTag)}
-      </h1>
-      <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+    <header
+      className="surface-panel relative overflow-hidden rounded-lg border border-border px-5 py-4"
+      data-room-header
+    >
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary via-primary/40 to-transparent"
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <MapBadge map={m.map} showName={false} className="px-1.5" />
+        <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
+          {roomTitle(m, intlTag)}
+        </h1>
+      </div>
+      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
         <span data-date-source={m.dateSource}>
           {m.dateSource === "processed" ? t("room.date.processed") : t("room.date.played")}
         </span>
         {m.roundsPlayed !== null ? (
-          <span>{fill(t("room.rounds"), { n: m.roundsPlayed })}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <GameIcon name="rounds" className="size-3.5" />
+            {fill(t("room.rounds"), { n: m.roundsPlayed })}
+          </span>
         ) : null}
         <span data-room-result={m.resultStatus}>{result}</span>
       </p>
@@ -292,7 +307,7 @@ function RoundStrip({ matchId }: { matchId: string }) {
                 data-round={r.roundNumber}
                 data-outcome={state}
                 className={cn(
-                  "flex size-8 items-center justify-center rounded border font-mono text-[10px]",
+                  "flex size-8 items-center justify-center rounded border font-mono text-xs",
                   state === "unknown"
                     ? "border-dashed border-border text-muted-foreground"
                     : r.side === "CT"
@@ -307,7 +322,11 @@ function RoundStrip({ matchId }: { matchId: string }) {
           );
         })}
       </ol>
-      <ul className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+      <ul className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+        <li className="flex items-center gap-1.5">
+          <SideBadge side="CT" />
+          <SideBadge side="T" />
+        </li>
         <li className="flex items-center gap-1.5">
           <span
             className="inline-block size-3 rounded border border-side-ct bg-side-ct/25"
