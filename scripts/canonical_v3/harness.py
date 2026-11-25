@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import json
 import math
+from decimal import Decimal
 import re
 import sys
 from typing import Any, Iterable
@@ -69,6 +70,27 @@ def _num(x: float | int) -> str:
     return f"{x:.6f}".rstrip("0").rstrip(".")
 
 
+def jsonb_number_text(x: int | float) -> str:
+    """O8-A item 2: the exact text PostgreSQL prints for a number stored in jsonb.
+
+    The app sends the bundle with JSON.stringify, which writes a double as its shortest round-trip
+    decimal (the same digits as Python's repr); jsonb keeps that numeric exactly and prints it in
+    plain notation, without exponent and without trailing zeros it never had. So the number is
+    printed from those digits, exactly: no rounding, no truncation, no tolerance. -0 is written
+    "0" by JSON.stringify. A non-finite value cannot be in JSON and is refused.
+    """
+    if isinstance(x, bool):
+        raise TypeError("bool is not a jsonb number")
+    if isinstance(x, int):
+        return str(x)
+    if not math.isfinite(x):
+        raise ValueError("non-finite numbers are not representable in jsonb")
+    text = format(Decimal(repr(x)), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return "0" if text in ("-0", "") else text
+
+
 def jsonb_text(value: Any) -> str:
     """The text PostgreSQL prints for a jsonb value (key order: length, then bytes)."""
     if value is None:
@@ -76,7 +98,7 @@ def jsonb_text(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, (int, float)):
-        return _num(value)
+        return jsonb_number_text(value)
     if isinstance(value, str):
         return json.dumps(value, ensure_ascii=False)
     if isinstance(value, list):
