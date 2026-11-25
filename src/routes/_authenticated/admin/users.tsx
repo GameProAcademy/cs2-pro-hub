@@ -45,8 +45,8 @@ function StatusBadge({ status }: { status: AccountStatus }) {
     <span
       className={
         status === "active"
-          ? "rounded-sm border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary"
-          : "rounded-sm border border-border bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+          ? "rounded-sm border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-xs uppercase tracking-wider text-primary"
+          : "rounded-sm border border-border bg-secondary px-2 py-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground"
       }
     >
       {t(`admin.status.${status}`)}
@@ -261,7 +261,7 @@ function AdminUsersPage() {
           <div className="hidden overflow-x-auto rounded-lg border border-border lg:block">
             <table className="w-full text-sm">
               <thead className="bg-secondary/50">
-                <tr className="text-left font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                <tr className="text-left font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
                   <th className="px-3 py-2">
                     <input
                       type="checkbox"

@@ -57,7 +57,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
           .replace("{rounds}", dna.rounds === null ? "—" : String(dna.rounds))
           .replace("{partial}", String(dna.partialMatches))}
       </p>
-      <p className="font-mono text-[11px] text-muted-foreground" data-testid="dna-snapshot">
+      <p className="font-mono text-xs text-muted-foreground" data-testid="dna-snapshot">
         {dna.snapshot?.createdAt
           ? t("real.dna.snapshot")
               .replace("{version}", dna.snapshot.dnaVersion ?? "—")
@@ -167,7 +167,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                     (s.notFolded === "COMPLEMENT" ||
                       s.notFolded === "THIN_SAMPLE" ||
                       s.notFolded === "DUPLICATE") ? (
-                      <span className="block text-[11px]" data-dna-not-folded={s.notFolded}>
+                      <span className="block text-xs" data-dna-not-folded={s.notFolded}>
                         {fill(t(`real.dna.notFolded.${s.notFolded}`), {
                           min: DNA_MIN_EVENT_SAMPLE,
                         })}
@@ -184,7 +184,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                           { yes: t("real.dna.flagYes"), no: t("real.dna.flagNo") },
                           intlTag,
                         )}
-                    <span className="ml-2 text-[11px] text-muted-foreground">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       {t("real.dna.inMatches").replace("{n}", String(s.matches))}
                       {s.mean !== null &&
                       s.sample != null &&
@@ -234,7 +234,7 @@ function DnaHistory() {
           <div className="overflow-x-auto" data-table-scroll>
             <table className="w-full text-sm" data-dna-history>
               <thead>
-                <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                <tr className="text-left font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
                   <th className="py-2 pr-4 font-normal">{t("real.dna.history.date")}</th>
                   <th className="py-2 pr-4 font-normal">{t("real.dna.history.matches")}</th>
                   <th className="py-2 pr-4 font-normal">{t("real.dna.history.version")}</th>

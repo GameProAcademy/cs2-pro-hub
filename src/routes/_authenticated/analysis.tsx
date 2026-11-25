@@ -119,7 +119,7 @@ function AnalysisPage() {
               <div className="space-y-4">
                 <p className="text-base leading-relaxed text-foreground">{analysis.priority}</p>
                 <div>
-                  <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="mb-1 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     {t("analysis.recommendation")}
                   </p>
                   <p className="text-sm leading-relaxed text-muted-foreground">

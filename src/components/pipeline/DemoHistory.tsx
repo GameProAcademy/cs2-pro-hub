@@ -66,7 +66,7 @@ function DemoHistoryItem({ job }: { job: DemoJobView }) {
         </div>
         <span
           className={cn(
-            "font-mono text-[11px] uppercase tracking-wider",
+            "font-mono text-xs uppercase tracking-wider",
             job.status === "processed" && "text-success",
             job.status === "failed" && "text-destructive",
             job.status === "cancel_requested" && "text-warning",

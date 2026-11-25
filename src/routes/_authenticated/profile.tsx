@@ -247,7 +247,7 @@ function ProfilePage() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     {t("profile.section.competitive")}
                   </p>
                   <p className="text-xs text-muted-foreground">

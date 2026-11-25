@@ -42,7 +42,7 @@ export function SideSplitChart({
         return (
           <div key={row.metric}>
             <div className="mb-2 flex items-baseline justify-between gap-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                 {row.metric}
               </span>
               <span className="num-display text-sm">

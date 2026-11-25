@@ -16,9 +16,7 @@ export function ProScoreCard({ score }: { score: ProScore }) {
       />
       <div className="relative flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
-            CS2 PRO Score
-          </p>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">CS2 PRO Score</p>
           <p className="mt-1 text-xs text-muted-foreground">{score.tier}</p>
         </div>
         <DemoTag />

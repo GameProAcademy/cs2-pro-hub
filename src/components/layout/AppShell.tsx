@@ -38,7 +38,7 @@ function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
               className={cn(
                 "flex min-h-11 items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 isActive &&
-                  "border-primary/40 bg-sidebar-accent text-sidebar-accent-foreground [&_svg]:text-primary",
+                  "relative border-primary/30 bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_0_var(--primary)] [&_svg]:text-primary",
               )}
             >
               <area.icon className="size-4 shrink-0" aria-hidden />
@@ -53,7 +53,7 @@ function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
                       onClick={onNavigate}
                       activeOptions={{ exact: false }}
                       activeProps={{ className: "text-foreground", "aria-current": "page" }}
-                      className="flex min-h-9 items-center rounded px-2 text-[13px] text-muted-foreground hover:text-foreground"
+                      className="flex min-h-9 items-center rounded px-2 text-sm text-muted-foreground hover:text-foreground"
                     >
                       {t(sec.labelKey)}
                     </Link>
@@ -121,7 +121,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
         </Link>
       </Button>
       <div className="flex-1 overflow-y-auto">
-        <p className="mb-2 px-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70">
+        <p className="mb-2 px-3 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
           {t("nav.section.analysis")}
         </p>
         <NavLinks onNavigate={onNavigate} />
@@ -154,7 +154,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
           </div>
         </Link>
         {DEMO_DATA ? (
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-warning">
+          <p className="mt-2 font-mono text-xs uppercase tracking-wider text-warning">
             {t("nav.demoSession")}
           </p>
         ) : null}
@@ -193,7 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <DialogPrimitive.Root open={mobileOpen} onOpenChange={setMobileOpen}>
-      <div className="min-h-screen min-w-0 overflow-x-clip bg-background">
+      <div className="min-h-screen min-w-0 overflow-x-clip bg-background bg-[radial-gradient(1200px_600px_at_80%_-10%,color-mix(in_oklch,var(--primary)_6%,transparent),transparent)]">
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
           <SidebarContent />
@@ -246,7 +246,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </p>
             </div>
             {DEMO_DATA ? (
-              <span className="hidden rounded-sm border border-warning/40 bg-warning/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-warning sm:inline">
+              <span className="hidden rounded-sm border border-warning/40 bg-warning/10 px-2 py-1 font-mono text-xs uppercase tracking-wider text-warning sm:inline">
                 {t("nav.demoMode")}
               </span>
             ) : null}
@@ -280,7 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 aria-current={isActive ? "page" : undefined}
                 data-bottom-area={area.id}
                 className={cn(
-                  "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center text-[11px] font-medium leading-tight text-muted-foreground transition-colors",
+                  "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center text-xs font-medium leading-tight text-muted-foreground transition-colors",
                   isActive && "text-primary",
                 )}
               >

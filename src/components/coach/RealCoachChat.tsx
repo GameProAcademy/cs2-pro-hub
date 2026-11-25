@@ -50,7 +50,7 @@ function Inline({ text }: { text: string }) {
         ) : part.kind === "italic" ? (
           <em key={i}>{part.text}</em>
         ) : part.kind === "code" ? (
-          <code key={i} className="rounded bg-muted px-1 text-[0.85em]">
+          <code key={i} className="rounded bg-muted px-1 font-mono text-xs">
             {part.text}
           </code>
         ) : (
@@ -154,7 +154,7 @@ function Bubble({
         )}
       >
         {isCoach ? (
-          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-primary">
+          <p className="mb-1.5 font-mono text-xs uppercase tracking-[0.16em] text-primary">
             {aiLabel}
           </p>
         ) : null}
@@ -163,7 +163,7 @@ function Bubble({
         ) : (
           <p className="whitespace-pre-wrap">{message.content}</p>
         )}
-        <p className="mt-2 font-mono text-[10px] text-muted-foreground">{time}</p>
+        <p className="mt-2 font-mono text-xs text-muted-foreground">{time}</p>
       </div>
       {!isCoach ? (
         <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
@@ -324,7 +324,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
             <Bot className="size-3.5 text-primary" aria-hidden />
             {t("coach2.persona.identity")}
           </p>
-          <p className="text-[11px] leading-snug text-muted-foreground">
+          <p className="text-xs leading-snug text-muted-foreground">
             {t("real.aicoach.disclaimer")}
           </p>
         </div>
@@ -482,7 +482,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
             <Send className="size-4" aria-hidden />
           </Button>
         </div>
-        <p className="mt-1.5 flex justify-between font-mono text-[10px] text-muted-foreground">
+        <p className="mt-1.5 flex justify-between font-mono text-xs text-muted-foreground">
           <span>{t("real.aicoach.remaining").replace("{n}", String(data.remainingThisHour))}</span>
           <span>
             {draft.length}/{COACH_MAX_MESSAGE_CHARS}

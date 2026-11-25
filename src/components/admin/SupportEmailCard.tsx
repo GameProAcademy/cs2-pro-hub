@@ -50,7 +50,7 @@ export function SupportEmailCard() {
 
   return (
     <section className="rounded-lg border border-border bg-card" data-testid="support-email-card">
-      <h2 className="flex items-center gap-2 border-b border-border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+      <h2 className="flex items-center gap-2 border-b border-border px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
         <Mail className="size-3.5" aria-hidden />
         {t("adminEmail.title")}
       </h2>

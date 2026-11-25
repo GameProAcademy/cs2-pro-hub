@@ -160,7 +160,7 @@ function PlanView({
                 </h3>
                 {w.practice.length ? (
                   <div className="mt-3">
-                    <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                       {t("training.real.practice")}
                     </p>
                     <ul className="mt-1 list-disc space-y-1 pl-5 text-sm">
@@ -171,7 +171,7 @@ function PlanView({
                   </div>
                 ) : null}
                 <div className="mt-3">
-                  <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     {t("training.real.lessons")}
                   </p>
                   {w.items.length ? (
@@ -217,7 +217,7 @@ function CatalogItem({ item, why }: { item: Recommendation; why: string }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
           <p className="font-medium text-foreground">{item.title}</p>
-          <p className="font-mono text-[10px] uppercase tracking-wider text-primary">
+          <p className="font-mono text-xs uppercase tracking-wider text-primary">
             {t(`catalog.track.${item.track}` as TranslationKey)}
           </p>
           {why ? <p className="text-xs text-muted-foreground">{why}</p> : null}

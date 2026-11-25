@@ -52,11 +52,11 @@ export function IdentitiesCard() {
                 <p className="text-sm font-medium text-foreground">
                   {t(`identity.source.${PLATFORM_SOURCE[link.platform]}` as TranslationKey)}
                 </p>
-                <p className="truncate font-mono text-[11px] text-muted-foreground">
+                <p className="truncate font-mono text-xs text-muted-foreground">
                   {link.username ?? link.idMasked ?? t("identity.notConnected")}
                 </p>
                 {link.lastSyncAt ? (
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {t("link.lastSync")}: {new Date(link.lastSyncAt).toLocaleString()}
                   </p>
                 ) : null}
@@ -64,7 +64,7 @@ export function IdentitiesCard() {
             </div>
             <div className="flex items-center gap-2">
               {link.platform === "GAMERS_CLUB" ? (
-                <span className="rounded-md border border-warning/30 bg-warning/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-warning">
+                <span className="rounded-md border border-warning/30 bg-warning/10 px-2 py-1 font-mono text-xs uppercase tracking-wider text-warning">
                   {t("profile.identities.blocked")}
                 </span>
               ) : (

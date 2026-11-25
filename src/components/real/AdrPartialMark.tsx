@@ -11,7 +11,7 @@ export function AdrPartialMark() {
     <span
       data-adr-partial="true"
       title={t("adr.partial.hint")}
-      className="ml-1.5 inline-flex items-center rounded border border-amber-500/40 px-1 py-px align-middle font-sans text-[10px] uppercase leading-none tracking-wide text-amber-400"
+      className="ml-1.5 inline-flex items-center rounded border border-warning/40 px-1 py-px align-middle font-sans text-xs uppercase leading-none tracking-wide text-warning"
     >
       {t("adr.partial")}
       <span className="sr-only">: {t("adr.partial.hint")}</span>

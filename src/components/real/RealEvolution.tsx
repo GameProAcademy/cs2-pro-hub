@@ -5,6 +5,7 @@
  * a comparison is shown only when both periods have enough matches and the same method, and
  * it is never presented as caused by anything. The Player DNA is linked with its own state.
  */
+import { MapBadge } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info } from "lucide-react";
@@ -315,7 +316,7 @@ function EvolutionReportView({ rep }: { rep: EvolutionReport }) {
                 <span className="font-mono text-xs text-muted-foreground">
                   {formatDate(p.playedAt, intlTag)}
                 </span>
-                <span>{p.map ? mapDisplayName(p.map) : NOT_AVAILABLE_MARK}</span>
+                {p.map ? <MapBadge map={p.map} /> : <span>{NOT_AVAILABLE_MARK}</span>}
                 <span className="font-mono">
                   {p.value === null
                     ? t("evolution.notMeasured")

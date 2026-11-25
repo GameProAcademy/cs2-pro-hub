@@ -80,7 +80,7 @@ export function ConversationMenu({
                   }}
                 >
                   <span className="block truncate">{c.title || t("coach2.untitled")}</span>
-                  <span className="block font-mono text-[10px] text-muted-foreground">
+                  <span className="block font-mono text-xs text-muted-foreground">
                     <time dateTime={c.updatedAt}>{formatDateTime(c.updatedAt, intlTag)}</time>
                   </span>
                 </button>
@@ -151,7 +151,7 @@ export function DeleteConversationButton({
         {t("coach2.deleteCancel")}
       </Button>
       {failed ? (
-        <span role="alert" className="text-[11px] text-destructive">
+        <span role="alert" className="text-xs text-destructive">
           {t("coach2.deleteError")}
         </span>
       ) : null}
@@ -361,7 +361,7 @@ export function SuggestedQuestions({ onPick }: { onPick: (text: string) => void 
   const keys = [1, 2, 3, 4].map((n) => `coach2.suggestion.${n}` as TranslationKey);
   return (
     <div className="space-y-2" data-coach-suggestions>
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+      <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
         {t("coach2.suggestions")}
       </p>
       <div className="flex flex-wrap gap-2">

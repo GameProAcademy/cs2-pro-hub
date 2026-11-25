@@ -31,9 +31,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-        {label}
-      </p>
+      <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{value}</p>
     </div>
   );
@@ -76,7 +74,7 @@ function AdminOverviewPage() {
           <SupportEmailCard />
 
           <section className="rounded-lg border border-border bg-card">
-            <h2 className="border-b border-border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <h2 className="border-b border-border px-4 py-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
               {t("admin.overview.lastLogins")}
             </h2>
             {overview.data.lastLogins.length === 0 ? (

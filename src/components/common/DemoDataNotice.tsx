@@ -11,7 +11,7 @@ export function DemoTag({ className }: { className?: string | undefined }) {
   return (
     <span
       className={cn(
-        "rounded-sm border border-warning/40 bg-warning/10 px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-warning",
+        "rounded-sm border border-warning/40 bg-warning/10 px-1.5 py-0.5 font-mono text-xs font-medium uppercase tracking-wider text-warning",
         className,
       )}
     >

@@ -42,7 +42,7 @@ export function GamersClubPanel({ profileUrl, externalId, lastSyncAt }: GamersCl
         </div>
         <span
           className={cn(
-            "shrink-0 rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
+            "shrink-0 rounded-md border px-2 py-1 font-mono text-xs uppercase tracking-wider",
             blocked
               ? "border-warning/30 bg-warning/10 text-warning"
               : "border-success/30 bg-success/10 text-success",
@@ -106,7 +106,7 @@ export function GamersClubPanel({ profileUrl, externalId, lastSyncAt }: GamersCl
         {t("gc.ownershipNotice")}
       </p>
 
-      <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+      <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
         <Lock className="size-3 shrink-0" aria-hidden />
         {operational.architecture}
       </p>

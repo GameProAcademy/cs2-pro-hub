@@ -494,7 +494,7 @@ function Legend({ h, max }: { h: HeatmapResult; max: number }) {
         {fill(t("spatial.legend.cell"), { px: h.grid.cellPx, grid: h.grid.size })}
         {max ? ` ${fill(t("spatial.legend.max"), { n: max })}` : ""}
       </p>
-      <p className="mt-2 text-[11px] text-muted-foreground">
+      <p className="mt-2 text-xs text-muted-foreground">
         {fill(t("spatial.version"), { version: h.version, transform: h.transformVersion })}
       </p>
     </ChartCard>

@@ -80,7 +80,7 @@ export function MetricTile({ m, label }: { m: MetricEnvelope; label: string }) {
   const valued = VALUED.has(m.status) && m.value !== null;
   return (
     <div
-      className="rounded-md border border-border bg-card p-4"
+      className="surface-panel rounded-lg border border-border p-4"
       data-metric={m.metric_key}
       data-metric-status={m.status}
       data-provenance-method={m.provenance_method}

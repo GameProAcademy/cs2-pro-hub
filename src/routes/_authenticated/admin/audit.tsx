@@ -68,7 +68,7 @@ function AdminAuditPage() {
             {logs.data?.rows.map((log) => (
               <li key={log.id} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="rounded-sm border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">
+                  <span className="rounded-sm border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-xs uppercase tracking-wider text-primary">
                     {log.action}
                   </span>
                   <span className="font-mono text-xs text-muted-foreground">
@@ -94,7 +94,7 @@ function AdminAuditPage() {
                   </div>
                 </dl>
                 {log.metadata ? (
-                  <p className="mt-3 break-words font-mono text-[11px] text-muted-foreground">
+                  <p className="mt-3 break-words font-mono text-xs text-muted-foreground">
                     {t("admin.audit.metadata")}: {JSON.stringify(log.metadata)}
                   </p>
                 ) : null}

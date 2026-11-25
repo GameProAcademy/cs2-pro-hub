@@ -10,6 +10,7 @@
  *
  * Pure SVG (no chart library): the geometry is explicit and testable.
  */
+import { useId } from "react";
 import { useI18n } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
 import { splitAxisLabel } from "@/lib/dnaAxisLabel";
@@ -57,6 +58,7 @@ export function DnaRadarA({
   const { t } = useI18n();
   const n = axes.length;
   const pt = (i: number) => axisPoint(i, n, (R * (axes[i]!.value ?? 0)) / 100);
+  const uid = useId().replace(/:/g, "");
   return (
     <svg
       viewBox={`0 0 ${SIZE} ${SIZE}`}
@@ -65,6 +67,21 @@ export function DnaRadarA({
       aria-label={t("real.dna.select")}
       data-dna-radar-a
     >
+      {/* V-4: depth for the protagonist radar; a soft lime glow under the filled sectors. */}
+      <defs>
+        <radialGradient id={`${uid}-bg`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.08} />
+          <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+        </radialGradient>
+        <filter id={`${uid}-glow`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx={C} cy={C} r={R} fill={`url(#${uid}-bg)`} />
       {GRID.map((g) => (
         <polygon
           key={g}
@@ -74,21 +91,23 @@ export function DnaRadarA({
           strokeWidth={g === 100 ? 1.2 : 0.8}
         />
       ))}
-      {filledSectors(axes).map(([i, j]) => {
-        const [x1, y1] = pt(i);
-        const [x2, y2] = pt(j);
-        return (
-          <g key={`s${i}`} data-sector={`${i}-${j}`}>
-            <polygon
-              points={`${C},${C} ${x1},${y1} ${x2},${y2}`}
-              fill="var(--chart-1)"
-              fillOpacity={0.28}
-              stroke="none"
-            />
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--chart-1)" strokeWidth={2} />
-          </g>
-        );
-      })}
+      <g filter={`url(#${uid}-glow)`} data-radar-fill>
+        {filledSectors(axes).map(([i, j]) => {
+          const [x1, y1] = pt(i);
+          const [x2, y2] = pt(j);
+          return (
+            <g key={`s${i}`} data-sector={`${i}-${j}`}>
+              <polygon
+                points={`${C},${C} ${x1},${y1} ${x2},${y2}`}
+                fill="var(--chart-1)"
+                fillOpacity={0.28}
+                stroke="none"
+              />
+              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--chart-1)" strokeWidth={2} />
+            </g>
+          );
+        })}
+      </g>
       {axes.map((a, i) => {
         const [ex, ey] = axisPoint(i, n, R);
         const empty = a.value === null;

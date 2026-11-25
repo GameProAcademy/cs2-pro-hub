@@ -1,8 +1,9 @@
 > Cópia em texto do artefato UX-1 (https://claude.ai/artifact/YTeUHV1mKu37LoxbpN6WGS), Documento 6, rev 4, extraída em 2026-11-24 para consulta nas sessões de execução. A fonte é o artefato.
 
-
 # Documento 6 — Matriz de aprovação Das 29 recomendações, 13 ficam como A, 9 como B, 1 como C, 2 como D e 4 como E. Toda recomendação que mexe em fórmula é B, porque exige versão nova e a passagem pelo gate de integridade. Nenhuma classificação e nenhum gate autoriza implementação: isso depende de autorização explícita do proprietário, item por item. A coluna Classificação é editável para a sua avaliação.
+
 ## 1. Os nove critérios
+
 | # | Critério | Regra |
 | C1 | Integridade dos dados | eliminatório: não pode inventar, zerar NULL, misturar denominadores nem alterar versão existente |
 | C2 | Problema comprovado | evidência COMPROVADO ou PARCIALMENTE COMPROVADO com arquivo e linha |
@@ -13,7 +14,9 @@
 | C7 | Acessibilidade e mobile | funciona de 375 a 1440 px, teclado e leitor de tela |
 | C8 | Idiomas | viável nos 5 idiomas |
 | C9 | Preserva arquitetura e versões | não altera pro-score-v1, dna-weighted-v2 e as demais versões |
+
 ## 2. Matriz (rodada 1, 2026-11-19)
+
 | ID | Recomendação | Problema | Benefício | Evidência | Dados | Viabilidade técnica | Complexidade | Risco | Critérios | Condições | Classificação | Aceitação |
 | R-01 | Catálogo canônico com agregação por soma (metrics-catalog-v2, proposta) | ADR 104,1 contra 106,7 | um valor por métrica | D-01; Doc. 3, linhas 1, 4, 5 | existem | alta | média | médio: valores mudam para quem já viu | 9/9 | versão nova lado a lado; troca em todas as telas e no Coach ao mesmo tempo; nota de mudança | B · Aprovada com condições | as 3 partidas de referência dão 106,7 / 76,6 / 58,1 em todas as telas |
 | R-02 | Coach lê só o agregado canônico, sem recalcular | dois ADRs no contexto | Coach igual às telas | D-04 | existem | alta | baixa | baixo | 9/9 | depende de R-01; teste de contexto sem conversa real | B · Aprovada com condições | contexto montado contém um ADR, igual ao da tela |
@@ -44,14 +47,18 @@
 | R-27 | Matriz nominal 5×5 ou agregação de terceiros entre partidas | — | — | decisão de anonimato | — | — | — | alto | falha C1 | rejeitada | E · Rejeitada | — |
 | R-28 | Calibrar referências por população nesta fase | — | — | sem base populacional | não existem | — | — | alto | falha C1 e C4 | rejeitada em UX-1 | E · Rejeitada | — |
 | R-29 | Tornar o repositório privado | — | — | público por decisão do proprietário | — | — | — | — | — | rejeitada | E · Rejeitada | — |
+
 ## 3. Gates Cada gate só libera a passagem para o seguinte. Nenhum autoriza implementar.
+
 | Gate | O que verifica | Evidência exigida | Responsável |
 | G1 · Produto | o problema é real e a solução é desejada | C2 e C3 cumpridos; decisão registrada | proprietário |
 | G2 · UX/UI | fluxos, estados, mobile e idiomas completos | wireframe aprovado; C7 e C8 | design |
 | G3 · Técnica | cabe na arquitetura, sem tabela nem endpoint inventado | arquivos e linhas; C4, C5 e C9 | engenharia |
 | G4 · Integridade | nenhuma regressão de dado: NULL, denominador, versão | cálculo reproduzido nas partidas de referência; C1 e C6 | engenharia + proprietário |
 | G5 · Autorização | permissão explícita para implementar aquele item | mensagem do proprietário | proprietário |
+
 ## 4. Matriz revisada (rodada 2, 2026-11-23) Agora são 39 recomendações: as 29 da rodada 1 e 10 novas. A distribuição é 17 A, 12 B, 2 C, 4 D e 4 E. "Aprovado conceitualmente" registra só a decisão de direção tomada pelo proprietário. Nenhum item está autorizado para implementação, nem os classificados como A. A matriz da rodada 1 fica acima, sem alteração, como histórico.
+
 | ID | Recomendação | Classificação (rodada 2) | Aprovado conceitualmente | Ainda depende de validação | Mudança desde a rodada 1 |
 | R-01 | Catálogo canônico por soma (metrics-catalog-v2, proposta) | B · Aprovada com condições | sim: valor único e fonte canônica | V-1 a V-4 (Doc. 3, 5.1); tabela de impacto por jogador (L-3) | direção aprovada; protocolo de mudança (Doc. 3, 5.4) |
 | R-02 | Coach lê só o agregado canônico | B · Aprovada com condições | sim | R-01 | — |
@@ -89,6 +96,6 @@
 | R-34 | Nova. Campo do Coach acima da barra inferior | A · Aprovada | sim | — | critério M-10 |
 | R-35 | Nova. Tirar sinais repetidos entre dimensões no DNA v3 | D · Investigação pendente | — | igualdade de opening_* | achado D-30 |
 | R-36 | Nova. Economia como "não medido" no radar | A · Aprovada | sim | — | achado D-29 |
-| R-37 | Nova. Rating agregado: recalcular dos componentes ou só por partida | D · Investigação pendente | — | decisão Q-21 | Doc. 3, 5.1 |
+| R-37 | Nova. Rating agregado: recalcular dos componentes ou só por partida | Implementado e validado em produção (#373, `metrics-catalog-v2.1`; `docs/ux1/Q21_RATING_AGREGADO.md`) | — | Q-21 decidida em 2026-11-25 | Doc. 3, 5.1 |
 | R-38 | Nova. Intervalos calculados por partida no Treino | B · Aprovada com condições | sim (critério de confiança) | L-5 | Doc. 4, 5.1 |
 | R-39 | Nova. Redação proposta para L04 e para o comentário de roundContext | B · Aprovada com condições | — | decisão do proprietário (Q-16) | Doc. 2, 12.2 |

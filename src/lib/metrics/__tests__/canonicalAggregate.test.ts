@@ -106,7 +106,7 @@ const reference = () => [
 
 describe("metrics-catalog-v2 — pooled over each metric's own denominator", () => {
   it("names the methodology version", () => {
-    expect(METRICS_CATALOG_VERSION).toBe("metrics-catalog-v2");
+    expect(METRICS_CATALOG_VERSION).toBe("metrics-catalog-v2.1");
     for (const id of ["adr", "kast", "hsPercent", "rating"]) {
       expect(canonicalMetric(id).aggregation).toBe("pooled");
     }

@@ -58,7 +58,7 @@ export function CodeMultiSelect({
             {active ? <Check className="size-3" aria-hidden /> : null}
             {t(labelKey(code))}
             {isPrimary && primaryLabel ? (
-              <span className="ml-1 rounded bg-primary/20 px-1 font-mono text-[9px] uppercase tracking-wider">
+              <span className="ml-1 rounded bg-primary/20 px-1 font-mono text-xs uppercase tracking-wider">
                 {primaryLabel}
               </span>
             ) : null}

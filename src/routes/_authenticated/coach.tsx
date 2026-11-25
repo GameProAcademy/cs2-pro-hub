@@ -82,7 +82,7 @@ function CoachPage() {
         <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
           <section className="surface-panel flex h-[62vh] min-h-[420px] flex-col rounded-lg border border-border">
             <header className="border-b border-border px-4 py-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {t("coach.historyTitle")}
               </p>
             </header>

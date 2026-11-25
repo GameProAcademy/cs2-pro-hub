@@ -126,7 +126,7 @@ function AdminPipelinePage() {
                       <p className="truncate text-sm font-medium text-foreground">
                         {job.fileName || job.uploadId}
                       </p>
-                      <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                         {job.status} · {job.stage} · {dateFormat.format(new Date(job.queuedAt))}
                         {job.durationMs != null ? ` · ${Math.round(job.durationMs / 1000)}s` : ""}
                         {job.parserVersion ? ` · ${job.parserVersion}` : ""}
@@ -146,7 +146,7 @@ function AdminPipelinePage() {
                         <p className="mt-1 font-mono text-xs text-destructive">{job.errorCode}</p>
                       ) : null}
                     </div>
-                    <span className="font-mono text-[11px] uppercase text-muted-foreground">
+                    <span className="font-mono text-xs uppercase text-muted-foreground">
                       {job.retryCount}/{job.maxRetries}
                     </span>
                     {job.status === "failed" && !job.storageDeletedAt ? (

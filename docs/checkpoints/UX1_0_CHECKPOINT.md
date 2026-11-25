@@ -252,9 +252,9 @@ Deploy `7ad1b011` de `e970e64` (#366–#370), validado em produção.
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | VALIDADO EM PRODUÇÃO                      | R-01/R-30/R-31 (ADR único, enemy-hp-v1), R-02, R-09 e R-32 (#350–#353, rodada anterior), R-03, R-04/R-05 (DNA v3), R-06 (Sala), R-08 (5 áreas), R-10 (estados), R-11 (Coach com tela), R-12, R-13/R-38 (lista única), R-14 (radar A), R-17, R-18 (L02, textos), R-19, R-20, R-21, R-22, R-23, R-24, R-33, R-34, R-35, R-36; ingestão de `damage_enemy_hp`; Raio-X e plano do catálogo seguindo o Treino; i18n (en e fr sem sobras); responsividade 360–1440 sem transbordo |
 | VALIDADO EM TESTE                         | R-25 (teste de guarda no repositório); integração da ingestão em PostgreSQL descartável; simulação de falso positivo do Treino v2 (0,50–1,57%); seletor sem SteamID (#368)                                                                                                                                                                                                                                                                                                 |
-| PUBLICADO, MAS NÃO VALIDADO EM PRODUÇÃO   | seletor "Quem é você" (#368): não há demo pendente de identificação                                                                                                                                                                                                                                                                                                                                                                                                        |
-| BLOQUEADO POR EVIDÊNCIA EXTERNA           | R-07 (caminho do evento não exercido; origem do vencedor não persistida)                                                                                                                                                                                                                                                                                                                                                                                                   |
-| BLOQUEADO POR DEPENDÊNCIA DO PROPRIETÁRIO | R-15 e R-16 (experimentos C: aprovação e jogadores reais); R-37 (Q-21: rating agregado); início da fase visual (aprovar a proposta)                                                                                                                                                                                                                                                                                                                                        |
+| PUBLICADO, MAS NÃO VALIDADO EM PRODUÇÃO   | seleção no seletor "Quem é você" (#368): não há demo pendente de identificação (ausência de SteamID validada em produção, §2.14)                                                                                                                                                                                                                                                                                                                                           |
+| BLOQUEADO POR EVIDÊNCIA EXTERNA           | R-07 (#372: inventário de mapeamento revisado + release do worker com segredos do dono)                                                                                                                                                                                                                                                                                                                                                                                    |
+| BLOQUEADO POR DEPENDÊNCIA DO PROPRIETÁRIO | R-15 (experimento B: jogadores reais)                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | NÃO APLICÁVEL                             | R-26, R-27, R-28, R-29 (rejeitadas)                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | NÃO IMPLEMENTADO                          | R-15, R-16 (ver acima)                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
@@ -262,6 +262,55 @@ Limites declarados:
 
 - mobile medido por emulação de viewport, sem aparelho físico;
 - leitor de tela verificado pela árvore de acessibilidade, sem sessão com NVDA ou VoiceOver.
+
+### 2.14 Rodada de 2026-11-25: decisões do dono, fase visual e privacidade do seletor
+
+**Q-21 (R-37):**
+
+- A fórmula de rating é aplicada às somas, via a nota sem piso de cada partida e o piso aplicado no fim.
+- Isso equivale à média ponderada por rounds fora do piso (`docs/ux1/Q21_RATING_AGREGADO.md`).
+- #373 (`metrics-catalog-v2.1`). Em produção, o Raio-X mostra 0,91 (107,2/118), igual ao recálculo no banco.
+
+**Experimento C (R-16):** comparação técnica de snapshots (#374, `docs/ux1/EXPERIMENTOS_B_C.md`).
+
+- Os 3 snapshots v3 são cumulativos.
+- Deltas apenas direcionais.
+- Snapshots inalterados (md5).
+- Sem tela.
+
+**Experimento B (R-15):** não executado; depende de jogadores reais. A alternativa A segue oficial.
+
+**#368 (privacidade do seletor):** ao preparar o teste, a resposta de `getDemoIdentity` em produção trazia SteamID64 em `participants`, `suggestion` e `attachmentParticipantKey`.
+
+- #375: referências opacas `p1…pN`, resolvidas no servidor.
+- #377:
+  - `latestDecisionEventKey` (`manual:<SteamID>`) virou `manual:<ref>`;
+  - a lista de jobs deixou de enviar `attachmentParticipantKey`.
+- **Varredura em produção (bundle `index-D7xu1cH-`):**
+  - 63 respostas de servidor em todas as áreas e nas 7 abas da Sala: 0 SteamIDs depois do #377;
+  - 97 chunks JS (2,46 MB) e o HTML: 0;
+  - antes do #377, a única ocorrência era a lista de jobs.
+- **Teste controlado de seleção:** ainda sem demo pendente. A demo nova da conta de teste (job `819a7338`, 415,8 MB) parou em `RAW_AUDIT_BLOCKED`, sem identificação a fazer.
+
+**R-07:** #372 aberto e bloqueado por governança.
+
+- Os campos novos de evidência mudam a matriz reconciliada e, com ela, o inventário de mapeamento revisado (`canonical-demo-v2`, `cf0549c2…`).
+- Três testes de autoridade falham como esperado.
+- Atualizar as âncoras no próprio PR seria autoaprovação. O caminho é uma versão revisada do inventário junto com a release do worker (R5.8.31), que depende dos segredos do dono.
+
+**Fase visual:** autorizada pelo dono, com migração em produção e sem protótipos das 5 telas. Entregue em #376 e publicada no bundle `index-D7xu1cH-`.
+
+- Paleta semântica com contraste medido.
+- Duas sombras e dois raios.
+- Piso de 12 px.
+- `GameIcon`, `ToneBadge`, `SideBadge`, `MapBadge` e `DataStateBadge`.
+- `docs/ux1/VISUAL_SYSTEM.md`.
+
+**Produção:**
+
+- 10 rotas sem transbordo horizontal no painel estreito;
+- 0 textos abaixo de 12 px, salvo os chips de código do Coach, corrigidos no PR seguinte;
+- Rating 0,91 inalterado.
 
 ## 3. Bloqueios
 
@@ -273,7 +322,8 @@ Limites declarados:
 
 Dependem do dono:
 
-1. Aprovar a proposta da fase visual.
-2. R-07: decidir entre persistir a origem do vencedor (contrato novo) ou aceitar só o caminho do estado do jogo.
-3. Experimentos R-15 e R-16.
-4. Q-21 (R-37).
+1. R-07: revisar e aprovar a nova versão do inventário de mapeamento; definir os segredos de revisão para a release do worker (R5.8.31).
+2. Experimento B (R-15) com 3 a 5 jogadores reais.
+3. Uma demo de teste que fique pendente de identificação, para o teste controlado de seleção do #368.
+
+Executáveis: continuar a fase visual (Início, Treino, Raio-X e Coach com os novos componentes), uma etapa por PR.
