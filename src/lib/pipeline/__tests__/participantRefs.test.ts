@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { participantRefs, resolveParticipantRef } from "@/lib/pipeline-identity.functions";
+import {
+  opaqueEventKey,
+  participantRefs,
+  resolveParticipantRef,
+} from "@/lib/pipeline-identity.functions";
 
 /** #368b: the identity picker never sends a SteamID-shaped key to the browser. */
 const players = [
@@ -30,5 +34,14 @@ describe("#368b opaque participant references", () => {
     expect(body).not.toMatch(/participantKey: (participant|suggestion)\.participantKey,/);
     expect(body).not.toMatch(/: job\.(attachment|declared)_participant_key,/);
     expect(body).not.toMatch(/steamId/);
+  });
+  it("#368c: the decision event key carries the ref, never the SteamID", () => {
+    const refs = participantRefs(players);
+    const ref = (k: string | null) => (k ? (refs.get(k) ?? null) : null);
+    expect(opaqueEventKey("manual:76561198000000001", ref)).toBe("manual:p2");
+    expect(opaqueEventKey("manual:76561190000000000", ref)).toBe("manual:unknown");
+    expect(opaqueEventKey("manual:unresolved", ref)).toBe("manual:unresolved");
+    expect(opaqueEventKey("auto:steam:76561197960690195", ref)).toBe("auto:steam:p1");
+    expect(opaqueEventKey(null, ref)).toBeNull();
   });
 });

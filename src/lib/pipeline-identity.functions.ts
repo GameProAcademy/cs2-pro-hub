@@ -115,7 +115,8 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
       observedNickname: job.observed_nickname,
       latestDecisionStatus: latestDecision?.status ?? null,
       confirmationStatus: job.attachment_confirmation_status,
-      latestDecisionEventKey: latestDecision?.event_key ?? null,
+      // #368c: the stored key is `manual:<participant key>` (a SteamID); the browser gets the ref.
+      latestDecisionEventKey: opaqueEventKey(latestDecision?.event_key ?? null, ref),
       participants: participants.map((participant) => ({
         participantKey: ref(participant.participantKey) ?? "",
         nickname: participant.nickname,
@@ -388,6 +389,19 @@ export function resolveParticipantRef(
 ): string | null {
   for (const [key, value] of participantRefs(participants)) if (value === ref) return key;
   return null;
+}
+
+/** `kind:<participant key>` → `kind:<ref>`; a key outside the match becomes `kind:unknown`. */
+export function opaqueEventKey(
+  eventKey: string | null,
+  ref: (key: string | null) => string | null,
+): string | null {
+  if (!eventKey) return null;
+  const i = eventKey.lastIndexOf(":");
+  if (i < 0) return eventKey;
+  const tail = eventKey.slice(i + 1);
+  if (tail === "unresolved") return eventKey;
+  return `${eventKey.slice(0, i)}:${ref(tail) ?? "unknown"}`;
 }
 
 /** Demo players of a canonical match, read under the owner's RLS. */
