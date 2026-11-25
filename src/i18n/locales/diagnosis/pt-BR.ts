@@ -78,15 +78,16 @@ export const diagnosisPtBR = {
     "A bomba já estava plantada neste round quando você morreu. É contexto, não erro.",
   "diagnosis.rule.exposure.title": "Exposição a vários ângulos",
   "diagnosis.rule.exposure.body":
-    "Não avaliado: exige posições dos adversários ao longo do tempo e geometria do mapa, que não são guardadas.",
+    "Não avaliado: exigiria as posições dos adversários como observação contínua e a geometria do mapa. O CS2 PRO guarda só amostras de posição para o Replay (com lacunas) e não tira medidas delas.",
   "diagnosis.rule.isolation.title": "Isolamento",
   "diagnosis.rule.isolation.body":
-    "Não avaliado: exige a posição dos companheiros no momento da morte, que não é guardada.",
+    "Não avaliado: exigiria a posição dos companheiros no instante exato da morte. As amostras do Replay não coincidem com esse instante e não são usadas como medida.",
   "diagnosis.rule.re_peek.title": "Re-peek",
-  "diagnosis.rule.re_peek.body": "Não avaliado: exige a trajetória do jogador, que não é guardada.",
+  "diagnosis.rule.re_peek.body":
+    "Não avaliado: exigiria a trajetória do jogador como observação contínua. As amostras do Replay têm lacunas e não são usadas como medida.",
   "diagnosis.rule.rotation_timing.title": "Tempo de rotação",
   "diagnosis.rule.rotation_timing.body":
-    "Não avaliado: exige a trajetória do jogador e o estado do objetivo ao longo do round.",
+    "Não avaliado: exigiria a trajetória contínua do jogador e o estado do objetivo ao longo do round. As amostras do Replay não são usadas como medida.",
   "diagnosis.missing.title": "Dados ausentes nesta morte",
   "diagnosis.missing.none": "Nenhum campo ausente.",
   "diagnosis.missing.alive_counts": "Vivos por lado",

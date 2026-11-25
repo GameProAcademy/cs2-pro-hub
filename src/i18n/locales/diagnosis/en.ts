@@ -78,16 +78,16 @@ export const diagnosisEn: Record<keyof typeof diagnosisPtBR, string> = {
     "The bomb was already planted in this round when you died. Context, not a mistake.",
   "diagnosis.rule.exposure.title": "Exposed to several angles",
   "diagnosis.rule.exposure.body":
-    "Not evaluated: needs opponent positions over time and map geometry, which are not stored.",
+    "Not evaluated: it would need opponent positions as a continuous observation and the map geometry. CS2 PRO only keeps position samples for the Replay (with gaps) and takes no measure from them.",
   "diagnosis.rule.isolation.title": "Isolation",
   "diagnosis.rule.isolation.body":
-    "Not evaluated: needs teammate positions at the moment of death, which are not stored.",
+    "Not evaluated: it would need teammate positions at the exact moment of death. Replay samples do not fall on that moment and are not used as a measure.",
   "diagnosis.rule.re_peek.title": "Re-peek",
   "diagnosis.rule.re_peek.body":
-    "Not evaluated: needs the player's trajectory, which is not stored.",
+    "Not evaluated: it would need the player's trajectory as a continuous observation. Replay samples have gaps and are not used as a measure.",
   "diagnosis.rule.rotation_timing.title": "Rotation timing",
   "diagnosis.rule.rotation_timing.body":
-    "Not evaluated: needs the player's trajectory and the objective state across the round.",
+    "Not evaluated: it would need the player's continuous trajectory and the objective state across the round. Replay samples are not used as a measure.",
   "diagnosis.missing.title": "Missing data for this death",
   "diagnosis.missing.none": "No missing field.",
   "diagnosis.missing.alive_counts": "Alive per side",

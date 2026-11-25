@@ -79,16 +79,16 @@ export const diagnosisFr: Record<keyof typeof diagnosisPtBR, string> = {
     "La bombe était déjà posée dans ce round quand vous êtes mort. C'est du contexte, pas une erreur.",
   "diagnosis.rule.exposure.title": "Exposition à plusieurs angles",
   "diagnosis.rule.exposure.body":
-    "Non évalué : nécessite les positions des adversaires dans le temps et la géométrie de la carte, qui ne sont pas stockées.",
+    "Non évalué : il faudrait les positions adverses en observation continue et la géométrie de la carte. CS2 PRO ne garde que des échantillons de position pour le Replay (avec des trous) et n’en tire aucune mesure.",
   "diagnosis.rule.isolation.title": "Isolement",
   "diagnosis.rule.isolation.body":
-    "Non évalué : nécessite la position des coéquipiers au moment de la mort, qui n'est pas stockée.",
+    "Non évalué : il faudrait la position des coéquipiers à l’instant exact de la mort. Les échantillons du Replay ne tombent pas sur cet instant et ne servent pas de mesure.",
   "diagnosis.rule.re_peek.title": "Re-peek",
   "diagnosis.rule.re_peek.body":
-    "Non évalué : nécessite la trajectoire du joueur, qui n'est pas stockée.",
+    "Non évalué : il faudrait la trajectoire du joueur en observation continue. Les échantillons du Replay ont des trous et ne servent pas de mesure.",
   "diagnosis.rule.rotation_timing.title": "Timing de rotation",
   "diagnosis.rule.rotation_timing.body":
-    "Non évalué : nécessite la trajectoire du joueur et l'état de l'objectif pendant le round.",
+    "Non évalué : il faudrait la trajectoire continue du joueur et l’état de l’objectif pendant le round. Les échantillons du Replay ne servent pas de mesure.",
   "diagnosis.missing.title": "Données manquantes pour cette mort",
   "diagnosis.missing.none": "Aucun champ manquant.",
   "diagnosis.missing.alive_counts": "En vie par camp",
