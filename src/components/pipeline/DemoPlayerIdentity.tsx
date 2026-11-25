@@ -7,6 +7,7 @@
  * earlier demo, the dialog first asks "is this you?"; nothing is attached until
  * the user says yes, and "no" shows every player.
  */
+import { fill } from "@/lib/format";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -201,7 +202,7 @@ export function DemoPlayerIdentity({
                   <p className="font-semibold text-foreground">
                     {t("pipeline.identify.suggestion").replace(
                       "{nickname}",
-                      suggestion.nickname ?? suggestion.participantKey,
+                      suggestion.nickname ?? t("pipeline.identify.unnamedSuggested"),
                     )}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -234,7 +235,7 @@ export function DemoPlayerIdentity({
                   <legend className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                     {t("pipeline.identify.selectLabel")}
                   </legend>
-                  {participants.map((participant) => (
+                  {participants.map((participant, index) => (
                     <label
                       key={participant.participantKey}
                       className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition-colors focus-within:ring-2 focus-within:ring-ring ${
@@ -246,14 +247,16 @@ export function DemoPlayerIdentity({
                       <input
                         type="radio"
                         name={`demo-player-${jobId}`}
-                        value={participant.participantKey}
+                        // The key (a SteamID) stays in React state; the DOM only carries the index.
+                        value={String(index)}
                         checked={selected === participant.participantKey}
                         onChange={() => setSelected(participant.participantKey)}
                         className="size-4 shrink-0 accent-primary"
                       />
                       <span className="min-w-0">
                         <span className="block break-words font-medium">
-                          {participant.nickname ?? participant.participantKey}
+                          {participant.nickname ??
+                            fill(t("pipeline.identify.unnamed"), { n: index + 1 })}
                         </span>
                         {participant.team ? (
                           <span className="mt-0.5 block text-xs text-muted-foreground">

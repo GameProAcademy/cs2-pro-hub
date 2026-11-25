@@ -105,4 +105,6 @@ export const demoFlowFr: Record<keyof typeof demoFlowPtBR, string> = {
   "demoFlow.resumed": "Nous avons repris le suivi de cette démo.",
   "demoFlow.leaveWarning":
     "L’envoi de la démo est toujours en cours. Quitter maintenant interrompt l’envoi.",
+  "pipeline.identify.unnamed": "Joueur sans nom {n}",
+  "pipeline.identify.unnamedSuggested": "un joueur sans nom",
 };

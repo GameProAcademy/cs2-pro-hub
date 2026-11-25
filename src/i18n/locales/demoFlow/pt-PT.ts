@@ -103,4 +103,6 @@ export const demoFlowPtPT: Record<keyof typeof demoFlowPtBR, string> = {
   "demoFlow.reconnecting": "Sem ligação. A tentar voltar a ligar e retomar o acompanhamento…",
   "demoFlow.resumed": "Retomámos o acompanhamento desta demo.",
   "demoFlow.leaveWarning": "O envio da demo ainda está em curso. Sair agora interrompe o envio.",
+  "pipeline.identify.unnamed": "Jogador sem nome {n}",
+  "pipeline.identify.unnamedSuggested": "um jogador sem nome",
 };

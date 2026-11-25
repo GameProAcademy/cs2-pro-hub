@@ -87,7 +87,7 @@ describe("FASE 2.7.2D-C — demo upload feedback", () => {
 
   it("renders real participants and an honest empty state without synthetic players", () => {
     const source = readFileSync("src/components/pipeline/DemoPlayerIdentity.tsx", "utf8");
-    expect(source).toContain("participants.map((participant)");
+    expect(source).toContain("participants.map((participant, index)");
     expect(source).toContain('t("pipeline.identify.empty")');
     expect(source).toContain("checked={selected === participant.participantKey}");
     expect(source).toContain("isParticipantConfirmationDisabled(selected, declare.isPending)");
