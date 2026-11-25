@@ -15,7 +15,7 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 | Item                               | Valor                                                                                                                                                                                                                            |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                                                                       |
-| Etapa atual                        | UX-1.0 concluído no que é executável; aguardando decisões do dono (fase visual, R-07, R-15/R-16, Q-21)                                                                                                                           |
+| Etapa atual                        | UX-1.0 fechado; fase visual em produção (#376); R-07 bloqueado por governança do inventário (#372); B aguarda jogadores reais                                                                                                    |
 | Última etapa concluída             | #366–#370: ingestão enemy-hp provada, Coach com tela validado, HS sem arredondamento duplo, seletor sem SteamID, L02 e R-25 — checkpoint UX-1.0 §2.12–§2.13                                                                      |
 | Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                                                                            |
 | Processos em execução              | Nenhum                                                                                                                                                                                                                           |
@@ -308,6 +308,16 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 4. Retomar na "Próxima ação exata". Não repetir o que a tabela de retomada proíbe.
 
 ## RESUMO PARA PRÓXIMA SESSÃO
+
+> Atualização 2026-11-25:
+>
+> - `main` `d7f039c` + o PR de fechamento.
+> - App publicado no bundle `index-D7xu1cH-`.
+> - Fase visual em produção (`docs/ux1/VISUAL_SYSTEM.md`).
+> - Q-21 em produção.
+> - Experimento C validado tecnicamente.
+> - Seletor sem SteamID (#375 e #377).
+> - Aberto: #372 (R-07), bloqueado por governança. Detalhes em `docs/checkpoints/UX1_0_CHECKPOINT.md` §2.14.
 
 - Projeto: CS2 PRO Hub (`GameProAcademy/cs2-pro-hub`)
 - Fase 4.2: PM1, PM6, PM2, PM3, PM4 e **PM5 concluídos**; missão ativa: integração Steam/Valve (`docs/steam/STEAM_CHECKPOINT.md`)
