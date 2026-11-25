@@ -276,3 +276,34 @@ Tests in `scripts/tests/test_o8a_event_type_incendiary.py`:
 
 - the set difference with the previous allowlist is exactly `{incendiary}`;
 - `Incendiary`, `incendiary ` (with a trailing space), `inferno_startburn`, `fire`, `""`, `null` and `unknown` are still rejected.
+
+### 8.3 O8-A item 2 and the re-run: server gate PASS (2026-11-25)
+
+**Comparison method for numbers inside jsonb** (`jsonb_number_text`). The app sends the bundle with `JSON.stringify`, which writes each double as its shortest round-trip decimal (the digits Python's `repr` gives). jsonb stores that numeric exactly and prints it in plain notation. The harness prints those same digits:
+
+- no exponent and no trailing zeros the value never had;
+- `-0` prints as `0`;
+- non-finite values are refused;
+- no rounding, truncation or tolerance.
+
+Numeric scalar columns are unchanged: both sides still compare them through `round(numeric, 6)`.
+
+Tests in `scripts/tests/test_o8a_jsonb_numbers.py` (29). They include 24 cases measured on PostgreSQL 16 (`o8a-jsonb-number-cases.json`): decimals, integers, negatives, `-0`, `null`, `1e-7`, `1.5e-7`, `1e21`, 2^53, the smallest subnormal and the largest double.
+
+**The earlier difference was representation only.**
+
+| Demo   | Events | Rows missing from the database (old serializer) | Rows missing (exact serializer) | Changed rows whose exact value equals the database value |
+| ------ | ------ | ----------------------------------------------- | ------------------------------- | -------------------------------------------------------- |
+| Dust2  | 3 496  | 497                                             | 0                               | 497/497                                                  |
+| Mirage | 4 378  | 639                                             | 0                               | 639/639                                                  |
+
+**Re-run with both O8-A fixes (PR E):**
+
+- the parser ran twice per demo, with byte-identical output;
+- server-path bundles were built twice, byte-identical;
+- persistence ran in a fresh disposable database with the production function text (`md5(prosrc)` equal);
+- the digests were read back with `harness.py sql`.
+
+Every round is `confirmed` by `game_state`, and the winners give the official scores (Dust2 13:3, Mirage 13:10). No `canonical_v3_withheld`.
+
+**Gate:** server **PASS**, browser **PASS**, evidence demos `dust2` and `mirage`. The v2 inventory, matrix and catalogue are identical to `main`, and the v2 gate stays BLOCKED.

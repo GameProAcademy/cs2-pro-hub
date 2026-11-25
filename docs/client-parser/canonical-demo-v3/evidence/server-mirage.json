@@ -326,7 +326,7 @@
     "non_null": 1,
     "zero": 0,
     "empty_object": 0,
-    "digest": "4fd170eee63fb612",
+    "digest": "71572f6d2fc39b0a",
     "checks": {
      "object": {
       "ok": true,
@@ -2408,7 +2408,7 @@
     "digest": "6eb9df3b5fda2028",
     "checks": {
      "event_type_allowlist": {
-      "ok": false,
+      "ok": true,
       "detail": "event_type_allowlist"
      }
     }
@@ -2853,7 +2853,7 @@
     "non_null": 4378,
     "zero": 0,
     "empty_object": 49,
-    "digest": "b02b8d80e3816749",
+    "digest": "49bfa3aa4a7db579",
     "checks": {
      "object": {
       "ok": true,
@@ -2863,14 +2863,14 @@
    },
    "deterministic": true,
    "round_trip": {
-    "status": "DIFFERENT",
+    "status": "EQUAL",
     "persisted": {
      "rows": 4378,
      "digest": "49bfa3aa4a7db579"
     },
     "bundle": {
      "rows": 4378,
-     "digest": "b02b8d80e3816749"
+     "digest": "49bfa3aa4a7db579"
     }
    }
   }
