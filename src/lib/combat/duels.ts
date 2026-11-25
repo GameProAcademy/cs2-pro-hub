@@ -157,7 +157,9 @@ export const NOT_MEASURED_AIM = [
 ] as const;
 
 const isNum = (v: number | null): v is number => typeof v === "number" && Number.isFinite(v);
-const ratio = (num: number, den: number) => Math.round((num / den) * 10000) / 10000;
+// 6 decimals, not 4: screens show these as percentages with one decimal, and rounding twice
+// (0.538462 → 0.5385 → 53.9 %) showed 53.9 for 7 of 13 (exact 53.846 %, i.e. 53.8 %).
+const ratio = (num: number, den: number) => Math.round((num / den) * 1_000_000) / 1_000_000;
 
 function rate(
   key: string,

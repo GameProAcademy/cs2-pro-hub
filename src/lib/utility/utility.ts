@@ -130,7 +130,8 @@ export interface UtilityReport {
 }
 
 const isNum = (v: number | null): v is number => typeof v === "number" && Number.isFinite(v);
-const round4 = (v: number) => Math.round(v * 10000) / 10000;
+// 6 decimals: values are shown with one decimal (rates as %), so 4 decimals rounded twice.
+const roundRatio = (v: number) => Math.round(v * 1_000_000) / 1_000_000;
 
 function valued(
   key: string,
@@ -187,7 +188,7 @@ function perFlash(
   if (!blinds) return empty(key, unit, "NOT_OBSERVED", method);
   if (den < MIN_SAMPLE.flashes)
     return empty(key, unit, "INSUFFICIENT_SAMPLE", method, den, "flashes");
-  return valued(key, round4(num / den), unit, "DERIVED", method, den, "flashes", refs);
+  return valued(key, roundRatio(num / den), unit, "DERIVED", method, den, "flashes", refs);
 }
 
 export function buildUtilityReport(input: UtilityInput, me: string): UtilityReport {
@@ -311,7 +312,7 @@ export function buildUtilityReport(input: UtilityInput, me: string): UtilityRepo
       enemies,
       teammates,
       self,
-      enemyBlindSeconds: round4(enemyBlindSeconds),
+      enemyBlindSeconds: roundRatio(enemyBlindSeconds),
     };
   });
   const unmatchedBlinds =
@@ -464,7 +465,7 @@ export function buildUtilityReport(input: UtilityInput, me: string): UtilityRepo
           )
         : valued(
             "utility.he_damage_per_grenade",
-            round4(he.enemy / heDets),
+            roundRatio(he.enemy / heDets),
             "hp",
             "DERIVED",
             "HE damage to enemies ÷ your HE detonations",
@@ -489,7 +490,7 @@ export function buildUtilityReport(input: UtilityInput, me: string): UtilityRepo
           )
         : valued(
             "utility.fire_damage_per_grenade",
-            round4(fire.enemy / fireDets),
+            roundRatio(fire.enemy / fireDets),
             "hp",
             "DERIVED",
             "fire damage to enemies ÷ your fires",

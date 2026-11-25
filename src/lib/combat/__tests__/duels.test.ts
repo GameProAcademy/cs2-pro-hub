@@ -241,7 +241,7 @@ describe("shooting (R5.8.30 telemetry)", () => {
     const r = report(events);
     expect(r.metrics["first_shot_hit_rate"]).toMatchObject({
       status: "DERIVED",
-      value: 0.3704,
+      value: 0.37037, // 10 / 27, 6 decimals
       sample_size: { n: 27, unit: "bursts" },
     });
     const first = r.shooting.spray.find((s) => s.bucket === "1")!;
@@ -249,7 +249,7 @@ describe("shooting (R5.8.30 telemetry)", () => {
     expect(r.shooting.spray.find((s) => s.bucket === "2-3")!.shots).toBe(50);
     expect(r.metrics["shot_hit_rate"]).toMatchObject({
       status: "DERIVED",
-      value: Math.round((10 / 77) * 10000) / 10000,
+      value: Math.round((10 / 77) * 1_000_000) / 1_000_000,
     });
   });
 
