@@ -187,12 +187,10 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
                         className="flex min-w-36 items-center gap-2"
                         data-dna-index-status="READY"
                       >
-                        <ProgressBar
-                          value={r.index}
-                          max={100}
-                          className="w-20"
-                          label={`${t("xray.dnaIndex")} · ${t(dnaLabelKey(r.dimension))}`}
-                        />
+                        {/* Decorative: the row already names the index and states the number. */}
+                        <span aria-hidden className="w-20">
+                          <ProgressBar value={r.index} max={100} />
+                        </span>
                         <span className="font-mono">{r.index} / 100</span>
                       </span>
                     ) : r.indexStatus === "IN_FORMATION" ? (
@@ -232,8 +230,8 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
               >
                 <dt className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   <SideBadge side={side === "ct" ? "CT" : "T"} />
-                  {t(`xray.sides.${side}` as TranslationKey)}
-                  {" · "}
+                  {/* The badge shows the side; the localized name stays for screen readers. */}
+                  <span className="sr-only">{t(`xray.sides.${side}` as TranslationKey)} · </span>
                   {x.sides[side].rounds === null
                     ? NOT_AVAILABLE_MARK
                     : fill(t("xray.sides.rounds"), {

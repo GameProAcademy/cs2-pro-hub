@@ -447,6 +447,12 @@ describe("xray-v1 inference and recommendation", () => {
     const texts = [...ready.matchAll(/>(\d+)<!-- --> \/ 100</g)].map((v) => v[1]);
     expect(bars.length).toBeGreaterThan(0);
     expect(bars).toEqual(texts);
+    // The bar is decorative and carries no visible label (the row already names the index):
+    // a label inside the narrow cell overlapped the number in production.
+    expect(ready).toMatch(
+      /<span aria-hidden="true" class="w-20"><div class="w-full"><div role="progressbar"/,
+    );
+    expect(ready).not.toMatch(/class="w-20"><div class="w-full"><div class="mb-1\.5/);
   });
 });
 

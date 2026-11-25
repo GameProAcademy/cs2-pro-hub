@@ -339,9 +339,9 @@ export function RealCoachChat({ className }: { className?: string | undefined })
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/40 px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/40 px-4 py-2 sm:py-2.5">
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <p className="flex items-center gap-2 text-xs font-semibold text-foreground sm:text-sm">
             <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
               <Bot className="size-3.5" aria-hidden />
             </span>
