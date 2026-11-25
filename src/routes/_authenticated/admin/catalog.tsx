@@ -162,9 +162,7 @@ function LessonsTab() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 space-y-1">
                     <p className="font-medium text-foreground">{row.title}</p>
-                    <p className="break-all font-mono text-xs text-muted-foreground">
-                      {row.url}
-                    </p>
+                    <p className="break-all font-mono text-xs text-muted-foreground">{row.url}</p>
                     <p className="font-mono text-xs text-muted-foreground">
                       {[
                         row.locale ?? "—",
