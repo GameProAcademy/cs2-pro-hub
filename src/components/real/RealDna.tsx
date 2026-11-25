@@ -297,7 +297,7 @@ export function RealDnaSummary() {
               observed: dna.observedDimensions ?? NOT_AVAILABLE_MARK,
             });
   return (
-    <ChartCard showDemoTag={false} title={t("dashboard.dna")}>
+    <ChartCard showDemoTag={false} icon="dna" title={t("dashboard.dna")}>
       {query.isPending ? (
         <LoadingState />
       ) : query.isError || !dna ? (

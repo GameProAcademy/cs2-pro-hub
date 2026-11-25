@@ -90,7 +90,7 @@ export function RealProScoreCard() {
   const { t } = useI18n();
   const query = useProScore();
   return (
-    <ChartCard showDemoTag={false} title={t("real.proScore.title")}>
+    <ChartCard showDemoTag={false} icon="target" title={t("real.proScore.title")}>
       {query.isPending ? (
         <LoadingState label={t("score.loading")} />
       ) : query.isError || !query.data ? (
