@@ -913,12 +913,26 @@ export function compositeRating(
   damage: number,
   rounds: number,
 ): number {
-  if (rounds <= 0) return 0;
+  return Math.max(0, compositeRatingUnfloored(kills, deaths, damage, rounds) ?? 0);
+}
+
+/**
+ * Q-21: the same formula without the floor at 0. It is linear in kills, deaths and damage per
+ * round, so over several matches it is recomputed on the pooled counts (Σ over matches, then the
+ * floor once): Σ(rounds·value) ÷ Σ rounds equals the formula on Σkills/Σrounds, Σdeaths/Σrounds
+ * and Σdamage/Σrounds. null when there is no round.
+ */
+export function compositeRatingUnfloored(
+  kills: number,
+  deaths: number,
+  damage: number,
+  rounds: number,
+): number | null {
+  if (rounds <= 0) return null;
   const kpr = kills / rounds;
   const dpr = deaths / rounds;
   const adr = damage / rounds;
-  const value = 0.45 * (kpr / 0.7) + 0.25 * (1 - dpr / 0.75) + 0.3 * (adr / 80);
-  return Math.max(0, value);
+  return 0.45 * (kpr / 0.7) + 0.25 * (1 - dpr / 0.75) + 0.3 * (adr / 80);
 }
 
 /**
