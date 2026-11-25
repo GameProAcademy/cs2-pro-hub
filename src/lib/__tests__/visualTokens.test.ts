@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /** Visual phase V-1: the semantic palette is measured, not assumed (WCAG 2.x contrast). */
@@ -74,5 +74,29 @@ describe("visual phase semantic palette", () => {
     expect(css).toMatch(/--radius-md: 8px;/);
     expect(css).toMatch(/--radius-lg: 12px;/);
     expect(css).toMatch(/--radius-xl: 12px;/);
+  });
+});
+
+describe("visual phase source guards", () => {
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory()
+        ? e.name === "__tests__"
+          ? []
+          : files(`${dir}/${e.name}`)
+        : e.name.endsWith(".tsx")
+          ? [`${dir}/${e.name}`]
+          : [],
+    );
+  const sources = files("src").map((f) => [f, readFileSync(f, "utf8")] as const);
+  it("no text below 12 px: no 9/10/11 px classes and no fractional em text", () => {
+    const bad = sources
+      .filter(([, s]) => /text-\[(9|10|11)px\]|text-\[0\.\d+em\]/.test(s))
+      .map(([f]) => f);
+    expect(bad).toEqual([]);
+  });
+  it("no raw amber/sky palette classes: roles come from tokens", () => {
+    const bad = sources.filter(([, s]) => /\b(amber|sky)-\d{3}\b/.test(s)).map(([f]) => f);
+    expect(bad).toEqual([]);
   });
 });

@@ -50,7 +50,7 @@ function Inline({ text }: { text: string }) {
         ) : part.kind === "italic" ? (
           <em key={i}>{part.text}</em>
         ) : part.kind === "code" ? (
-          <code key={i} className="rounded bg-muted px-1 text-[0.85em]">
+          <code key={i} className="rounded bg-muted px-1 font-mono text-xs">
             {part.text}
           </code>
         ) : (
