@@ -18,7 +18,9 @@ export type GameIconName =
   | "bomb"
   | "skull"
   | "dna"
-  | "target";
+  | "target"
+  | "alert"
+  | "trend";
 
 const PATHS: Record<GameIconName, string[]> = {
   crosshair: [
@@ -51,6 +53,9 @@ const PATHS: Record<GameIconName, string[]> = {
     "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
     "M12 12h.01",
   ],
+  // Attention (warning tone): the role is never colour alone.
+  alert: ["M12 3l10 18H2z", "M12 10v4", "M12 17h.01"],
+  trend: ["M3 17l6-6 4 4 8-8", "M15 7h6v6"],
 };
 
 export function GameIcon({

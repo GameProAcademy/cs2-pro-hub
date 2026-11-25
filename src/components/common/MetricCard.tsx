@@ -3,6 +3,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { DemoTag } from "@/components/common/DemoDataNotice";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { useT } from "@/i18n";
 import { NOT_AVAILABLE_MARK, isNotAvailable } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,10 @@ export function MetricCard({
   hint,
   size = "md",
   showDemoTag = true,
+  icon,
 }: {
+  /** Optional game icon beside the label (decorative). */
+  icon?: GameIconName | undefined;
   /** Text or a <MetricTerm> (name + definition). */
   label: ReactNode;
   /** null / undefined / "—" = not available: never shown as zero. */
@@ -82,8 +86,14 @@ export function MetricCard({
         )}
       />
       <div className="flex items-start justify-between gap-2">
-        <p className="font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground">
-          {label}
+        <p className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground">
+          {icon ? (
+            <GameIcon
+              name={icon}
+              className={cn("size-3.5 shrink-0", missing ? "text-neutral" : "text-primary")}
+            />
+          ) : null}
+          <span className="min-w-0">{label}</span>
         </p>
         {showDemoTag ? <DemoTag /> : null}
       </div>

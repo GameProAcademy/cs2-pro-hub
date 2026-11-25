@@ -75,6 +75,7 @@ function RealDashboardPage() {
               {overview.matches.length ? (
                 <ChartCard
                   showDemoTag={false}
+                  icon="rounds"
                   title={t("dashboard.lastMatches")}
                   actions={
                     <Button asChild size="sm" variant="ghost">
@@ -92,6 +93,7 @@ function RealDashboardPage() {
               {overview.latestJobs.length ? (
                 <ChartCard
                   showDemoTag={false}
+                  icon="clock"
                   title={t("real.uploads.title")}
                   subtitle={t("real.uploads.subtitle")}
                 >

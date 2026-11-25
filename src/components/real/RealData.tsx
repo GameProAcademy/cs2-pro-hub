@@ -3,7 +3,7 @@
  * (the signed-in player's own rows under RLS) or is an explicit, honest state.
  * No component in this file renders a demonstration value.
  */
-import { MapBadge } from "@/components/common/VisualBadges";
+import { MapBadge, ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Ban, CircleDashed, Clock3, Fingerprint, ShieldAlert, Upload } from "lucide-react";
@@ -139,10 +139,21 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
     value === null ? null : formatNumber(value, intlTag, digits);
   return (
     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
-      <MetricCard showDemoTag={false} label={t("real.metric.matches")} value={a.matches} />
-      <MetricCard showDemoTag={false} label={<MetricTerm id="kd" />} value={num(a.kd, 2)} />
       <MetricCard
         showDemoTag={false}
+        icon="map"
+        label={t("real.metric.matches")}
+        value={a.matches}
+      />
+      <MetricCard
+        showDemoTag={false}
+        icon="crosshair"
+        label={<MetricTerm id="kd" />}
+        value={num(a.kd, 2)}
+      />
+      <MetricCard
+        showDemoTag={false}
+        icon="target"
         label={<MetricTerm id="adr" />}
         value={num(a.adr, 1)}
         hint={
@@ -153,12 +164,14 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
       />
       <MetricCard
         showDemoTag={false}
+        icon="rounds"
         label={<MetricTerm id="kast" />}
         value={num(a.kast, 1)}
         unit="%"
       />
       <MetricCard
         showDemoTag={false}
+        icon="trend"
         label={<MetricTerm id="winRate" variant="label" />}
         value={a.decided ? num((a.wins / a.decided) * 100, 0) : null}
         unit="%"
@@ -171,11 +184,14 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
         }
       />
       {a.limited > 0 ? (
-        <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-5">
-          <span className="font-mono">
-            {t("real.metric.limited")}: {a.limited}/{a.matches}.
-          </span>{" "}
-          {t("real.admission.limitedNote")}
+        <p
+          className="flex flex-wrap items-center gap-2 text-xs leading-relaxed text-muted-foreground sm:col-span-2 xl:col-span-5"
+          data-limited-note
+        >
+          <ToneBadge tone="attention" icon="alert" className="font-mono">
+            {t("real.metric.limited")}: {a.limited}/{a.matches}
+          </ToneBadge>
+          <span className="min-w-0 flex-1">{t("real.admission.limitedNote")}</span>
         </p>
       ) : null}
     </div>
@@ -191,17 +207,17 @@ export function AdmissionBadge({ row }: { row: OverviewMatch }) {
     .map((id) => t(`real.admission.${id}` as TranslationKey))
     .join(" · ");
   return (
-    <span
-      className={
-        limited
-          ? "rounded-sm border border-warning/50 px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-warning"
-          : "rounded-sm border border-border px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground"
-      }
-      title={limited ? detail : undefined}
-      aria-label={limited ? `${t("real.admission.limited")}: ${detail}` : undefined}
+    <ToneBadge
+      tone={limited ? "attention" : "context"}
+      icon={limited ? "alert" : "shield"}
+      className="font-mono uppercase tracking-wider"
+      data-admission={row.admission}
+      {...(limited
+        ? { title: detail, "aria-label": `${t("real.admission.limited")}: ${detail}` }
+        : {})}
     >
       {t(limited ? "real.admission.limited" : "real.admission.certified")}
-    </span>
+    </ToneBadge>
   );
 }
 
@@ -354,6 +370,17 @@ const JOB_STATUS_KEY: Record<OverviewJob["status"], TranslationKey> = {
   blocked_raw_audit: "real.job.blocked",
 };
 
+/** Job status → semantic tone (failures critical, blocked attention, in-flight context). */
+const JOB_STATUS_TONE: Record<OverviewJob["status"], BadgeTone> = {
+  pending: "neutral",
+  processing: "context",
+  cancel_requested: "context",
+  processed: "brand",
+  failed: "critical",
+  cancelled: "neutral",
+  blocked_raw_audit: "attention",
+};
+
 const IDENTITY_KEY: Record<OverviewJob["identity"], TranslationKey | null> = {
   CONFIRMED: "real.identity.confirmed",
   PENDING: "real.identity.pending",
@@ -378,14 +405,27 @@ export function RecentUploads({ jobs }: { jobs: OverviewJob[] }) {
                 <time dateTime={job.queuedAt}>{formatDateTime(job.queuedAt, intlTag)}</time>
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wider">
-              <span className="rounded-sm border border-border px-1.5 py-0.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <ToneBadge
+                tone={JOB_STATUS_TONE[job.status]}
+                icon={
+                  job.status === "failed" || job.status === "blocked_raw_audit"
+                    ? "alert"
+                    : undefined
+                }
+                className="font-mono uppercase tracking-wider"
+                data-job-status={job.status}
+              >
                 {t(JOB_STATUS_KEY[job.status])}
-              </span>
+              </ToneBadge>
               {identity ? (
-                <span className="rounded-sm border border-border px-1.5 py-0.5 text-muted-foreground">
+                <ToneBadge
+                  tone={job.identity === "CONFLICT" ? "attention" : "neutral"}
+                  className="font-mono uppercase tracking-wider"
+                  data-job-identity={job.identity}
+                >
                   {t(identity)}
-                </span>
+                </ToneBadge>
               ) : null}
             </div>
           </li>

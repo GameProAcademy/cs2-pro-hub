@@ -227,7 +227,12 @@ describe("wiring", () => {
   it("the limited-admission badge uses the warning token, not raw palette colours", () => {
     const data = read("src/components/real/RealData.tsx");
     expect(data).not.toMatch(/amber-\d{3}/);
-    expect(data).toContain("text-warning");
+    // Visual phase: the badge is the shared ToneBadge in the attention tone, whose class is the
+    // warning token (VisualBadges.tsx), not a hand-made span.
+    expect(data).toMatch(/tone=\{limited \? "attention"/);
+    expect(read("src/components/common/VisualBadges.tsx")).toMatch(
+      /attention: "[^"]*text-warning[^"]*"/,
+    );
   });
 
   it("no raw ISO slicing for display dates in real-data components", () => {
