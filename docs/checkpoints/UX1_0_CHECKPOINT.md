@@ -185,6 +185,84 @@ O parser de produção (`services/cs2-demo-parser/parser.py`, `demoparser2==0.42
   - O render no idioma pedido foi conferido, e o idioma da conta foi restaurado (pt-BR) ao final.
 - Suíte unitária completa em `main` `3cef2e4`: 2973 testes verdes. Os testes de integração rodam só no CI, com PostgreSQL.
 
+### 2.12 Rodada de 2026-11-24/25 (autorização do proprietário para R-07, ingestão, UX-1.8 e R-18)
+
+Deploy `7ad1b011` de `e970e64` (#366–#370), validado em produção.
+
+**Ingestão `damage_enemy_hp` (#366): VALIDADO EM PRODUÇÃO e VALIDADO EM TESTE.**
+
+- Demo de Cache do dono (`NOVA-demofaceit-cache.dem`) na conta de teste: job `49e1267b`, 24/24 rounds, parser 0.42.2.
+- Após a escolha manual do participante, foram gravados 1691 / `HEALTH_AFTER` / 0 excluídos; ADR 70,5.
+- A função de produção, aplicada à saída do parser de produção, reproduz exatamente esses valores: 71 golpes em inimigos, 0 em aliado, 0 próprios, 0 de lado desconhecido.
+- Telas: Início, Partidas, Raio-X e Evolução mostram 74,3 (6.541/88).
+- Teste de integração em PostgreSQL descartável:
+  - cobre os casos inimigo, letal com excesso, vários atacantes, aliado, próprio, mundo, lado desconhecido e golpe sem `health_after`;
+  - usa a migração de produção sem alterações;
+  - prova idempotência, NULL→NULL, `adr` intacto, outras linhas intactas e acesso negado a anon/authenticated.
+- As 11 linhas do backfill não foram tocadas.
+
+**UX-1.8 (Coach com a tela): VALIDADO EM PRODUÇÃO** (conta de teste, 2 perguntas).
+
+- O payload levou só `{area, matchId, tab}`.
+- Com a Mirage aberta (não é a mais recente), a resposta veio dessa partida: ADR 75, 15 abates, 17 mortes, K/D 0,88.
+- Nenhum SteamID, nenhum dado de terceiro.
+
+**Defeitos achados e corrigidos nesta rodada (todos em produção):**
+
+- #367: HS em Duelos mostrava 53,9% para 7/13, por arredondamento duplo; agora 53,8%, igual ao Coach e a `hs_percent`.
+- #368: o seletor "Quem é você nesta demo?" levava o SteamID no `value` do rádio e o mostrava quando faltava apelido. Publicado e testado; não validado em produção, porque não há demo pendente de identificação.
+- #370 (R-25): e-mail pessoal real removido dos testes; endereços fictícios movidos para domínios reservados, com teste de guarda. O histórico do Git não foi reescrito (AGENTS.md).
+
+**R-18 / L02 (#369): decisão documentada em `docs/ux1/L02_DECISAO.md` e VALIDADO EM PRODUÇÃO.**
+
+- O Replay já cumpria a política.
+- Os quatro textos de regra que diziam "não é guardada" foram corrigidos e conferidos na ficha de morte.
+- `l02Policy.test.ts` impede que trajetórias virem medida.
+
+**R-07: BLOQUEADO (texto "Seu lado venceu X de Y" continua desligado).**
+
+| Demo              | Fonte do resultado          | Resultado             | Placar público              |
+| ----------------- | --------------------------- | --------------------- | --------------------------- |
+| FURIA × GL Dust2  | parser de produção          | 13:3 (11:1; 2:2)      | 13:3 (11:1; 2:2)            |
+| FURIA × GL Mirage | parser de produção          | 13:10 (5:7; 8:3)      | 13:10 (5:7; 8:3)            |
+| FURIA × GL Cache  | dados gravados (`48e517e4`) | GL 13:11 (11:1; 2:10) | GL 13:11 (FURIA 1:11; 10:2) |
+
+- As três seguiram o caminho do estado do jogo (`round_boundaries_observed_from_game_state`).
+- Nenhuma demo disponível anuncia `round_end` (FACEIT, profissional, GamersClub). O caminho do evento não foi exercido.
+- A demo GamersClub de Cache caiu no 3º caminho (11 rounds sem vencedor, deve mostrar "?").
+- Condições do Doc. 2 §12.2 não cumpridas:
+  - "os dois caminhos representados";
+  - "painel de método diz a origem": a origem não é persistida em `match_rounds`, e passar a persistir exige mudar o contrato.
+- Para liberar:
+  - persistir a origem por round (nova versão do contrato);
+  - validar uma demo com `round_end` real, ou o dono aceitar formalmente só o caminho do estado do jogo.
+- A demo profissional NOVA (100 Thieves × Imperial, 415,8 MB) excede o limite de cópia de 400 MB.
+
+**UX-1.9**
+
+- R-25: feito (#370).
+- R-16 (alternativa C): pré-requisito confirmado. A conta de teste tem 2 snapshots `dna-weighted-v3`, separados dos v2. Experimento C não aprovado conceitualmente pelo dono (Doc. 6): NÃO IMPLEMENTADO.
+- R-15 (alternativa B): exige teste com jogadores reais; o protocolo está na proposta visual. NÃO IMPLEMENTADO, coleta pendente.
+- Higiene: nenhum componente de app órfão. Os não importados são primitivas `ui/*` do scaffold, `index.ts` de reexportação, workers por `new URL` e a POC do parser no navegador, isolada por regra do AGENTS.md. Nada removido.
+- Proposta da fase visual: documento https://claude.ai/artifact/QU1HGQ5xpk51EtNocVp3a8 (inventário, problemas, referências, direção, prioridades, critérios, plano V-1 a V-6). Nenhum código visual alterado.
+
+### 2.13 Matriz final de aceitação UX-1.0 (2026-11-25)
+
+| Estado                                    | Itens                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VALIDADO EM PRODUÇÃO                      | R-01/R-30/R-31 (ADR único, enemy-hp-v1), R-02, R-09 e R-32 (#350–#353, rodada anterior), R-03, R-04/R-05 (DNA v3), R-06 (Sala), R-08 (5 áreas), R-10 (estados), R-11 (Coach com tela), R-12, R-13/R-38 (lista única), R-14 (radar A), R-17, R-18 (L02, textos), R-19, R-20, R-21, R-22, R-23, R-24, R-33, R-34, R-35, R-36; ingestão de `damage_enemy_hp`; Raio-X e plano do catálogo seguindo o Treino; i18n (en e fr sem sobras); responsividade 360–1440 sem transbordo |
+| VALIDADO EM TESTE                         | R-25 (teste de guarda no repositório); integração da ingestão em PostgreSQL descartável; simulação de falso positivo do Treino v2 (0,50–1,57%); seletor sem SteamID (#368)                                                                                                                                                                                                                                                                                                 |
+| PUBLICADO, MAS NÃO VALIDADO EM PRODUÇÃO   | seletor "Quem é você" (#368): não há demo pendente de identificação                                                                                                                                                                                                                                                                                                                                                                                                        |
+| BLOQUEADO POR EVIDÊNCIA EXTERNA           | R-07 (caminho do evento não exercido; origem do vencedor não persistida)                                                                                                                                                                                                                                                                                                                                                                                                   |
+| BLOQUEADO POR DEPENDÊNCIA DO PROPRIETÁRIO | R-15 e R-16 (experimentos C: aprovação e jogadores reais); R-37 (Q-21: rating agregado); início da fase visual (aprovar a proposta)                                                                                                                                                                                                                                                                                                                                        |
+| NÃO APLICÁVEL                             | R-26, R-27, R-28, R-29 (rejeitadas)                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| NÃO IMPLEMENTADO                          | R-15, R-16 (ver acima)                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+Limites declarados:
+
+- mobile medido por emulação de viewport, sem aparelho físico;
+- leitor de tela verificado pela árvore de acessibilidade, sem sessão com NVDA ou VoiceOver.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
@@ -195,11 +273,7 @@ O parser de produção (`services/cs2-demo-parser/parser.py`, `demoparser2==0.42
 
 Dependem do dono:
 
-1. R-07: 3ª demo com placar conhecido (§2.10).
-2. Validar uma nova ingestão gravando `damage_enemy_hp`. Exige enviar uma demo à conta de teste, o que cria dados em produção.
-3. UX-1.8 em produção: exige uma conversa real com o Coach.
-4. R-18: decisão L02.
-
-Executáveis:
-
-5. Restante do Doc. 7 (UX-1.9 por último).
+1. Aprovar a proposta da fase visual.
+2. R-07: decidir entre persistir a origem do vencedor (contrato novo) ou aceitar só o caminho do estado do jogo.
+3. Experimentos R-15 e R-16.
+4. Q-21 (R-37).
