@@ -8,6 +8,7 @@
  * state (EMPTY, PROCESSING, IDENTITY_PENDING, BLOCKED, FAILED, ERROR).
  */
 
+import { compositeRatingUnfloored } from "@/lib/pipeline/metrics";
 import { pooledValue } from "@/lib/metrics/canonicalAggregate";
 
 export type OverviewState =
@@ -57,6 +58,20 @@ export interface OverviewJob {
   finishedAt: string | null;
   errorCode: string | null;
   identity: JobIdentity;
+}
+
+/**
+ * Q-21: a demo match's rating before the floor, from the counts the pipeline used (kills, deaths,
+ * the historical raw `adr` × rounds = damage given). Only where the match has a rating; other
+ * sources keep their stored rating.
+ */
+function ratingUnfloored(row: OverviewMetricRow, source: string | null): number | null {
+  const rating = num(row.rating);
+  const adr = num(row.adr);
+  const rounds = row.rounds_played;
+  if (source !== "demo" || rating === null || adr === null || !rounds || rounds <= 0) return null;
+  if (row.kills === null || row.deaths === null) return null;
+  return compositeRatingUnfloored(row.kills, row.deaths, adr * rounds, rounds);
 }
 
 export interface OverviewMetricRow {
@@ -141,6 +156,8 @@ export interface OverviewMatch {
   kast: number | null;
   hsPercent: number | null;
   rating: number | null;
+  /** Q-21: rating before the floor (demo matches, same formula, own counts); null otherwise. */
+  ratingUnfloored?: number | null;
   /** NULL when the demo did not prove event timing (opening duels / trades need it). */
   firstKills: number | null;
   firstDeaths: number | null;
@@ -320,6 +337,7 @@ export function shapeMatches(
           kast: num(row.kast),
           hsPercent: num(row.hs_percent),
           rating: num(row.rating),
+          ratingUnfloored: ratingUnfloored(row, match.data_source),
           firstKills: row.first_kills ?? null,
           firstDeaths: row.first_deaths ?? null,
           tradeKills: row.trade_kills ?? null,

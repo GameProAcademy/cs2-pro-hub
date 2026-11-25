@@ -33,7 +33,14 @@
  * NULL is never zero: a match without the value (or without its denominator) leaves both the
  * numerator and the denominator, and `matches` reports the coverage.
  */
-export const METRICS_CATALOG_VERSION = "metrics-catalog-v2";
+/**
+ * v2.1 (Q-21, 2026-11-25): the rating is the formula on the pooled counts. The formula is linear in
+ * kills, deaths and damage per round, so that equals Σ(rounds × unfloored match value) ÷ Σ rounds,
+ * floored once. Above the floor the unfloored value is the stored match rating; a match at the
+ * floor contributes its true value from its own counts. v2 (round-weighted mean of the floored
+ * ratings) differs only when a match is at the floor — none in production on 2026-11-25.
+ */
+export const METRICS_CATALOG_VERSION = "metrics-catalog-v2.1";
 
 export type PooledMetricKey = "adr" | "kast" | "hsPercent" | "kd" | "rating";
 
@@ -50,6 +57,12 @@ export interface PooledMatchInput {
   kast: number | null;
   hsPercent: number | null;
   rating: number | null;
+  /**
+   * Q-21: the match's rating before the floor at 0, from its own kills, deaths, raw damage and
+   * rounds (demo matches). The pooled rating is the formula on the pooled counts; a match whose
+   * rating was floored still contributes its true (negative) value, and the floor applies once.
+   */
+  ratingUnfloored?: number | null;
   roundsPlayed: number | null;
 }
 
@@ -103,10 +116,13 @@ export function pooledParts(m: PooledMatchInput, key: PooledMetricKey): PooledPa
       return finite(m.kills) && finite(m.deaths)
         ? { numerator: m.kills, denominator: m.deaths, scale: 1 }
         : null;
-    case "rating":
-      return finite(m.rating) && rounds
-        ? { numerator: m.rating * rounds, denominator: rounds, scale: 1 }
-        : null;
+    case "rating": {
+      if (!finite(m.rating) || !rounds) return null;
+      // Above the floor the stored rating IS the unfloored value (the one the match shows); only a
+      // match at the floor needs its true value, recomputed from its own counts (Q-21).
+      const value = m.rating <= 0 && finite(m.ratingUnfloored) ? m.ratingUnfloored : m.rating;
+      return { numerator: value * rounds, denominator: rounds, scale: 1 };
+    }
   }
 }
 
@@ -120,8 +136,10 @@ export function pooledValue(
   const numerator = parts.reduce((s, p) => s + p.numerator, 0);
   const denominator = parts.reduce((s, p) => s + p.denominator, 0);
   const scale = parts[0]!.scale;
+  const raw = denominator > 0 ? (numerator / denominator) * scale : null;
   return {
-    value: denominator > 0 ? (numerator / denominator) * scale : null,
+    // Q-21: the rating's floor at 0 applies once, to the pooled value.
+    value: raw !== null && key === "rating" ? Math.max(0, raw) : raw,
     numerator,
     denominator,
     matches: parts.length,

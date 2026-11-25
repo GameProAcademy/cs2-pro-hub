@@ -162,7 +162,8 @@ export const CANONICAL_METRICS: readonly CanonicalMetric[] = [
     source: "match_metrics.rating",
     unit: "index",
     formula: "0.45·(KPR/0.70) + 0.25·(1 − DPR/0.75) + 0.30·(ADR/80), floored at 0",
-    denominator: "rounds played (Σ over matches with a rating and rounds)",
+    denominator:
+      "rounds played: the formula on the pooled counts (Σ rounds × unfloored match value ÷ Σ rounds), floored once (Q-21)",
     aggregation: "pooled",
     minMatches: 1,
     nullWhen: "kill or damage events missing, or round coverage incomplete",
