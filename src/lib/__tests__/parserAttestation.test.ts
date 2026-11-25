@@ -33,9 +33,9 @@ describe("parser runtime attestation SHA binding", () => {
     // Two separately pinned identities. In R5.8.18 (D29 parser release, controlled deploy of
     // the exact merge commit) they coincide: the released commit is the one that changed the
     // worker tree. R5.8.13 had distinct values (diagnostics-only build on top of the semantic).
-    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("0c646583dc98426d4a2298a8797658253ad565c0");
+    expect(PARSER_ATTESTATION_EXPECTED.commit).toBe("4f7466ec448ed5736ca337224890cd56aae10b85");
     expect(PARSER_ATTESTATION_EXPECTED.buildCommit).toBe(
-      "0c646583dc98426d4a2298a8797658253ad565c0",
+      "4f7466ec448ed5736ca337224890cd56aae10b85",
     );
     expect(Object.keys(PARSER_ATTESTATION_EXPECTED)).toEqual(
       expect.arrayContaining(["commit", "buildCommit", "deploymentSourceCommit"]),
@@ -48,8 +48,8 @@ describe("parser runtime attestation SHA binding", () => {
 
   it("documents the exact critical-file allowlist and verified worker blob hash", () => {
     const hashes = {
-      "services/cs2-demo-parser/parser.py": "421dfd9563ae1a7950d4d5a4229556a1e20df17d",
-      "services/cs2-demo-parser/adapter.py": "1eaf38401a09baceebbf9d959adf2f30ded5e962",
+      "services/cs2-demo-parser/parser.py": "0a039253f2425af661c2830d1aa06f4cd67c3e76",
+      "services/cs2-demo-parser/adapter.py": "b95b430f3783e7f637c8321eff0f86618a1525a6",
       "services/cs2-demo-parser/worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
       "services/cs2-demo-parser/raw_evidence.py": "3890313eb4855fc58f9636d9688309e3356790b7",
       "services/cs2-demo-parser/settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d",
@@ -124,11 +124,11 @@ describe("parser runtime attestation SHA binding", () => {
     const expected = PARSER_ATTESTATION_EXPECTED;
     const hashes = {
       "services/cs2-demo-parser/parser.py": {
-        observed: "421dfd9563ae1a7950d4d5a4229556a1e20df17d",
+        observed: "0a039253f2425af661c2830d1aa06f4cd67c3e76",
         match: true,
       },
       "services/cs2-demo-parser/adapter.py": {
-        observed: "1eaf38401a09baceebbf9d959adf2f30ded5e962",
+        observed: "b95b430f3783e7f637c8321eff0f86618a1525a6",
         match: true,
       },
       "services/cs2-demo-parser/worker.py": {

@@ -1,0 +1,91 @@
+{
+ "deployment_id": "c372485e-b6b4-4209-8c6b-c4d16678b52d",
+ "branch": "main",
+ "semantic_commit": "4f7466ec448ed5736ca337224890cd56aae10b85",
+ "build_commit": "4f7466ec448ed5736ca337224890cd56aae10b85",
+ "deployment_commit": "4f7466ec448ed5736ca337224890cd56aae10b85",
+ "workflow_source_sha": "f5e8ffb19d03dca410591f8d2fd38dc47a3ca485",
+ "parser_version": "0.42.2",
+ "critical_hashes": {
+  "parser.py": "0a039253f2425af661c2830d1aa06f4cd67c3e76",
+  "adapter.py": "b95b430f3783e7f637c8321eff0f86618a1525a6",
+  "worker.py": "23a5f8624955181ad9033221cfae00138c7228dc",
+  "raw_evidence.py": "3890313eb4855fc58f9636d9688309e3356790b7",
+  "settings.py": "8bcadce307bb39895965fa7583fc272e2763b39d"
+ },
+ "database_target_md5": {
+  "assert_verified_parser_provenance": "dd1f25ccd089798dc27599106307825d",
+  "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+ },
+ "recorder_target_md5": "e477fc605fa2de200f15e956713cdaf3",
+ "observed": {
+  "observed_at": "2026-11-25T19:33:00Z",
+  "railway_deployment": {
+   "id": "c372485e-b6b4-4209-8c6b-c4d16678b52d",
+   "status": "SUCCESS",
+   "commitHash": "4f7466ec448ed5736ca337224890cd56aae10b85",
+   "branch": "main",
+   "reason": "deploy",
+   "created_at": "2026-11-25T19:26:23.753Z",
+   "release_control": "queue idle (no queued/processing jobs) before the release; PR #379 (merge 4f7466ec) merged with the service source pinned (0c646583) and the watch-pattern freeze (/services/cs2-demo-parser/.release-freeze-r5-8-17) in place, so the merge deployed nothing; PARSER_REVISION/PARSER_BUILD_REVISION set to git:4f7466ec448ed5736ca337224890cd56aae10b85 with skipped deploys; the persistent service source was aligned to 4f7466ec (repo GameProAcademy/cs2-pro-hub, branch main, rootDirectory services/cs2-demo-parser). The deployment created by that source change (19343205-b159-4297-bd1e-d32d6099228e) was SKIPPED by the watch-pattern freeze and built nothing; exactly one deployment of the pinned commit was then triggered through the Railway agent (c372485e), the only build of this release",
+   "failed_builds_never_served": [],
+   "previous_deployment_status_after_release": "584ea563 REMOVED",
+   "service_source_after_release": {
+    "repo": "GameProAcademy/cs2-pro-hub",
+    "branch": "main",
+    "commitSha": "4f7466ec448ed5736ca337224890cd56aae10b85",
+    "rootDirectory": "services/cs2-demo-parser"
+   }
+  },
+  "railway_variables_changed": {
+   "PARSER_REVISION": "git:0c646583dc98426d4a2298a8797658253ad565c0",
+   "PARSER_BUILD_REVISION": "git:0c646583dc98426d4a2298a8797658253ad565c0",
+   "set_with_skip_deploys": true
+  },
+  "production_dry_run": "the full migration DO body ran with a final RAISE and reached R5_8_32_DRY_RUN_OK_ROLLED_BACK; md5 of both functions unchanged afterwards (515f433f, e35c5ff8)",
+  "version_hosts": "PROVEN_AFTER_REPIN_BY_THE_H3E_ACTIVATION_GATE: parser.gamepro.network/version and cs2-demo-parser-production.up.railway.app/version observed 2026-11-25T19:33Z: parser demoparser2 0.42.2, revision = semantic = build = git:4f7466ec448ed5736ca337224890cd56aae10b85, build.commit 4f7466ec448ed5736ca337224890cd56aae10b85, embedded true, source railway, declared_revision_matches true",
+  "dependency_drift_check": "requirements unchanged (demoparser2==0.42.2); parser.py audits the game-state round winner (round_state_audit, winner_check) and adapter.py emits round-winner-evidence-v1 (winner_method, winner_status, winner_sources); raw_evidence.py unchanged",
+  "before": {
+   "deployment_id": "584ea563-f978-476a-9ba6-9984d16ca0ab",
+   "semantic_revision": "git:0c646583dc98426d4a2298a8797658253ad565c0",
+   "build_revision": "git:0c646583dc98426d4a2298a8797658253ad565c0",
+   "parser_version": "0.42.2"
+  },
+  "managed_start_state": {
+   "read_at": "2026-11-25T19:30:00Z",
+   "record_parser_runtime_attestation": "515f433f919370312dbe9a8a60c9dd31",
+   "assert_verified_parser_provenance": "e35c5ff8903e331f7b47214665fcab31",
+   "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc",
+   "pin_occurrences": {
+    "deployment": [
+     1,
+     1
+    ],
+    "commit": [
+     4,
+     3
+    ],
+    "parser.py": [
+     1,
+     0
+    ],
+    "adapter.py": [
+     1,
+     0
+    ]
+   },
+   "target_md5_computed_read_only": {
+    "record_parser_runtime_attestation": "e477fc605fa2de200f15e956713cdaf3",
+    "assert_verified_parser_provenance": "dd1f25ccd089798dc27599106307825d"
+   }
+  }
+ },
+ "release_status": "CANDIDATE_RUNTIME_OBSERVED_PENDING_MANAGED_MIGRATION",
+ "supersedes": "docs/reference/r5_8_31/spec.json",
+ "pin_role": "R5.8.32: re-pin semantic/build commit, Railway deployment and the parser.py and adapter.py critical blobs (PR #379, R-07 round winner evidence, O8/O8-A); parser version 0.42.2 and the raw_evidence.py, worker.py, settings.py and workflow blobs unchanged",
+ "r5_8_31_database_target_md5": {
+  "assert_verified_parser_provenance": "e35c5ff8903e331f7b47214665fcab31",
+  "enforce_approved_attestation_workflow": "f74d8af991b7ec6f33d9aabbef00c4fc"
+ },
+ "r5_8_31_recorder_target_md5": "515f433f919370312dbe9a8a60c9dd31"
+}
