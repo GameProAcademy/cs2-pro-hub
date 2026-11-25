@@ -3,6 +3,7 @@
  * phase can be rendered and checked in tests. The container (DemoFlowModal) owns the
  * queries, the mutations and the navigation lock; this view only shows what it is given.
  */
+import { fill } from "@/lib/format";
 import {
   AlertCircle,
   Ban,
@@ -438,7 +439,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
               {t("pipeline.identify.selectLabel")}
             </legend>
             <div className="grid max-h-[38vh] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-              {props.participants.map((participant) => {
+              {props.participants.map((participant, index) => {
                 const checked = props.selectedKey === participant.participantKey;
                 return (
                   <label
@@ -453,7 +454,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
                     <input
                       type="radio"
                       name="demo-flow-player"
-                      value={participant.participantKey}
+                      value={participant.participantKey /* opaque p1…pN (#368b) */}
                       checked={checked}
                       onChange={() => props.onSelect(participant.participantKey)}
                       disabled={props.identityBusy}
@@ -461,7 +462,8 @@ export function DemoFlowView(props: DemoFlowViewProps) {
                     />
                     <span className="min-w-0">
                       <span className="block break-words font-medium text-foreground">
-                        {participant.nickname ?? participant.participantKey}
+                        {participant.nickname ??
+                          fill(t("pipeline.identify.unnamed"), { n: index + 1 })}
                       </span>
                       <span className="mt-0.5 block text-xs text-muted-foreground">
                         {participant.team

@@ -86,6 +86,10 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
     if (!job) return null;
 
     const participants = job.match_id ? await readParticipants(supabase, job.match_id) : [];
+    // #368b: the browser never receives a participant key (a SteamID): only an opaque reference,
+    // stable within this match (key order), translated back on the server by declareDemoPlayer.
+    const refOf = participantRefs(participants);
+    const ref = (key: string | null) => (key ? (refOf.get(key) ?? null) : null);
     const own = await readOwnIdentityEvidence(supabase, context.userId);
     const suggested = suggestParticipantForPlayer(participants, own);
     const suggestion = suggested?.participant ?? null;
@@ -105,21 +109,21 @@ export const getDemoIdentity = createServerFn({ method: "GET" })
       attachmentMethod: job.attachment_method,
       attachmentConfidence: job.attachment_confidence_label,
       attachmentSource: job.attachment_source,
-      attachmentParticipantKey: job.attachment_participant_key,
+      attachmentParticipantKey: ref(job.attachment_participant_key),
       declaredNickname: job.declared_nickname,
-      declaredParticipantKey: job.declared_participant_key,
+      declaredParticipantKey: ref(job.declared_participant_key),
       observedNickname: job.observed_nickname,
       latestDecisionStatus: latestDecision?.status ?? null,
       confirmationStatus: job.attachment_confirmation_status,
       latestDecisionEventKey: latestDecision?.event_key ?? null,
       participants: participants.map((participant) => ({
-        participantKey: participant.participantKey,
+        participantKey: ref(participant.participantKey) ?? "",
         nickname: participant.nickname,
         team: participant.team,
       })),
       suggestion: suggestion
         ? {
-            participantKey: suggestion.participantKey,
+            participantKey: ref(suggestion.participantKey) ?? "",
             nickname: suggestion.nickname,
             team: suggestion.team,
             basis: suggested!.basis,
@@ -203,9 +207,12 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .maybeSingle();
 
+    // #368b: the browser sends the opaque reference it was given; it maps back to the key here.
+    const declaredKey = resolveParticipantRef(participants, data.participantKey);
+    if (!declaredKey) throw new Error("PARTICIPANT_NOT_FOUND");
     const declaration: PlayerDeclaration = {
       kind: "participant",
-      participantKey: data.participantKey,
+      participantKey: declaredKey,
     };
 
     const outcome = resolvePlayerAttachment({
@@ -226,7 +233,7 @@ export const declareDemoPlayer = createServerFn({ method: "POST" })
         _user_id: userId,
         _attachment: {
           event_key: `manual:${outcome.participantKey ?? "unresolved"}`,
-          declared_participant_key: data.participantKey,
+          declared_participant_key: declaredKey,
           declared_nickname: null,
           state: outcome.state,
           // Stored vocabulary of demo_jobs.attachment_method (D11).
@@ -364,6 +371,23 @@ async function readOwnIdentityEvidence(
     verifiedSteamId: await readVerifiedSteamId64(supabase, playerId),
     historyNicknames: (data ?? []).flatMap((row) => (row["nickname"] ? [row["nickname"]] : [])),
   };
+}
+
+/** #368b: `p1`…`pN` in participant-key order: stable for a match, meaningless outside it. */
+export function participantRefs(
+  participants: readonly { participantKey: string }[],
+): Map<string, string> {
+  const keys = [...new Set(participants.map((p) => p.participantKey).filter(Boolean))].sort();
+  return new Map(keys.map((key, i) => [key, `p${i + 1}`]));
+}
+
+/** The participant key behind a reference of this match; null when it is not one of them. */
+export function resolveParticipantRef(
+  participants: readonly { participantKey: string }[],
+  ref: string,
+): string | null {
+  for (const [key, value] of participantRefs(participants)) if (value === ref) return key;
+  return null;
 }
 
 /** Demo players of a canonical match, read under the owner's RLS. */
