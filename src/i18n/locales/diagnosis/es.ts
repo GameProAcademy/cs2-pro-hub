@@ -78,16 +78,16 @@ export const diagnosisEs: Record<keyof typeof diagnosisPtBR, string> = {
     "La bomba ya estaba plantada en esta ronda cuando moriste. Es contexto, no un error.",
   "diagnosis.rule.exposure.title": "Exposición a varios ángulos",
   "diagnosis.rule.exposure.body":
-    "No evaluado: requiere posiciones de los rivales en el tiempo y la geometría del mapa, que no se guardan.",
+    "No evaluado: requeriría las posiciones de los rivales como observación continua y la geometría del mapa. CS2 PRO solo guarda muestras de posición para el Replay (con huecos) y no saca medidas de ellas.",
   "diagnosis.rule.isolation.title": "Aislamiento",
   "diagnosis.rule.isolation.body":
-    "No evaluado: requiere la posición de los compañeros al morir, que no se guarda.",
+    "No evaluado: requeriría la posición de los compañeros en el instante exacto de la muerte. Las muestras del Replay no coinciden con ese instante y no se usan como medida.",
   "diagnosis.rule.re_peek.title": "Re-peek",
   "diagnosis.rule.re_peek.body":
-    "No evaluado: requiere la trayectoria del jugador, que no se guarda.",
+    "No evaluado: requeriría la trayectoria del jugador como observación continua. Las muestras del Replay tienen huecos y no se usan como medida.",
   "diagnosis.rule.rotation_timing.title": "Tiempo de rotación",
   "diagnosis.rule.rotation_timing.body":
-    "No evaluado: requiere la trayectoria del jugador y el estado del objetivo durante la ronda.",
+    "No evaluado: requeriría la trayectoria continua del jugador y el estado del objetivo a lo largo del round. Las muestras del Replay no se usan como medida.",
   "diagnosis.missing.title": "Datos ausentes en esta muerte",
   "diagnosis.missing.none": "Ningún campo ausente.",
   "diagnosis.missing.alive_counts": "Vivos por bando",
