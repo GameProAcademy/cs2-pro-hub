@@ -22,8 +22,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "2a97516c354b6884",
-     "rows": 1
+     "rows": 1,
+     "digest": "2a97516c354b6884"
     },
     "bundle": {
      "rows": 1,
@@ -50,8 +50,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "d1c24bdcdf9427fa",
-     "rows": 1
+     "rows": 1,
+     "digest": "d1c24bdcdf9427fa"
     },
     "bundle": {
      "rows": 1,
@@ -76,8 +76,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -102,8 +102,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -170,8 +170,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -198,8 +198,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "eebbf6457e46a7f6",
-     "rows": 1
+     "rows": 1,
+     "digest": "eebbf6457e46a7f6"
     },
     "bundle": {
      "rows": 1,
@@ -226,8 +226,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "eebbf6457e46a7f6",
-     "rows": 1
+     "rows": 1,
+     "digest": "eebbf6457e46a7f6"
     },
     "bundle": {
      "rows": 1,
@@ -254,8 +254,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "4f53cda18c2baa0c",
-     "rows": 1
+     "rows": 1,
+     "digest": "4f53cda18c2baa0c"
     },
     "bundle": {
      "rows": 1,
@@ -282,8 +282,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "6b86b273ff34fce1",
-     "rows": 1
+     "rows": 1,
+     "digest": "6b86b273ff34fce1"
     },
     "bundle": {
      "rows": 1,
@@ -310,8 +310,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "54a92a8d05a21983",
-     "rows": 1
+     "rows": 1,
+     "digest": "54a92a8d05a21983"
     },
     "bundle": {
      "rows": 1,
@@ -326,7 +326,7 @@
     "non_null": 1,
     "zero": 0,
     "empty_object": 0,
-    "digest": "40bf036423379e73",
+    "digest": "4fd170eee63fb612",
     "checks": {
      "object": {
       "ok": true,
@@ -359,8 +359,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "27321e07197e4d90",
-     "rows": 1
+     "rows": 1,
+     "digest": "27321e07197e4d90"
     },
     "bundle": {
      "rows": 1,
@@ -387,8 +387,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "f99f33e2882aa01d",
-     "rows": 1
+     "rows": 1,
+     "digest": "f99f33e2882aa01d"
     },
     "bundle": {
      "rows": 1,
@@ -413,8 +413,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -458,8 +458,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -484,8 +484,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -510,8 +510,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -538,8 +538,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "4ddb3e96801a1ee2",
-     "rows": 1
+     "rows": 1,
+     "digest": "4ddb3e96801a1ee2"
     },
     "bundle": {
      "rows": 1,
@@ -566,8 +566,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b5bea41b6c623f7c",
-     "rows": 1
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
     },
     "bundle": {
      "rows": 1,
@@ -594,8 +594,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b5bea41b6c623f7c",
-     "rows": 1
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
     },
     "bundle": {
      "rows": 1,
@@ -620,8 +620,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -646,8 +646,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -672,8 +672,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -698,8 +698,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -724,8 +724,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -752,8 +752,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b17ef6d19c7a5b1e",
-     "rows": 1
+     "rows": 1,
+     "digest": "b17ef6d19c7a5b1e"
     },
     "bundle": {
      "rows": 1,
@@ -780,8 +780,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "eebbf6457e46a7f6",
-     "rows": 1
+     "rows": 1,
+     "digest": "eebbf6457e46a7f6"
     },
     "bundle": {
      "rows": 1,
@@ -808,8 +808,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "4f53cda18c2baa0c",
-     "rows": 1
+     "rows": 1,
+     "digest": "4f53cda18c2baa0c"
     },
     "bundle": {
      "rows": 1,
@@ -836,8 +836,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "6b86b273ff34fce1",
-     "rows": 1
+     "rows": 1,
+     "digest": "6b86b273ff34fce1"
     },
     "bundle": {
      "rows": 1,
@@ -864,8 +864,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b17ef6d19c7a5b1e",
-     "rows": 1
+     "rows": 1,
+     "digest": "b17ef6d19c7a5b1e"
     },
     "bundle": {
      "rows": 1,
@@ -892,8 +892,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b17ef6d19c7a5b1e",
-     "rows": 1
+     "rows": 1,
+     "digest": "b17ef6d19c7a5b1e"
     },
     "bundle": {
      "rows": 1,
@@ -918,8 +918,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73c8ffe9553f8c24",
-     "rows": 1
+     "rows": 1,
+     "digest": "73c8ffe9553f8c24"
     },
     "bundle": {
      "rows": 1,
@@ -946,8 +946,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "4a44dc15364204a8",
-     "rows": 1
+     "rows": 1,
+     "digest": "4a44dc15364204a8"
     },
     "bundle": {
      "rows": 1,
@@ -974,8 +974,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "6b86b273ff34fce1",
-     "rows": 1
+     "rows": 1,
+     "digest": "6b86b273ff34fce1"
     },
     "bundle": {
      "rows": 1,
@@ -990,7 +990,7 @@
     "non_null": 1,
     "zero": 0,
     "empty_object": 0,
-    "digest": "801f8522550bb910",
+    "digest": "80ae95e050f70cdd",
     "checks": {
      "equals_events_length": {
       "ok": true,
@@ -1002,12 +1002,12 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "801f8522550bb910",
-     "rows": 1
+     "rows": 1,
+     "digest": "80ae95e050f70cdd"
     },
     "bundle": {
      "rows": 1,
-     "digest": "801f8522550bb910"
+     "digest": "80ae95e050f70cdd"
     }
    }
   },
@@ -1030,8 +1030,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b5bea41b6c623f7c",
-     "rows": 1
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
     },
     "bundle": {
      "rows": 1,
@@ -1058,8 +1058,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b5bea41b6c623f7c",
-     "rows": 1
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
     },
     "bundle": {
      "rows": 1,
@@ -1086,8 +1086,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b5bea41b6c623f7c",
-     "rows": 1
+     "rows": 1,
+     "digest": "b5bea41b6c623f7c"
     },
     "bundle": {
      "rows": 1,
@@ -1114,8 +1114,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "d4735e3a265e16ee",
-     "rows": 1
+     "rows": 1,
+     "digest": "d4735e3a265e16ee"
     },
     "bundle": {
      "rows": 1,
@@ -1142,8 +1142,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b597ad4b6498addc",
-     "rows": 10
+     "rows": 10,
+     "digest": "b597ad4b6498addc"
     },
     "bundle": {
      "rows": 10,
@@ -1191,8 +1191,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "67555a640abcf6d7",
-     "rows": 10
+     "rows": 10,
+     "digest": "67555a640abcf6d7"
     },
     "bundle": {
      "rows": 10,
@@ -1219,8 +1219,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b597ad4b6498addc",
-     "rows": 10
+     "rows": 10,
+     "digest": "b597ad4b6498addc"
     },
     "bundle": {
      "rows": 10,
@@ -1247,8 +1247,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b597ad4b6498addc",
-     "rows": 10
+     "rows": 10,
+     "digest": "b597ad4b6498addc"
     },
     "bundle": {
      "rows": 10,
@@ -1275,8 +1275,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "05fb34d66ec2c052",
-     "rows": 10
+     "rows": 10,
+     "digest": "05fb34d66ec2c052"
     },
     "bundle": {
      "rows": 10,
@@ -1301,8 +1301,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b1a87a6546911db3",
-     "rows": 10
+     "rows": 10,
+     "digest": "b1a87a6546911db3"
     },
     "bundle": {
      "rows": 10,
@@ -1329,8 +1329,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "0f3277782487beb5",
-     "rows": 10
+     "rows": 10,
+     "digest": "0f3277782487beb5"
     },
     "bundle": {
      "rows": 10,
@@ -1357,8 +1357,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "3b5731714d3d5d70",
-     "rows": 10
+     "rows": 10,
+     "digest": "3b5731714d3d5d70"
     },
     "bundle": {
      "rows": 10,
@@ -1385,8 +1385,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "e75f8a31467dcd41",
-     "rows": 10
+     "rows": 10,
+     "digest": "e75f8a31467dcd41"
     },
     "bundle": {
      "rows": 10,
@@ -1411,8 +1411,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "26f724a2161481dd",
-     "rows": 10
+     "rows": 10,
+     "digest": "26f724a2161481dd"
     },
     "bundle": {
      "rows": 10,
@@ -1439,8 +1439,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "279638a3bd298a1b",
-     "rows": 16
+     "rows": 16,
+     "digest": "279638a3bd298a1b"
     },
     "bundle": {
      "rows": 16,
@@ -1467,8 +1467,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "e232e1dc1d6617cb",
-     "rows": 16
+     "rows": 16,
+     "digest": "e232e1dc1d6617cb"
     },
     "bundle": {
      "rows": 16,
@@ -1495,8 +1495,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "d4d08a91705098c8",
-     "rows": 16
+     "rows": 16,
+     "digest": "d4d08a91705098c8"
     },
     "bundle": {
      "rows": 16,
@@ -1521,8 +1521,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c17e778f685ac9be",
-     "rows": 16
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
     },
     "bundle": {
      "rows": 16,
@@ -1547,8 +1547,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c17e778f685ac9be",
-     "rows": 16
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
     },
     "bundle": {
      "rows": 16,
@@ -1573,8 +1573,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c17e778f685ac9be",
-     "rows": 16
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
     },
     "bundle": {
      "rows": 16,
@@ -1599,8 +1599,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c17e778f685ac9be",
-     "rows": 16
+     "rows": 16,
+     "digest": "c17e778f685ac9be"
     },
     "bundle": {
      "rows": 16,
@@ -1617,9 +1617,13 @@
     "empty_object": 0,
     "digest": "53a40eb7e90c9518",
     "checks": {
-     "in:CT,T": {
+     "in_or_null:CT,T": {
       "ok": true,
-      "detail": "CT,T"
+      "detail": "CT,T,null"
+     },
+     "winner_side_matches_evidence": {
+      "ok": true,
+      "detail": "winningSide differs from the confirmed evidence side: 0"
      }
     }
    },
@@ -1627,8 +1631,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "53a40eb7e90c9518",
-     "rows": 16
+     "rows": 16,
+     "digest": "53a40eb7e90c9518"
     },
     "bundle": {
      "rows": 16,
@@ -1653,8 +1657,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "115cfb1a5c145b5d",
-     "rows": 16
+     "rows": 16,
+     "digest": "115cfb1a5c145b5d"
     },
     "bundle": {
      "rows": 16,
@@ -1681,8 +1685,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "d5ad210617a01943",
-     "rows": 16
+     "rows": 16,
+     "digest": "d5ad210617a01943"
     },
     "bundle": {
      "rows": 16,
@@ -1713,8 +1717,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "af68cf095dd74512",
-     "rows": 16
+     "rows": 16,
+     "digest": "af68cf095dd74512"
     },
     "bundle": {
      "rows": 16,
@@ -1745,8 +1749,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "319065140a8861cf",
-     "rows": 16
+     "rows": 16,
+     "digest": "319065140a8861cf"
     },
     "bundle": {
      "rows": 16,
@@ -1773,8 +1777,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "9a3ccf981fd3edf9",
-     "rows": 16
+     "rows": 16,
+     "digest": "9a3ccf981fd3edf9"
     },
     "bundle": {
      "rows": 16,
@@ -1801,8 +1805,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "83450fafdb740bcf",
-     "rows": 16
+     "rows": 16,
+     "digest": "83450fafdb740bcf"
     },
     "bundle": {
      "rows": 16,
@@ -1817,7 +1821,7 @@
     "non_null": 16,
     "zero": 0,
     "empty_object": 0,
-    "digest": "6778101f5d6451d7",
+    "digest": "94867ecd554e1c0b",
     "checks": {
      "unit_interval_or_null": {
       "ok": true,
@@ -1829,38 +1833,40 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "6778101f5d6451d7",
-     "rows": 16
+     "rows": 16,
+     "digest": "94867ecd554e1c0b"
     },
     "bundle": {
      "rows": 16,
-     "digest": "6778101f5d6451d7"
+     "digest": "94867ecd554e1c0b"
     }
    }
   },
   "CanonicalRound.metadata": {
-   "state": "legitimately_empty",
+   "state": "available",
    "run1": {
     "rows": 16,
     "non_null": 16,
     "zero": 0,
-    "empty_object": 16,
-    "digest": "28ade67bc1b4baaa",
-    "representation": {
-     "ok": true,
-     "detail": "every value == {}"
+    "empty_object": 0,
+    "digest": "1bcb08cd1d8cfd4f",
+    "checks": {
+     "winner_evidence_schema": {
+      "ok": true,
+      "detail": "rounds with a malformed winnerEvidence: 0"
+     }
     }
    },
    "deterministic": true,
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "28ade67bc1b4baaa",
-     "rows": 16
+     "rows": 16,
+     "digest": "1bcb08cd1d8cfd4f"
     },
     "bundle": {
      "rows": 16,
-     "digest": "28ade67bc1b4baaa"
+     "digest": "1bcb08cd1d8cfd4f"
     }
    }
   },
@@ -1883,8 +1889,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "ce421a5f228b5fdf",
-     "rows": 160
+     "rows": 160,
+     "digest": "ce421a5f228b5fdf"
     },
     "bundle": {
      "rows": 160,
@@ -1911,8 +1917,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "d71aeb68485b3d7a",
-     "rows": 160
+     "rows": 160,
+     "digest": "d71aeb68485b3d7a"
     },
     "bundle": {
      "rows": 160,
@@ -1943,8 +1949,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c11e8da600c8cce8",
-     "rows": 160
+     "rows": 160,
+     "digest": "c11e8da600c8cce8"
     },
     "bundle": {
      "rows": 160,
@@ -1969,8 +1975,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2005,8 +2011,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "a005a88932b43576",
-     "rows": 160
+     "rows": 160,
+     "digest": "a005a88932b43576"
     },
     "bundle": {
      "rows": 160,
@@ -2037,8 +2043,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c3c697a71aa8a92b",
-     "rows": 160
+     "rows": 160,
+     "digest": "c3c697a71aa8a92b"
     },
     "bundle": {
      "rows": 160,
@@ -2069,8 +2075,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "e39fddd5d23992c1",
-     "rows": 160
+     "rows": 160,
+     "digest": "e39fddd5d23992c1"
     },
     "bundle": {
      "rows": 160,
@@ -2095,8 +2101,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2121,8 +2127,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2147,8 +2153,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2173,8 +2179,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2199,8 +2205,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2225,8 +2231,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2251,8 +2257,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2277,8 +2283,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2303,8 +2309,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2329,8 +2335,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "73789b34dbf19b92",
-     "rows": 160
+     "rows": 160,
+     "digest": "73789b34dbf19b92"
     },
     "bundle": {
      "rows": 160,
@@ -2355,8 +2361,8 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "bb974d48f70e6aed",
-     "rows": 160
+     "rows": 160,
+     "digest": "bb974d48f70e6aed"
     },
     "bundle": {
      "rows": 160,
@@ -2367,11 +2373,11 @@
   "CanonicalEvent.roundNumber": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
     "empty_object": 0,
-    "digest": "1d0cd104aed0f8c0",
+    "digest": "a9ca545e2b36aa6e",
     "checks": {
      "round_fk": {
       "ok": true,
@@ -2383,26 +2389,26 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "1d0cd104aed0f8c0",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "a9ca545e2b36aa6e"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "1d0cd104aed0f8c0"
+     "rows": 3496,
+     "digest": "a9ca545e2b36aa6e"
     }
    }
   },
   "CanonicalEvent.type": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
     "empty_object": 0,
-    "digest": "71408db1b0a391ec",
+    "digest": "0d689713bc0491d0",
     "checks": {
      "event_type_allowlist": {
-      "ok": true,
+      "ok": false,
       "detail": "event_type_allowlist"
      }
     }
@@ -2411,23 +2417,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "71408db1b0a391ec",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "0d689713bc0491d0"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "71408db1b0a391ec"
+     "rows": 3496,
+     "digest": "0d689713bc0491d0"
     }
    }
   },
   "CanonicalEvent.tick": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
     "empty_object": 0,
-    "digest": "aef99b53533c858f",
+    "digest": "6cfe4b8d503913ca",
     "checks": {
      "tick_domain_events": {
       "ok": true,
@@ -2439,23 +2445,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "aef99b53533c858f",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "6cfe4b8d503913ca"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "aef99b53533c858f"
+     "rows": 3496,
+     "digest": "6cfe4b8d503913ca"
     }
    }
   },
   "CanonicalEvent.gameTimeSeconds": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
     "empty_object": 0,
-    "digest": "b409e6fbc25bf265",
+    "digest": "1b446715a8156871",
     "checks": {
      "time_monotonic_in_round": {
       "ok": true,
@@ -2467,23 +2473,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b409e6fbc25bf265",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "1b446715a8156871"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "b409e6fbc25bf265"
+     "rows": 3496,
+     "digest": "1b446715a8156871"
     }
    }
   },
   "CanonicalEvent.actorParticipantKey": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 510,
+    "rows": 3496,
+    "non_null": 3458,
     "zero": 0,
     "empty_object": 0,
-    "digest": "a7efcdbdc19ce3a8",
+    "digest": "c85038bb931e7852",
     "checks": {
      "participant_fk_or_null": {
       "ok": true,
@@ -2495,23 +2501,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "a7efcdbdc19ce3a8",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "c85038bb931e7852"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "a7efcdbdc19ce3a8"
+     "rows": 3496,
+     "digest": "c85038bb931e7852"
     }
    }
   },
   "CanonicalEvent.victimParticipantKey": {
    "state": "available",
    "run1": {
-    "rows": 3414,
+    "rows": 3496,
     "non_null": 499,
     "zero": 0,
     "empty_object": 0,
-    "digest": "c43eaee2bc9a7c1f",
+    "digest": "6efd3f2750fdf9fb",
     "checks": {
      "participant_fk_or_null": {
       "ok": true,
@@ -2523,23 +2529,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c43eaee2bc9a7c1f",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "6efd3f2750fdf9fb"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "c43eaee2bc9a7c1f"
+     "rows": 3496,
+     "digest": "6efd3f2750fdf9fb"
     }
    }
   },
   "CanonicalEvent.assisterParticipantKey": {
    "state": "available",
    "run1": {
-    "rows": 3414,
+    "rows": 3496,
     "non_null": 33,
     "zero": 0,
     "empty_object": 0,
-    "digest": "b214a4ee890b507f",
+    "digest": "b253ec3e3546a5ba",
     "checks": {
      "participant_fk_or_null": {
       "ok": true,
@@ -2551,23 +2557,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b214a4ee890b507f",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "b253ec3e3546a5ba"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "b214a4ee890b507f"
+     "rows": 3496,
+     "digest": "b253ec3e3546a5ba"
     }
    }
   },
   "CanonicalEvent.sourceActorExternalId": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 510,
+    "rows": 3496,
+    "non_null": 3458,
     "zero": 0,
     "empty_object": 0,
-    "digest": "a7efcdbdc19ce3a8",
+    "digest": "c85038bb931e7852",
     "checks": {
      "steam_id64_or_null": {
       "ok": true,
@@ -2579,23 +2585,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "a7efcdbdc19ce3a8",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "c85038bb931e7852"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "a7efcdbdc19ce3a8"
+     "rows": 3496,
+     "digest": "c85038bb931e7852"
     }
    }
   },
   "CanonicalEvent.sourceVictimExternalId": {
    "state": "available",
    "run1": {
-    "rows": 3414,
+    "rows": 3496,
     "non_null": 499,
     "zero": 0,
     "empty_object": 0,
-    "digest": "c43eaee2bc9a7c1f",
+    "digest": "6efd3f2750fdf9fb",
     "checks": {
      "steam_id64_or_null": {
       "ok": true,
@@ -2607,23 +2613,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c43eaee2bc9a7c1f",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "6efd3f2750fdf9fb"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "c43eaee2bc9a7c1f"
+     "rows": 3496,
+     "digest": "6efd3f2750fdf9fb"
     }
    }
   },
   "CanonicalEvent.sourceAssisterExternalId": {
    "state": "available",
    "run1": {
-    "rows": 3414,
+    "rows": 3496,
     "non_null": 33,
     "zero": 0,
     "empty_object": 0,
-    "digest": "b214a4ee890b507f",
+    "digest": "b253ec3e3546a5ba",
     "checks": {
      "steam_id64_or_null": {
       "ok": true,
@@ -2635,23 +2641,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "b214a4ee890b507f",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "b253ec3e3546a5ba"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "b214a4ee890b507f"
+     "rows": 3496,
+     "digest": "b253ec3e3546a5ba"
     }
    }
   },
   "CanonicalEvent.weapon": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 493,
+    "rows": 3496,
+    "non_null": 3044,
     "zero": 0,
     "empty_object": 0,
-    "digest": "911e4eb8c5261a98",
+    "digest": "1e221b15bcdb32f7",
     "checks": {
      "string_or_null": {
       "ok": true,
@@ -2663,23 +2669,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "911e4eb8c5261a98",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "1e221b15bcdb32f7"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "911e4eb8c5261a98"
+     "rows": 3496,
+     "digest": "1e221b15bcdb32f7"
     }
    }
   },
   "CanonicalEvent.headshot": {
    "state": "available",
    "run1": {
-    "rows": 3414,
+    "rows": 3496,
     "non_null": 100,
     "zero": 0,
     "empty_object": 0,
-    "digest": "d396e9584144618a",
+    "digest": "9dbb5bd677bc70c3",
     "checks": {
      "boolean_or_null": {
       "ok": true,
@@ -2691,23 +2697,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "d396e9584144618a",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "9dbb5bd677bc70c3"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "d396e9584144618a"
+     "rows": 3496,
+     "digest": "9dbb5bd677bc70c3"
     }
    }
   },
   "CanonicalEvent.distance": {
    "state": "available",
    "run1": {
-    "rows": 3414,
+    "rows": 3496,
     "non_null": 100,
     "zero": 0,
     "empty_object": 0,
-    "digest": "67cfbf1ae4f793ec",
+    "digest": "3c14d0b9ce4f8bd0",
     "checks": {
      "non_negative_or_null": {
       "ok": true,
@@ -2719,23 +2725,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "67cfbf1ae4f793ec",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "3c14d0b9ce4f8bd0"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "67cfbf1ae4f793ec"
+     "rows": 3496,
+     "digest": "3c14d0b9ce4f8bd0"
     }
    }
   },
   "CanonicalEvent.damage": {
    "state": "available",
    "run1": {
-    "rows": 3414,
+    "rows": 3496,
     "non_null": 399,
     "zero": 6,
     "empty_object": 0,
-    "digest": "83f4759805754397",
+    "digest": "b5653e66c64e2594",
     "checks": {
      "non_negative_or_null": {
       "ok": true,
@@ -2747,23 +2753,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "83f4759805754397",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "b5653e66c64e2594"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "83f4759805754397"
+     "rows": 3496,
+     "digest": "b5653e66c64e2594"
     }
    }
   },
   "CanonicalEvent.quality.status": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
     "empty_object": 0,
-    "digest": "4650ff830a4fcd1c",
+    "digest": "25acac5008bcc1b5",
     "checks": {
      "in:complete,partial,unknown": {
       "ok": true,
@@ -2775,23 +2781,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "4650ff830a4fcd1c",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "25acac5008bcc1b5"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "4650ff830a4fcd1c"
+     "rows": 3496,
+     "digest": "25acac5008bcc1b5"
     }
    }
   },
   "CanonicalEvent.quality.reasons": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
     "empty_object": 0,
-    "digest": "897fdaf331378ce9",
+    "digest": "fce7341616d78f88",
     "checks": {
      "array": {
       "ok": true,
@@ -2803,23 +2809,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "897fdaf331378ce9",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "fce7341616d78f88"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "897fdaf331378ce9"
+     "rows": 3496,
+     "digest": "fce7341616d78f88"
     }
    }
   },
   "CanonicalEvent.quality.confidence": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
     "empty_object": 0,
-    "digest": "c6fa1a49358f47b7",
+    "digest": "54118d9a7c9785ab",
     "checks": {
      "unit_interval_or_null": {
       "ok": true,
@@ -2831,23 +2837,23 @@
    "round_trip": {
     "status": "EQUAL",
     "persisted": {
-     "digest": "c6fa1a49358f47b7",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "54118d9a7c9785ab"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "c6fa1a49358f47b7"
+     "rows": 3496,
+     "digest": "54118d9a7c9785ab"
     }
    }
   },
   "CanonicalEvent.data": {
    "state": "available",
    "run1": {
-    "rows": 3414,
-    "non_null": 3414,
+    "rows": 3496,
+    "non_null": 3496,
     "zero": 0,
-    "empty_object": 2915,
-    "digest": "45f796ad08fea92a",
+    "empty_object": 33,
+    "digest": "e34a0d7fb71a03ad",
     "checks": {
      "object": {
       "ok": true,
@@ -2857,14 +2863,14 @@
    },
    "deterministic": true,
    "round_trip": {
-    "status": "EQUAL",
+    "status": "DIFFERENT",
     "persisted": {
-     "digest": "45f796ad08fea92a",
-     "rows": 3414
+     "rows": 3496,
+     "digest": "d6a0e540fc1775e3"
     },
     "bundle": {
-     "rows": 3414,
-     "digest": "45f796ad08fea92a"
+     "rows": 3496,
+     "digest": "e34a0d7fb71a03ad"
     }
    }
   }

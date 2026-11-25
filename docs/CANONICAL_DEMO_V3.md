@@ -233,3 +233,27 @@ Scope of this PASS: two real demos with full evidence; the Cache demo is covered
 (economy 240/240, identity `correlated`, v3 tag present, nothing withheld) but not by local determinism or the
 field round trip. It says every field is classified and each classification is proven for the evidence set;
 it does not say every field has a value (34 do not, by contract), and it does not authorize the browser path.
+
+### 8.1 O8 evidence run (2026-11-25) and the current gate result
+
+The two v3 evidence demos were re-run end to end with the R-07 parser (PR B):
+
+- **Inputs:** `furia-vs-gamerlegion-m3-dust2.dem` (sha256 `1c271096…`) and `furia-vs-gamerlegion-m2-mirage.dem` (`1d98f8b6…`), from the owner's machine. Never committed.
+- **Parser:** `parse_demo_file`, two runs per demo, byte-identical outputs. Non-finite floats were set to `null`, as JSON transport does.
+- **Server path:** `canonicalV3Harness.test.ts`, two runs, byte-identical bundles.
+- **Persistence:** a disposable PostgreSQL 16 with the six tables' columns, constraints and unique indexes read from production. The persistence functions are the production text: `md5(prosrc)` of `persist_canonical_observation`, `canonical_source_priority` and `is_canonical_match_quarantined` equals production. The digests were read back with `harness.py sql`.
+- **Round winners:** identical to the production rows of matches `747c7a6b` (Dust2 13:3, 16 rounds) and `95186f3f` (Mirage 13:10, 23 rounds). All rounds are `confirmed` by `game_state`; no `canonical_v3_withheld`.
+
+O8 result:
+
+| Field                        | Dust2                                         | Mirage                                        |
+| ---------------------------- | --------------------------------------------- | --------------------------------------------- |
+| `CanonicalRound.metadata`    | schema 16/16, deterministic, round trip EQUAL | schema 23/23, deterministic, round trip EQUAL |
+| `CanonicalRound.winningSide` | checks pass, deterministic, round trip EQUAL  | checks pass, deterministic, round trip EQUAL  |
+
+The server gate is **BLOCKED** by two fields outside O8. The committed 2026-10-28 evidence (R5.8.20 parser) did not see them; the re-run with today's parser does:
+
+1. `CanonicalEvent.type`: the parser emits `incendiary` since PR #345 (2026-11-18). The database CHECK allows it; the v3 check `event_type_allowlist` does not. Changing that allowlist is a contract decision outside R-07.
+2. `CanonicalEvent.data`: the round trip reads DIFFERENT only because the harness prints floats inside jsonb with 6 decimals, while PostgreSQL keeps the full value. The values are equal: with the exact float text, 0 of 3 496 (Dust2) rows differ. Fixing the harness measurement is outside R-07.
+
+Neither is weakened here. The R-07 release waits for the owner's decision on both.

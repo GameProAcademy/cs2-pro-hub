@@ -3,7 +3,7 @@
  *
  * The contract (scripts/canonical_v3/contract.py, docs/CANONICAL_DEMO_V3.md) gives each of the
  * 105 Canonical fields one state per path. On the server path, 33 fields have a fixed representation
- * (O8, pending, moved CanonicalRound.metadata out of this list; it and winningSide are not_verified):
+ * (O8 moved CanonicalRound.metadata out of this list; it and winningSide are available with evidence):
  * they are legitimately empty for a DEM, unsupported by the current extraction, or not
  * authorized because their single source of truth is the metrics layer. Their persisted value
  * is fixed (the "representation"). This module enforces that before persistence:
@@ -21,7 +21,7 @@ import type { CanonicalMatchBundle } from "@/lib/canonical/canonical.types";
 export const CANONICAL_CONTRACT_V3 = "canonical-demo-v3" as const;
 /** sha256 of docs/client-parser/canonical-demo-v3/contract.json (pinned by test_canonical_v3_contract.py). */
 export const CANONICAL_CONTRACT_V3_DIGEST =
-  "50e78288e1bfc9dcf327c76489efd5cc830c79a0bb7e91291b71d131b820698f";
+  "06f506aa7f91c5a2c18e6ecdebd574cc7a97a2e58aac0794b06eb59d9554e07f";
 
 type Entity = "observation" | "match" | "participants" | "rounds" | "roundPlayers";
 type Representation = null | "unknown" | Record<string, never>;

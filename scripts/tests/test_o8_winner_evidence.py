@@ -16,12 +16,24 @@ def test_schema_cases_agree_with_the_app():
             assert harness.confirmed_side(case["metadata"]["winnerEvidence"]) == case["side"], case["name"]
 
 
-def test_o8_fields_are_pending_not_available():
-    assert SERVER["CanonicalRound.metadata"]["state"] == "not_verified"
-    assert SERVER["CanonicalRound.winningSide"]["state"] == "not_verified"
-    assert SERVER["CanonicalRound.metadata"]["checks"] == ["winner_evidence_schema"] or \
-        tuple(SERVER["CanonicalRound.metadata"]["checks"]) == ("winner_evidence_schema",)
-    assert "PROPOSED" in DECISIONS["O8_round_winner_evidence"]
+def test_o8_fields_are_available_with_their_checks():
+    # PR B: evidence from two real demos (Dust2, Mirage) proved schema, determinism and the round trip.
+    assert SERVER["CanonicalRound.metadata"]["state"] == "available"
+    assert tuple(SERVER["CanonicalRound.metadata"]["checks"]) == ("winner_evidence_schema",)
+    assert SERVER["CanonicalRound.winningSide"]["state"] == "available"
+    assert tuple(SERVER["CanonicalRound.winningSide"]["checks"]) == ("in_or_null:CT,T", "winner_side_matches_evidence")
+    assert "O8_round_winner_evidence" in DECISIONS
+
+
+def test_committed_evidence_proves_the_two_o8_fields():
+    for label in ("dust2", "mirage"):
+        ev = json.loads((ROOT / f"docs/client-parser/canonical-demo-v3/evidence/server-{label}.json").read_text())
+        for field in ("CanonicalRound.metadata", "CanonicalRound.winningSide"):
+            item = ev["fields"][field]
+            assert item["state"] == "available" and item["deterministic"] is True, (label, field)
+            assert item["round_trip"]["status"] == "EQUAL", (label, field)
+            assert item["run1"]["non_null"] == item["run1"]["rows"] > 0, (label, field)
+            assert all(check["ok"] for check in item["run1"]["checks"].values()), (label, field)
 
 
 def _bundle(rounds):

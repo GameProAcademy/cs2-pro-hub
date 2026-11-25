@@ -111,14 +111,14 @@ DECISIONS = {
                                "attachment step ran; 0 means 'none resolved'. The demo path always runs the step, so "
                                "'could not determine' does not occur on it; an observation without the step would be "
                                "null (not 0).",
-    "O8_round_winner_evidence": "PROPOSED, pending evidence (owner approved the architecture on 2026-11-25; the "
-                                "results are not pre-approved). CanonicalRound.metadata carries exactly "
+    "O8_round_winner_evidence": "Architecture approved by the owner on 2026-11-25 (docs/decisions/"
+                                "O8_ROUND_WINNER_EVIDENCE.md); the two fields became available only after the "
+                                "evidence in docs/client-parser/canonical-demo-v3/evidence/ proved them. CanonicalRound.metadata carries exactly "
                                 "{winnerEvidence} with the closed schema round-winner-evidence-v1: version, status "
                                 "(confirmed|absent|inconclusive|conflicting), method (round_end_event|game_state|both|null) "
                                 "and sources {roundEndEvent, gameState} (CT|T|null each). CanonicalRound.winningSide is "
                                 "the confirmed side and null for every other status: an absent, inconclusive or "
-                                "conflicting round is never a winner, a loss or a tie. Both fields stay not_verified "
-                                "until two real demos prove schema, determinism and the persistence round trip.",
+                                "conflicting round is never a winner, a loss or a tie.",
     "O6_tick_domain": "A demo's tick domain is complete for Canonical when: (a) every round has non-null start and end "
                       "ticks with start < end <= next start; (b) every persisted event tick lies inside its round's "
                       "[start, end] (events the parser could not assign are omitted and counted in a warning, never "
@@ -218,9 +218,8 @@ SERVER: dict[str, dict[str, Any]] = {
                                               exit="as Match.durationSeconds"),
     "CanonicalRound.winningTeam": _server("unsupported", "needs team identity (teamA/teamB unsupported)", exit="after teamA/teamB"),
     # O8 (pending): nullable when the winner is not confirmed; must equal the confirmed evidence side.
-    "CanonicalRound.winningSide": _server("not_verified", "O8: confirmed side of round-winner-evidence-v1, null otherwise",
-                                          checks=("in_or_null:CT,T", "winner_side_matches_evidence"),
-                                          exit="O8 evidence: two real demos, deterministic, round trip EQUAL -> available"),
+    "CanonicalRound.winningSide": _server("available", "O8: confirmed side of round-winner-evidence-v1, null otherwise",
+                                          checks=("in_or_null:CT,T", "winner_side_matches_evidence")),
     "CanonicalRound.winReason": _server("unsupported", "O3: sentinel 'unknown'; no reviewed reason table", representation="unknown",
                                         exit="reviewed round_win_reason code table + consistency with bomb flags"),
     "CanonicalRound.bombPlanted": _server("available", "bomb_planted events (D25: absent stream = zero occurrences)", checks=("boolean",)),
@@ -230,9 +229,8 @@ SERVER: dict[str, dict[str, Any]] = {
     "CanonicalRound.quality.reasons": _server("available", "inherits source reasons", checks=("array",)),
     "CanonicalRound.quality.confidence": _server("available", "inherits source confidence", checks=("unit_interval_or_null",)),
     # O8 (pending): the only promoted round metadata is the closed winnerEvidence object.
-    "CanonicalRound.metadata": _server("not_verified", "O8: exactly {winnerEvidence} (round-winner-evidence-v1)",
-                                       checks=("winner_evidence_schema",),
-                                       exit="O8 evidence: two real demos, deterministic, round trip EQUAL -> available"),
+    "CanonicalRound.metadata": _server("available", "O8: exactly {winnerEvidence} (round-winner-evidence-v1)",
+                                       checks=("winner_evidence_schema",)),
     # CanonicalRoundPlayer
     "CanonicalRoundPlayer.roundNumber": _server("available", "foreign key to an emitted round", checks=("round_fk",)),
     "CanonicalRoundPlayer.participantKey": _server("available", "source-local Steam key, FK to participants", checks=("participant_fk",)),
