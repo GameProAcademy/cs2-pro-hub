@@ -10,6 +10,9 @@ import { CircleDashed } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
+import { ProgressBar } from "@/components/common/ProgressBar";
+import { SideBadge, ToneBadge } from "@/components/common/VisualBadges";
 import { MetricTerm } from "@/components/common/MetricTerm";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -24,6 +27,7 @@ import { METRIC_IDS, type MetricId } from "@/lib/glossary";
 import { canonicalMetric } from "@/lib/metrics/canonicalMetrics";
 import type { SideSummary } from "@/lib/roundContext";
 import { getXRay } from "@/lib/xray.functions";
+import { cn } from "@/lib/utils";
 
 export const XRAY_QUERY_KEY = ["player", "xray"] as const;
 
@@ -40,10 +44,10 @@ function ObservationValue({ o }: { o: XRayObservation }) {
   const { intlTag } = useI18n();
   if (o.status !== "MEASURED" || o.value === null)
     return (
-      <span className="text-muted-foreground" data-observation-status={o.status}>
-        <span aria-hidden>{NOT_AVAILABLE_MARK} </span>
+      <ToneBadge tone="neutral" data-observation-status={o.status}>
+        <span aria-hidden>{NOT_AVAILABLE_MARK}</span>
         {t(`xray.status.${o.status}` as TranslationKey)}
-      </span>
+      </ToneBadge>
     );
   const unit = canonicalMetric(o.metric).unit === "percent" ? "%" : "";
   return (
@@ -61,7 +65,8 @@ function ObservationValue({ o }: { o: XRayObservation }) {
         {fill(t("xray.inMatches"), { n: o.matches })}
       </span>
       {o.partialMatches ? (
-        <span className="mt-0.5 block text-xs text-warning" data-adr-partial="true">
+        <span className="mt-1 flex items-center gap-1 text-xs text-warning" data-adr-partial="true">
+          <GameIcon name="alert" className="size-3" />
           {fill(t("adr.partialMatches"), { n: o.partialMatches })}
         </span>
       ) : null}
@@ -69,24 +74,59 @@ function ObservationValue({ o }: { o: XRayObservation }) {
   );
 }
 
-function Layer({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+/** Visual phase: the three layers read as steps (observed → inference → recommendation). */
+function Layer({
+  title,
+  hint,
+  step,
+  icon,
+  children,
+}: {
+  title: string;
+  hint: string;
+  step: number;
+  icon: GameIconName;
+  children: ReactNode;
+}) {
   return (
-    <section className="space-y-3" aria-label={title}>
-      <div>
-        <h2 className="font-display text-lg font-semibold text-foreground">{title}</h2>
-        <p className="text-sm text-muted-foreground">{hint}</p>
+    <section className="space-y-4" aria-label={title} data-xray-layer={step}>
+      <div className="flex items-start gap-3 border-b border-border pb-3">
+        <span
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
+          aria-hidden
+        >
+          <GameIcon name={icon} className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            {String(step).padStart(2, "0")}
+          </p>
+          <h2 className="font-display text-lg font-semibold text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground">{hint}</p>
+        </div>
       </div>
       {children}
     </section>
   );
 }
 
+/** Decorative icon per X-ray dimension (the title carries the meaning). */
+const DIMENSION_ICON: Record<string, GameIconName> = {
+  aim_duels: "crosshair",
+  survival_positioning: "shield",
+  utility: "grenade",
+  impact: "target",
+  consistency: "trend",
+  decision: "dna",
+};
+
 export function XRayBody({ x }: { x: XRayDiagnosis }) {
   const t = useT();
   const { intlTag } = useI18n();
   return (
     <div className="space-y-8" data-xray-version={x.version} data-xray-state={x.state}>
-      <p className="rounded-lg border border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+      <p className="surface-panel flex items-start gap-3 rounded-lg border border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+        <GameIcon name="rounds" className="mt-0.5 size-4 shrink-0 text-context" />
         {fill(t("xray.sample"), {
           matches: x.sample.matches,
           rounds: x.sample.rounds ?? NOT_AVAILABLE_MARK,
@@ -94,7 +134,8 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
         })}
       </p>
       {x.state === "IN_FORMATION" ? (
-        <p className="rounded-lg border border-warning/25 bg-warning/8 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+        <p className="flex items-start gap-3 rounded-lg border border-warning/25 bg-warning/8 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+          <GameIcon name="alert" className="mt-0.5 size-4 shrink-0 text-warning" />
           {fill(t("xray.inFormation"), {
             matches: x.sample.dnaMatches,
             minimum: x.sample.dnaMinimumMatches,
@@ -102,16 +143,24 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
         </p>
       ) : null}
 
-      <Layer title={t("xray.layer.observed")} hint={t("xray.layer.observedHint")}>
+      <Layer
+        step={1}
+        icon="crosshair"
+        title={t("xray.layer.observed")}
+        hint={t("xray.layer.observedHint")}
+      >
         <div className="grid gap-5 lg:grid-cols-2">
           {x.dimensions.map((d) => (
             <ChartCard
               key={d.id}
               showDemoTag={false}
+              icon={DIMENSION_ICON[d.id]}
               title={t(`xray.dim.${d.id}` as TranslationKey)}
             >
               {d.status === "NOT_OBSERVED" ? (
-                <p className="text-sm text-muted-foreground">{t("xray.dim.notObserved")}</p>
+                <p className="rounded-md border border-dashed border-border-strong px-3 py-2 text-sm text-muted-foreground">
+                  {t("xray.dim.notObserved")}
+                </p>
               ) : null}
               <ul className="divide-y divide-border" data-xray-dimension={d.id}>
                 {d.observations.map((o) => (
@@ -134,22 +183,31 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
                       {t("xray.dnaIndex")} · {t(dnaLabelKey(r.dimension))}
                     </span>
                     {r.indexStatus === "READY" && r.index !== null ? (
-                      <span className="font-mono" data-dna-index-status="READY">
-                        {r.index} / 100
+                      <span
+                        className="flex min-w-36 items-center gap-2"
+                        data-dna-index-status="READY"
+                      >
+                        <ProgressBar
+                          value={r.index}
+                          max={100}
+                          className="w-20"
+                          label={`${t("xray.dnaIndex")} · ${t(dnaLabelKey(r.dimension))}`}
+                        />
+                        <span className="font-mono">{r.index} / 100</span>
                       </span>
                     ) : r.indexStatus === "IN_FORMATION" ? (
-                      <span className="text-muted-foreground" data-dna-index-status="IN_FORMATION">
+                      <ToneBadge tone="attention" data-dna-index-status="IN_FORMATION">
                         {t("real.dna.inFormation")}
-                      </span>
+                      </ToneBadge>
                     ) : r.indexStatus === "NOT_MEASURED" || r.indexStatus === "NO_SAMPLE" ? (
                       // UX-1.7c: same words as the Player DNA page.
-                      <span className="text-muted-foreground" data-dna-index-status={r.indexStatus}>
+                      <ToneBadge tone="neutral" data-dna-index-status={r.indexStatus}>
                         {t(`real.dna.status.${r.indexStatus}` as TranslationKey)}
-                      </span>
+                      </ToneBadge>
                     ) : (
-                      <span className="text-muted-foreground" data-dna-index-status="NOT_OBSERVED">
+                      <ToneBadge tone="neutral" data-dna-index-status="NOT_OBSERVED">
                         {t("real.dna.notObserved")}
-                      </span>
+                      </ToneBadge>
                     )}
                   </li>
                 ))}
@@ -159,13 +217,21 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
         </div>
         <ChartCard
           showDemoTag={false}
+          icon="shield"
           title={t("xray.sides.title")}
           subtitle={t("xray.sides.description")}
         >
           <dl className="grid gap-4 sm:grid-cols-2" data-xray-sides>
             {(["ct", "t"] as const).map((side) => (
-              <div key={side} className="rounded-md border border-border p-3">
-                <dt className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              <div
+                key={side}
+                className={cn(
+                  "rounded-md border bg-elevated/30 p-3",
+                  side === "ct" ? "border-side-ct/30" : "border-side-t/30",
+                )}
+              >
+                <dt className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  <SideBadge side={side === "ct" ? "CT" : "T"} />
                   {t(`xray.sides.${side}` as TranslationKey)}
                   {" · "}
                   {x.sides[side].rounds === null
@@ -198,13 +264,19 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
       </Layer>
 
       <Layer
+        step={2}
+        icon="dna"
         title={t("xray.layer.inference")}
         hint={fill(t("xray.layer.inferenceHint"), { ceiling: x.inferenceCeiling })}
       >
         {x.inferences.length ? (
           <ol className="space-y-2" data-xray-inferences>
             {x.inferences.map((i) => (
-              <li key={i.dimension} className="rounded-md border border-border px-4 py-3 text-sm">
+              <li
+                key={i.dimension}
+                className="surface-panel flex items-start gap-3 rounded-lg border border-context/30 px-4 py-3 text-sm"
+              >
+                <GameIcon name="dna" className="mt-0.5 size-4 shrink-0 text-context" />
                 {fill(t("xray.inference.item"), {
                   dimension: t(dnaLabelKey(i.dimension)),
                   index: i.index,
@@ -214,7 +286,10 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
             ))}
           </ol>
         ) : (
-          <p className="text-sm text-muted-foreground" data-xray-inference-blocked>
+          <p
+            className="rounded-lg border border-dashed border-border-strong px-4 py-3 text-sm text-muted-foreground"
+            data-xray-inference-blocked
+          >
             {fill(t(`xray.inference.${x.inferenceBlockedBy ?? "NO_DATA"}` as TranslationKey), {
               matches: x.sample.dnaMatches,
               minimum: x.sample.dnaMinimumMatches,
@@ -224,12 +299,21 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
         )}
       </Layer>
 
-      <Layer title={t("xray.layer.recommendation")} hint={t("xray.layer.recommendationHint")}>
+      <Layer
+        step={3}
+        icon="target"
+        title={t("xray.layer.recommendation")}
+        hint={t("xray.layer.recommendationHint")}
+      >
         {x.recommendations.length ? (
           <div className="space-y-3">
             <ul className="space-y-2" data-xray-recommendations>
               {x.recommendations.map((r) => (
-                <li key={r.dimension} className="text-sm">
+                <li
+                  key={r.dimension}
+                  className="surface-panel relative overflow-hidden rounded-lg border border-primary/30 py-3 pl-5 pr-4 text-sm"
+                >
+                  <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-primary/70" />
                   {fill(t("xray.recommendation.item"), { dimension: t(dnaLabelKey(r.dimension)) })}
                 </li>
               ))}
@@ -254,7 +338,7 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
         )}
       </Layer>
 
-      <ChartCard showDemoTag={false} title={t("xray.unsupported.title")}>
+      <ChartCard showDemoTag={false} icon="alert" title={t("xray.unsupported.title")}>
         <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
           {x.unsupported.map((u) => (
             <li key={u}>{t(`xray.unsupported.${u}` as TranslationKey)}</li>
