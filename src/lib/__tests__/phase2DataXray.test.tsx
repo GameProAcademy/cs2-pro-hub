@@ -419,6 +419,35 @@ describe("xray-v1 inference and recommendation", () => {
     expect(ready).toContain("data-xray-inferences");
     expect(ready).toContain("Priorizar");
   });
+
+  it("visual phase: three numbered layers, a dimension icon per card, the DNA index drawn on a bar and the states as badges", () => {
+    const formation = render(
+      <XRayBody
+        x={buildXRay({
+          overview: overview([m()]),
+          dna: dna("INSUFFICIENT_SAMPLE", values),
+          sides: [],
+        })}
+      />,
+    );
+    for (const step of ["1", "2", "3"]) expect(formation).toContain(`data-xray-layer="${step}"`);
+    expect(formation).toContain('data-card-icon="crosshair"');
+    // Absence stays neutral and dashed, never a bar and never zero.
+    expect(formation).toMatch(
+      /data-tone="neutral"[^>]*data-observation-status="EXCLUDED_BY_ADMISSION"/,
+    );
+    expect(formation).not.toContain('role="progressbar"');
+    const ready = render(
+      <XRayBody
+        x={buildXRay({ overview: overview([m()]), dna: dna("READY", values), sides: [] })}
+      />,
+    );
+    // Each READY index is the same number on the bar and in the text.
+    const bars = [...ready.matchAll(/aria-valuenow="(\d+)"/g)].map((v) => v[1]);
+    const texts = [...ready.matchAll(/>(\d+)<!-- --> \/ 100</g)].map((v) => v[1]);
+    expect(bars.length).toBeGreaterThan(0);
+    expect(bars).toEqual(texts);
+  });
 });
 
 describe("Player DNA presentation", () => {
