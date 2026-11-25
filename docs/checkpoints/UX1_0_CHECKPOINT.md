@@ -312,6 +312,38 @@ Limites declarados:
 - 0 textos abaixo de 12 px, salvo os chips de código do Coach, corrigidos no PR seguinte;
 - Rating 0,91 inalterado.
 
+### 2.15 R-07 / O8 (2026-11-25, depois da aprovação do dono)
+
+**Demos de evidência.** As duas demos do v3 estão na pasta Downloads do dono, confirmadas por sha256 (`1c271096…` Dust2, `1d98f8b6…` Mirage). Não foi preciso pedir demos novas.
+
+**#368 (seleção).** A demo Dust2 enviada sem nick (job `9780bad5`) foi atribuída a `-sav`, jogador indicado pelo dono, porque não havia evidência automática na conta.
+
+- Resposta do seletor: `p1…p10`, sem SteamID.
+- O job ficou `attached`/`manual_selected`.
+- Métricas batem com os eventos: 7 kills e 18 mortes, K/D 0,39 na tela.
+- Outros jobs e participantes inalterados (md5 igual antes e depois).
+- **Estado:** validado em produção.
+
+**PRs do O8:**
+
+- **#379 (PR A):** inventário, matriz e catálogo idênticos a `main`; O8 como `not_verified`; schema fechado; os três testes de autoridade passam individualmente.
+  - O "Main required gates" falha só nos dois testes do gate v3, como esperado enquanto a evidência não existe.
+  - **Estado:** implementado e testado; não integrado.
+- **#380:** registro da decisão. **Estado:** integrado.
+- **#381 (PR B), empilhado sobre o #379:**
+  - harness com 2 demos reais, determinismo byte a byte, round trip EQUAL em PostgreSQL descartável com o texto das funções de produção;
+  - vencedores iguais aos de produção; O8 `available`.
+  - **Estado:** implementado e testado; não integrado.
+
+**Bloqueio fora do O8.** O gate v3 está `BLOCKED` por dois campos que o O8 não toca:
+
+- `CanonicalEvent.type`: `incendiary` desde o #345;
+- `CanonicalEvent.data`: formatação de float no harness.
+
+Os dois dependem de decisão do dono (`docs/CANONICAL_DEMO_V3.md` §8.1).
+
+Release do worker e troca dos três valores: não iniciadas.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
