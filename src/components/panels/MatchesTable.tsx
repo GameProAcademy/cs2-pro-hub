@@ -50,7 +50,7 @@ export function MatchesTable({ rows }: { rows: MatchRow[] }) {
             {columnKeys.map((key) => (
               <TableHead
                 key={key}
-                className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+                className="whitespace-nowrap font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground"
               >
                 {t(key)}
               </TableHead>

@@ -200,7 +200,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
     <div className="rounded-md border border-border bg-card p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
-      {hint ? <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
@@ -921,14 +921,14 @@ function Translations({
           aria-label={t("adminNotify.preview")}
           className="rounded-md border border-dashed border-border p-3"
         >
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
             {t("adminNotify.preview")}
           </p>
           <p className="mt-2 text-sm font-medium">{draft.title || t("adminNotify.field.title")}</p>
           <p className="text-sm text-muted-foreground">
             {draft.body || t("adminNotify.field.body")}
           </p>
-          <p className="mt-2 text-[11px] text-muted-foreground">{campaign.link}</p>
+          <p className="mt-2 text-xs text-muted-foreground">{campaign.link}</p>
         </div>
       </div>
     </section>

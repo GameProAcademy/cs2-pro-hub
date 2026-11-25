@@ -143,7 +143,7 @@ export function RealProScoreDetails() {
               {t("score.components.title")}
             </caption>
             <thead>
-              <tr className="text-left font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              <tr className="text-left font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 <th scope="col" className="py-2 pr-4 font-normal">
                   {t("score.col.component")}
                 </th>
@@ -170,7 +170,7 @@ export function RealProScoreDetails() {
                   <td className="py-2 pr-4 font-mono">
                     {c.value === null ? "—" : `${pct(c.value, intlTag, 1)}%`}
                     {!c.available && c.unavailableReason ? (
-                      <span className="block font-sans text-[11px] text-muted-foreground">
+                      <span className="block font-sans text-xs text-muted-foreground">
                         {fill(t(`score.unavailable.${c.unavailableReason}`), {
                           min: PRO_SCORE_MIN_EVENT_SAMPLE,
                         })}

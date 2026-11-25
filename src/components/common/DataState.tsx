@@ -4,6 +4,7 @@
  * a number; every other status is words, never 0. "Not measured" (the product does not measure
  * it) is distinct from "insufficient sample" and from "not recorded in this demo".
  */
+import { ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { useT, type TranslationKey } from "@/i18n";
 import { fill } from "@/lib/format";
 import type { MetricStatus } from "@/lib/metrics/metricContract";
@@ -44,5 +45,30 @@ export function DataStateText({ className, ...s }: DataStateInfo & { className?:
     <span data-state={s.status} className={className}>
       {dataStateText(t, s)}
     </span>
+  );
+}
+
+/**
+ * Visual phase V-2: the same 8 statuses as a tone. Valued statuses keep the player's lime only for
+ * a direct observation; derived/inferred are context; partial is attention; every status without
+ * a value is the dashed neutral, never a filled colour and never a zero.
+ */
+export const DATA_STATE_TONE: Record<MetricStatus, BadgeTone> = {
+  OBSERVED: "brand",
+  DERIVED: "context",
+  INFERRED: "context",
+  PARTIAL: "attention",
+  NOT_OBSERVED: "neutral",
+  NOT_MEASURED: "neutral",
+  INSUFFICIENT_SAMPLE: "neutral",
+  UNAVAILABLE: "neutral",
+};
+
+export function DataStateBadge({ className, ...s }: DataStateInfo & { className?: string }) {
+  const t = useT();
+  return (
+    <ToneBadge tone={DATA_STATE_TONE[s.status]} className={className} data-state={s.status}>
+      {dataStateText(t, s)}
+    </ToneBadge>
   );
 }

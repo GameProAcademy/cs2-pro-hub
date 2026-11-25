@@ -65,11 +65,24 @@ export function MetricCard({
   const shownHint = hint ?? (missing ? t("common.notAvailableHint") : undefined);
   return (
     <div
-      className="surface-panel rounded-lg border border-border p-4 transition-colors hover:border-primary/35"
+      className={cn(
+        "surface-panel group relative overflow-hidden rounded-lg border border-border p-4 transition-colors hover:border-primary/35",
+        missing && "border-dashed",
+      )}
       data-metric-missing={missing ? "true" : undefined}
     >
+      {/* V-2 Kpi: a thin lime rule marks the player's own data; absent values keep it neutral. */}
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-x-0 top-0 h-0.5",
+          missing
+            ? "bg-neutral/40"
+            : "bg-gradient-to-r from-primary/70 via-primary/20 to-transparent",
+        )}
+      />
       <div className="flex items-start justify-between gap-2">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="font-mono text-xs uppercase tracking-[0.12em] text-muted-foreground">
           {label}
         </p>
         {showDemoTag ? <DemoTag /> : null}
@@ -77,7 +90,8 @@ export function MetricCard({
       <div className="mt-3 flex items-end gap-2">
         <span
           className={cn(
-            "num-display font-semibold leading-none text-foreground",
+            "num-display font-semibold leading-none",
+            missing ? "text-muted-foreground" : "text-foreground",
             size === "lg" ? "text-4xl" : "text-3xl",
           )}
         >

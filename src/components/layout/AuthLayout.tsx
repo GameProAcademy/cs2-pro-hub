@@ -71,7 +71,7 @@ export function AuthLayout({
           aria-hidden
         />
         <div className="relative flex h-full flex-col justify-end p-10 xl:p-14">
-          <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-primary">GamePro</p>
+          <p className="font-mono text-xs uppercase tracking-[0.32em] text-primary">GamePro</p>
           <p className="mt-3 max-w-lg text-balance font-display text-2xl font-bold uppercase leading-tight tracking-tight text-foreground">
             {t("brand.tagline")}
           </p>

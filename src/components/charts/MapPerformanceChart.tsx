@@ -103,7 +103,7 @@ export function MapPerformanceChart({
       </div>
 
       {hasHistorical ? (
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           {t("maps.outOfPoolNote")}
         </p>
       ) : null}

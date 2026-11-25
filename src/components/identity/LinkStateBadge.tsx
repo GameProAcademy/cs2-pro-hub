@@ -20,7 +20,7 @@ export function LinkStateBadge({ state }: { state: ExternalLinkState }) {
     <span
       data-link-state={state}
       className={cn(
-        "rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
+        "rounded-md border px-2 py-1 font-mono text-xs uppercase tracking-wider",
         CLASS[state],
       )}
     >

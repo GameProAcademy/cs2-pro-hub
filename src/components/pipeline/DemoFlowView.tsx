@@ -155,7 +155,7 @@ function Steps({ phase }: { phase: DemoFlowPhase }) {
           >
             <span
               className={cn(
-                "flex size-7 items-center justify-center rounded-full border text-[11px]",
+                "flex size-7 items-center justify-center rounded-full border text-xs",
                 state === "done" && "border-primary/50 bg-primary/15 text-primary",
                 state === "active" && "border-primary bg-primary/10 text-primary",
                 state === "pending" && "border-border/80 bg-background/30 text-muted-foreground",
@@ -178,7 +178,7 @@ function Steps({ phase }: { phase: DemoFlowPhase }) {
             </span>
             <span
               className={cn(
-                "w-full break-words text-[10px] leading-tight sm:text-[11px]",
+                "w-full break-words text-xs leading-tight sm:text-xs",
                 state === "active" ? "font-semibold text-foreground" : "text-muted-foreground",
               )}
             >
@@ -235,7 +235,7 @@ function UploadProgress({ phase }: { phase: Extract<DemoFlowPhase, { kind: "uplo
           <div className="absolute inset-y-0 left-0 w-1/3 animate-pulse rounded-full bg-primary/60 motion-reduce:animate-none" />
         </div>
       )}
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
+      <p className="text-xs leading-relaxed text-muted-foreground">
         {t("demoFlow.upload.keepOpen")}
       </p>
     </div>
@@ -312,7 +312,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
             </p>
           </div>
           {size ? (
-            <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
               <span className="sr-only">{t("demoFlow.size")} </span>
               {size}
             </span>
@@ -434,7 +434,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
       (phase.kind === "failed" && phase.action === "select_and_retry") ? (
         props.participants.length > 0 ? (
           <fieldset className="min-w-0 space-y-2">
-            <legend className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            <legend className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {t("pipeline.identify.selectLabel")}
             </legend>
             <div className="grid max-h-[38vh] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
@@ -525,7 +525,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
       {phase.kind === "completed" ? (
         <dl className="grid grid-cols-1 gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm sm:grid-cols-3">
           <div className="min-w-0">
-            <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <dt className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {t("demoFlow.done.player")}
             </dt>
             <dd className="break-words font-semibold text-foreground">
@@ -533,7 +533,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
             </dd>
           </div>
           <div className="min-w-0">
-            <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <dt className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {t("demoFlow.done.map")}
             </dt>
             <dd className="break-words font-semibold text-foreground">
@@ -541,7 +541,7 @@ export function DemoFlowView(props: DemoFlowViewProps) {
             </dd>
           </div>
           <div className="min-w-0">
-            <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <dt className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {t("demoFlow.done.status")}
             </dt>
             <dd className="font-semibold text-primary">{t("demoFlow.done.statusValue")}</dd>
@@ -641,12 +641,12 @@ export function DemoFlowView(props: DemoFlowViewProps) {
         </div>
       ) : null}
       {phase.kind === "completed" && props.autoCloseSeconds != null ? (
-        <p className="-mt-3 text-right text-[11px] text-muted-foreground" aria-live="off">
+        <p className="-mt-3 text-right text-xs text-muted-foreground" aria-live="off">
           {t("demoFlow.done.autoClose").replace("{seconds}", String(props.autoCloseSeconds))}
         </p>
       ) : null}
       {canContinueInBackground(phase) ? (
-        <p className="-mt-3 text-[11px] leading-relaxed text-muted-foreground sm:text-right">
+        <p className="-mt-3 text-xs leading-relaxed text-muted-foreground sm:text-right">
           {t("demoFlow.backgroundHint")}
         </p>
       ) : null}

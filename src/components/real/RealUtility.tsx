@@ -4,6 +4,7 @@
  * never show a number; each flash links to the 2D replay on its detonation tick. A flash with no
  * enemy blinded is described as "no measured effect", never as a wasted or bad flash.
  */
+import { GameIcon } from "@/components/common/GameIcon";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info, UserX } from "lucide-react";
@@ -83,12 +84,13 @@ function Tile({ m }: { m: MetricEnvelope }) {
   const key = m.metric_key.split(".")[1]!;
   return (
     <div
-      className="rounded-md border border-border bg-card p-4"
+      className="surface-panel rounded-lg border border-border p-4"
       data-metric={m.metric_key}
       data-metric-status={m.status}
       data-provenance-method={m.provenance_method}
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <GameIcon name="grenade" className="size-3.5 text-category-utility" />
         {t(`nade.metric.${key}` as TranslationKey)}
       </p>
       <p className="mt-2 font-mono text-2xl font-semibold text-foreground">{display(m, intlTag)}</p>

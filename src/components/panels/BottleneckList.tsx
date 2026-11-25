@@ -25,7 +25,7 @@ export function BottleneckList({ items }: { items: Bottleneck[] }) {
             </h3>
             <span
               className={cn(
-                "rounded-sm border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+                "rounded-sm border px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider",
                 priorityTone[item.priority],
               )}
             >

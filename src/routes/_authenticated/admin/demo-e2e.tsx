@@ -52,7 +52,7 @@ const VERDICT_STYLE: Record<E2EVerdict, string> = {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-border/60 py-1.5 last:border-b-0">
-      <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+      <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
       <span className="break-all text-right font-mono text-xs text-foreground">{value}</span>
@@ -63,7 +63,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function EvidenceBlock({ title, evidence }: { title: string; evidence: E2EEvidence }) {
   return (
     <div className="rounded-lg border border-border bg-card/40 px-4 py-3">
-      <h4 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-primary">{title}</h4>
+      <h4 className="mb-2 font-mono text-xs uppercase tracking-wider text-primary">{title}</h4>
       <Row label="canonical match ids" value={evidence.matchIds.join(", ") || "—"} />
       <Row label="match_sources" value={String(evidence.matchSourceCount)} />
       <Row label="match_participants" value={String(evidence.participants)} />
@@ -111,7 +111,7 @@ function RawEvidenceBlock({ evidence }: { evidence: RawDemoEvidence }) {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left font-mono text-[11px]">
+        <table className="w-full min-w-[760px] text-left font-mono text-xs">
           <thead className="text-muted-foreground">
             <tr>
               {[
@@ -155,7 +155,7 @@ function RawEvidenceBlock({ evidence }: { evidence: RawDemoEvidence }) {
           ] as const
         ).map(([title, rows]) => (
           <div key={title} className="rounded border border-border p-3">
-            <p className="mb-2 font-mono text-[11px] text-primary">{title}</p>
+            <p className="mb-2 font-mono text-xs text-primary">{title}</p>
             {rows.map((row) => (
               <Row
                 key={row.property}
@@ -166,7 +166,7 @@ function RawEvidenceBlock({ evidence }: { evidence: RawDemoEvidence }) {
           </div>
         ))}
         <div className="rounded border border-border p-3">
-          <p className="mb-2 font-mono text-[11px] text-primary">RAW → CONTRACT MAPPING</p>
+          <p className="mb-2 font-mono text-xs text-primary">RAW → CONTRACT MAPPING</p>
           {evidence.field_mappings.map((row) => (
             <Row
               key={row.raw_field}
@@ -400,7 +400,7 @@ function AdminDemoE2EPage() {
             </h3>
             <VerdictBadge verdict={report.evaluation.verdict} reasons={report.evaluation.reasons} />
             {report.evaluation.projection ? (
-              <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                 canonical={report.evaluation.verdict} / projection=
                 {report.evaluation.projection}
                 {report.evaluation.projectionReason
@@ -410,7 +410,7 @@ function AdminDemoE2EPage() {
             ) : null}
             {report.idempotency ? (
               <div>
-                <p className="mb-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                <p className="mb-1 font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   idempotência
                 </p>
                 <VerdictBadge

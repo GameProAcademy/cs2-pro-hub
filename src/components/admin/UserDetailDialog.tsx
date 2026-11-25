@@ -50,18 +50,14 @@ import { provenSteamId64 } from "@/lib/identity/verifiedSteam";
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </p>
+      <p className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
       <p className="break-words text-sm text-foreground">{value}</p>
     </div>
   );
 }
 
 function SectionTitle({ children }: { children: string }) {
-  return (
-    <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">{children}</h3>
-  );
+  return <h3 className="font-mono text-xs uppercase tracking-[0.18em] text-primary">{children}</h3>;
 }
 
 function Empty({ label }: { label: string }) {

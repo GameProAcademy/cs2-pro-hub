@@ -55,7 +55,7 @@ export function PlayerIdentityPanel() {
               {t(`identity.source.${observation.source}` as TranslationKey)}
             </span>
             <span className="flex min-w-0 items-center gap-2">
-              <span className="truncate font-mono text-[11px] text-muted-foreground">
+              <span className="truncate font-mono text-xs text-muted-foreground">
                 {observation.username ?? t("identity.notConnected")}
               </span>
               {linkViews.find((link) => SOURCE[link.platform] === observation.source) ? (
@@ -73,13 +73,13 @@ export function PlayerIdentityPanel() {
       <div className="flex items-center justify-between gap-3">
         <span
           className={cn(
-            "rounded-md border px-2 py-1 font-mono text-[10px] uppercase tracking-wider",
+            "rounded-md border px-2 py-1 font-mono text-xs uppercase tracking-wider",
             STATUS_CLASS[graph.status] ?? STATUS_CLASS["unlinked"],
           )}
         >
           {t(`identity.status.${graph.status}` as TranslationKey)}
         </span>
-        <span className="font-mono text-[11px] text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground">
           {t("identity.confidence")}:{" "}
           {t(`identity.confidence.${confidenceLabel(graph.confidence)}` as TranslationKey)}
         </span>
@@ -94,7 +94,7 @@ export function PlayerIdentityPanel() {
             {graph.evidence.map((item, index) => (
               <li
                 key={`${item.attribute}-${index}`}
-                className="flex items-center justify-between gap-3 font-mono text-[11px] text-muted-foreground"
+                className="flex items-center justify-between gap-3 font-mono text-xs text-muted-foreground"
               >
                 <span>
                   {item.identityA.source} ↔ {item.identityB.source} · {item.attribute}

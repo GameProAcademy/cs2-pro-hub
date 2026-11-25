@@ -3,6 +3,7 @@
  * (the signed-in player's own rows under RLS) or is an explicit, honest state.
  * No component in this file renders a demonstration value.
  */
+import { MapBadge } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Ban, CircleDashed, Clock3, Fingerprint, ShieldAlert, Upload } from "lucide-react";
@@ -193,8 +194,8 @@ export function AdmissionBadge({ row }: { row: OverviewMatch }) {
     <span
       className={
         limited
-          ? "rounded-sm border border-warning/50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-warning"
-          : "rounded-sm border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+          ? "rounded-sm border border-warning/50 px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-warning"
+          : "rounded-sm border border-border px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-muted-foreground"
       }
       title={limited ? detail : undefined}
       aria-label={limited ? `${t("real.admission.limited")}: ${detail}` : undefined}
@@ -232,7 +233,7 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
             {columns.map((column, index) => (
               <TableHead
                 key={typeof column === "string" ? column : index}
-                className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"
+                className="whitespace-nowrap font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground"
               >
                 {typeof column === "string" ? t(column as TranslationKey) : column}
               </TableHead>
@@ -269,8 +270,9 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
                   to="/matches/$matchId"
                   params={{ matchId: row.matchId }}
                   data-room-link
-                  className="inline-flex min-h-11 items-center font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                  className="inline-flex min-h-11 items-center gap-2 font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
                 >
+                  {row.map ? <MapBadge map={row.map} showName={false} className="px-1" /> : null}
                   {row.map ? mapDisplayName(row.map) : NOT_AVAILABLE_MARK}
                 </Link>
               </TableCell>
@@ -372,11 +374,11 @@ export function RecentUploads({ jobs }: { jobs: OverviewJob[] }) {
           <li key={job.jobId} className="flex flex-wrap items-center justify-between gap-2 py-3">
             <div className="min-w-0">
               <p className="truncate text-sm text-foreground">{job.fileName ?? job.uploadId}</p>
-              <p className="font-mono text-[11px] text-muted-foreground">
+              <p className="font-mono text-xs text-muted-foreground">
                 <time dateTime={job.queuedAt}>{formatDateTime(job.queuedAt, intlTag)}</time>
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wider">
               <span className="rounded-sm border border-border px-1.5 py-0.5">
                 {t(JOB_STATUS_KEY[job.status])}
               </span>

@@ -50,21 +50,21 @@ export function VerificationCard({ result }: { result: VerificationResult }) {
 
         <div className="flex flex-wrap items-center gap-2">
           {result.verifiedBadge ? (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-success">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-success/30 bg-success/10 px-2 py-1 font-mono text-xs uppercase tracking-wider text-success">
               <BadgeCheck className="size-3.5" aria-hidden />
               {t("verification.badge")}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-1 font-mono text-xs uppercase tracking-wider text-muted-foreground">
               <ShieldAlert className="size-3.5" aria-hidden />
               {t("verification.notVerified")}
             </span>
           )}
-          <span className="rounded-md border border-border bg-card/40 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="rounded-md border border-border bg-card/40 px-2 py-1 font-mono text-xs uppercase tracking-wider text-muted-foreground">
             {t("verification.identityStatus")}:{" "}
             {t(`identity.status.${result.identityStatus}` as TranslationKey)}
           </span>
-          <span className="rounded-md border border-border bg-card/40 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="rounded-md border border-border bg-card/40 px-2 py-1 font-mono text-xs uppercase tracking-wider text-muted-foreground">
             {t("verification.confidenceLabel")}:{" "}
             {t(
               `identity.confidence.${confidenceLabel(result.identityConfidence)}` as TranslationKey,
@@ -81,7 +81,7 @@ export function VerificationCard({ result }: { result: VerificationResult }) {
               {result.profile.missing.map((item) => (
                 <span
                   key={item}
-                  className="rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning"
+                  className="rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-xs text-warning"
                 >
                   {t(`verification.missing.${item}` as TranslationKey)}
                 </span>

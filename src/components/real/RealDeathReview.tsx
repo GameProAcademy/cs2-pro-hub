@@ -336,7 +336,7 @@ function Row({ label, field, text }: { label: string; field: Field<unknown>; tex
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-right text-sm text-foreground" data-provenance={field.provenance}>
         {text}{" "}
-        <span className="ml-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="ml-1 font-mono text-xs uppercase tracking-wide text-muted-foreground">
           {t(`diagnosis.provenance.${field.provenance}` as TranslationKey)}
         </span>
       </dd>

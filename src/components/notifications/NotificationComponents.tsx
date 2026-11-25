@@ -175,7 +175,7 @@ export function NotificationBell() {
         >
           <Bell className="size-4" aria-hidden />
           {unread > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center font-mono text-[10px] leading-4 text-primary-foreground">
+            <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center font-mono text-xs leading-4 text-primary-foreground">
               {unread > 99 ? "99+" : unread}
             </span>
           ) : null}
@@ -227,7 +227,7 @@ export function NotificationBell() {
                     <span className="block text-sm font-medium">{text.title}</span>
                     <span className="block text-xs text-muted-foreground">{text.body}</span>
                     <time
-                      className="block font-mono text-[10px] text-muted-foreground"
+                      className="block font-mono text-xs text-muted-foreground"
                       dateTime={n.createdAt}
                     >
                       {formatDateTime(n.createdAt, intlTag)}
@@ -239,7 +239,7 @@ export function NotificationBell() {
           </ul>
         )}
         {mark.failed ? (
-          <p role="alert" className="px-3 py-1 text-[11px] text-destructive">
+          <p role="alert" className="px-3 py-1 text-xs text-destructive">
             {t("notify.actionError")}
           </p>
         ) : null}
@@ -358,7 +358,7 @@ export function NotificationCenter() {
                 )}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     {t(`notify.cat.${n.category}` as TranslationKey)} ·{" "}
                     <time dateTime={n.createdAt}>{formatDateTime(n.createdAt, intlTag)}</time>
                   </p>
@@ -498,7 +498,7 @@ export function PreferencesForm({ initial }: { initial: NotificationPrefs }) {
             <option value={168}>{t("notify.prefs.pause.168")}</option>
           </select>
           {paused ? (
-            <span className="mt-1 block text-[11px] text-muted-foreground">
+            <span className="mt-1 block text-xs text-muted-foreground">
               {fill(t("notify.prefs.pausedUntil"), { date: formatDateTime(paused, intlTag) })}
             </span>
           ) : null}

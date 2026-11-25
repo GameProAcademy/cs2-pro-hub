@@ -552,7 +552,7 @@ function SessionItem({
           </ol>
           {ex.commands.length ? (
             <pre
-              className="mt-1 overflow-x-auto rounded bg-muted p-2 font-mono text-[11px]"
+              className="mt-1 overflow-x-auto rounded bg-muted p-2 font-mono text-xs"
               aria-label={t("training.adaptive.commands")}
             >
               {ex.commands.join("\n")}
@@ -595,9 +595,7 @@ function SessionItem({
             </a>
           ) : null}
           {ex.reference ? (
-            <p className="text-[11px] text-muted-foreground">
-              {t("training.adaptive.referenceNote")}
-            </p>
+            <p className="text-xs text-muted-foreground">{t("training.adaptive.referenceNote")}</p>
           ) : null}
         </details>
       ) : null}
