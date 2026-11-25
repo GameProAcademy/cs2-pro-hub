@@ -160,7 +160,10 @@ describe("canonical metrics catalog", () => {
 
   it("every source column is read by the app and written by the pipeline", () => {
     const loader = read("src/lib/playerData.functions.ts");
-    const persisted = read("src/lib/pipeline/persistence.server.ts");
+    // The `_metrics` object lives in projectionPayload.ts (pure, shared with the ingestion test).
+    const persisted =
+      read("src/lib/pipeline/persistence.server.ts") +
+      read("src/lib/pipeline/projectionPayload.ts");
     for (const c of CANONICAL_METRICS) {
       const column = c.source.split(".")[1]!;
       expect(loader, c.source).toMatch(new RegExp(`\\b${column}\\b`));
