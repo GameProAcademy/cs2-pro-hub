@@ -11,6 +11,7 @@ import { CircleDashed, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,15 +91,34 @@ export function AdaptiveTrainingBody({ v }: { v: TrainingView }) {
   );
 }
 
+/** Visual phase: plan and session states as tones (labels unchanged). */
+const PLAN_STATUS_TONE: Record<"ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED", BadgeTone> = {
+  ACTIVE: "brand",
+  PAUSED: "attention",
+  COMPLETED: "context",
+  CANCELLED: "neutral",
+};
+const SESSION_TONE: Record<"PLANNED" | "DONE" | "SKIPPED", BadgeTone> = {
+  PLANNED: "neutral",
+  DONE: "brand",
+  SKIPPED: "attention",
+};
+
 function Priorities({ priorities }: { priorities: Priority[] }) {
   const t = useT();
   const { intlTag } = useI18n();
   return (
     <ol className="space-y-3" data-priorities>
       {priorities.map((p, i) => (
-        <li key={p.area} className="rounded-lg border border-border p-3" data-priority={p.area}>
+        <li
+          key={p.area}
+          className="surface-panel rounded-lg border border-border p-3"
+          data-priority={p.area}
+        >
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="font-mono text-xs text-muted-foreground">#{i + 1}</span>
+            <span className="num-display flex size-6 items-center justify-center rounded-md bg-primary/12 text-xs font-semibold text-primary">
+              {i + 1}
+            </span>
             <span className="font-medium">{t(`training.area.${p.area}` as TranslationKey)}</span>
             <span className="font-mono text-xs text-muted-foreground" data-score>
               {fill(t("training.adaptive.score"), {
@@ -298,9 +318,12 @@ function PlanPanel({ plan }: { plan: PlanView }) {
         })}
       >
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="rounded border border-border px-2 py-0.5" data-plan-state={plan.status}>
+          <ToneBadge
+            tone={PLAN_STATUS_TONE[plan.status as keyof typeof PLAN_STATUS_TONE] ?? "neutral"}
+            data-plan-state={plan.status}
+          >
             {t(`training.adaptive.status.${plan.status}` as TranslationKey)}
-          </span>
+          </ToneBadge>
           <span data-adherence={plan.adherence.rate === null ? "NO_SAMPLE" : "OK"}>
             {plan.adherence.rate === null
               ? t("training.adaptive.adherence.none")
@@ -518,7 +541,7 @@ function SessionItem({
   });
   return (
     <li
-      className="rounded border border-border p-2 text-sm"
+      className="rounded-md border border-border bg-elevated/30 p-3 text-sm"
       data-session={s.id}
       data-session-status={s.status}
     >
@@ -535,9 +558,13 @@ function SessionItem({
           {t(`training.area.${s.area}` as TranslationKey)} ·{" "}
           {fill(t("training.adaptive.minutesN"), { n: s.minutes })}
         </span>
-        <span className="ml-auto rounded bg-muted px-1.5 text-xs">
+        <ToneBadge
+          tone={SESSION_TONE[s.status as keyof typeof SESSION_TONE] ?? "neutral"}
+          className="ml-auto"
+          data-session-badge={s.status}
+        >
           {t(`training.adaptive.session.${s.status}` as TranslationKey)}
-        </span>
+        </ToneBadge>
       </div>
       {ex ? (
         <details className="mt-1">
