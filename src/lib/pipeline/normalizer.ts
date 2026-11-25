@@ -5,7 +5,7 @@
  * parser, a database or a network. The database never sees parser-internal
  * field names.
  */
-import { winnerEvidenceFromParser } from "@/lib/rounds/winnerEvidence";
+import { confirmedSide, winnerEvidenceFromParser } from "@/lib/rounds/winnerEvidence";
 import { MIN_VALID_ROUNDS, SCHEMA_VERSION } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { hasUtilityEvidence } from "@/lib/pipeline/evidence";
@@ -247,13 +247,21 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
     .filter((r) => Number.isInteger(r.number) && r.number > 0)
     .sort((a, b) => a.number - b.number)
     .map((r) => {
-      const winnerEvidence = winnerEvidenceFromParser(r);
+      // R-07 / O8: with evidence, the winner is the confirmed side and nothing else (never a source
+      // picked in a conflict); a malformed evidence fails closed (no winner, no evidence); a parser
+      // before the contract keeps its winner_side as before.
+      const parsed = winnerEvidenceFromParser(r);
+      const winnerEvidence = parsed.kind === "valid" ? parsed.evidence : null;
+      const winnerSide =
+        parsed.kind === "legacy"
+          ? toSide(r.winner_side)
+          : parsed.kind === "valid" && toSide(r.winner_side) === confirmedSide(parsed.evidence)
+            ? confirmedSide(parsed.evidence)
+            : null;
       return {
         roundNumber: r.number,
         winnerTeam: r.winner_team ?? null,
-        // R-07: a winner only when the evidence says confirmed; never a source picked in a conflict.
-        winnerSide:
-          winnerEvidence && winnerEvidence.status !== "confirmed" ? null : toSide(r.winner_side),
+        winnerSide,
         winnerEvidence,
         startTick: num(r.start_tick),
         endTick: num(r.end_tick),

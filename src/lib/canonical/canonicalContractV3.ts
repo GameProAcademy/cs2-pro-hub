@@ -2,7 +2,8 @@
  * canonical-demo-v3 — server-path persistence policy (2026-10-28).
  *
  * The contract (scripts/canonical_v3/contract.py, docs/CANONICAL_DEMO_V3.md) gives each of the
- * 105 Canonical fields one state per path. On the server path, 34 fields are NOT available:
+ * 105 Canonical fields one state per path. On the server path, 33 fields have a fixed representation
+ * (O8, pending, moved CanonicalRound.metadata out of this list; it and winningSide are not_verified):
  * they are legitimately empty for a DEM, unsupported by the current extraction, or not
  * authorized because their single source of truth is the metrics layer. Their persisted value
  * is fixed (the "representation"). This module enforces that before persistence:
@@ -20,7 +21,7 @@ import type { CanonicalMatchBundle } from "@/lib/canonical/canonical.types";
 export const CANONICAL_CONTRACT_V3 = "canonical-demo-v3" as const;
 /** sha256 of docs/client-parser/canonical-demo-v3/contract.json (pinned by test_canonical_v3_contract.py). */
 export const CANONICAL_CONTRACT_V3_DIGEST =
-  "f4c053022c75ca528c5c9bfb95f197e2ff031082224652ad1cd8ca128757b858";
+  "50e78288e1bfc9dcf327c76489efd5cc830c79a0bb7e91291b71d131b820698f";
 
 type Entity = "observation" | "match" | "participants" | "rounds" | "roundPlayers";
 type Representation = null | "unknown" | Record<string, never>;
@@ -107,7 +108,6 @@ export const SERVER_FIXED_FIELDS_V3: ReadonlyArray<{
     path: ["winReason"],
     representation: "unknown",
   },
-  { id: "CanonicalRound.metadata", entity: "rounds", path: ["metadata"], representation: {} },
   {
     id: "CanonicalRoundPlayer.survived",
     entity: "roundPlayers",

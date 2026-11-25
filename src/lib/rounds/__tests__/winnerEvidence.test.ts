@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { demoToCanonicalBundle } from "@/lib/canonical/adapters/demo.adapter";
@@ -7,7 +8,9 @@ import type { RawParserOutput } from "@/lib/pipeline/types";
 import { buildMatchRounds, summarizeRoundContext } from "@/lib/roundContext";
 import {
   ROUND_WINNER_EVIDENCE_VERSION,
+  confirmedSide,
   determinedWinnerSide,
+  winnerEvidenceErrors,
   winnerEvidenceFromMetadata,
 } from "@/lib/rounds/winnerEvidence";
 
@@ -87,8 +90,18 @@ describe("R-07 round-winner-evidence-v1 through the pipeline", () => {
 });
 
 describe("readers honour the evidence", () => {
+  // Valid round-winner-evidence-v1 objects (closed schema) for each status.
+  const SHAPES: Record<
+    string,
+    { method: string | null; sources: { roundEndEvent: string | null; gameState: string | null } }
+  > = {
+    confirmed: { method: "both", sources: { roundEndEvent: "CT", gameState: "CT" } },
+    conflicting: { method: "both", sources: { roundEndEvent: "T", gameState: "CT" } },
+    inconclusive: { method: "game_state", sources: { roundEndEvent: null, gameState: null } },
+    absent: { method: null, sources: { roundEndEvent: null, gameState: null } },
+  };
   const ev = (status: string) => ({
-    winnerEvidence: { version: ROUND_WINNER_EVIDENCE_VERSION, method: "both", status, sources: {} },
+    winnerEvidence: { version: ROUND_WINNER_EVIDENCE_VERSION, status, ...SHAPES[status] },
   });
   it("a stale winner_side kept by COALESCE after a reprocessed conflict is ignored", () => {
     expect(determinedWinnerSide({ winner_side: "T", metadata: ev("conflicting") })).toBeNull();
@@ -98,9 +111,18 @@ describe("readers honour the evidence", () => {
   it("rows persisted before the contract keep their recorded winner (origin not recorded)", () => {
     expect(determinedWinnerSide({ winner_side: "T", metadata: {} })).toBe("T");
     expect(determinedWinnerSide({ winner_side: null })).toBeNull();
+  });
+  it("O8: a present but malformed evidence fails closed (no winner)", () => {
     expect(
       determinedWinnerSide({ winner_side: "T", metadata: { winnerEvidence: { version: "x" } } }),
-    ).toBe("T");
+    ).toBeNull();
+    const bad = {
+      ...ev("confirmed").winnerEvidence,
+      sources: { roundEndEvent: "T", gameState: "CT" },
+    };
+    expect(
+      determinedWinnerSide({ winner_side: "T", metadata: { winnerEvidence: bad } }),
+    ).toBeNull();
   });
   it("the aggregate never counts a round without a determined winner", () => {
     const rounds = [1, 2, 3, 4].map((n) => ({
@@ -125,5 +147,20 @@ describe("readers honour the evidence", () => {
     const decided = s.ct.roundsWon + s.ct.roundsLost + s.t.roundsWon + s.t.roundsLost;
     expect(decided).toBe(2);
     expect(s.ct.roundsOutcomeUnknown + s.t.roundsOutcomeUnknown).toBe(2);
+  });
+});
+
+describe("O8 closed schema (shared cases with scripts/canonical_v3/harness.py)", () => {
+  const cases = (
+    JSON.parse(
+      readFileSync("docs/client-parser/canonical-demo-v3/o8-winner-evidence-cases.json", "utf8"),
+    ) as { cases: { name: string; ok: boolean; side?: string | null; metadata: unknown }[] }
+  ).cases;
+  it.each(cases.map((c) => [c.name, c] as const))("%s", (_name, c) => {
+    expect(winnerEvidenceErrors(c.metadata).length === 0).toBe(c.ok);
+    if (c.ok) {
+      const evidence = winnerEvidenceFromMetadata(c.metadata)!;
+      expect(confirmedSide(evidence)).toBe(c.side);
+    }
   });
 });
