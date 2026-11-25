@@ -93,7 +93,10 @@ export async function loadRoundContext(
   const contexts: MatchRoundContext[] = await Promise.all(
     [...keys].map(async ([matchId, participantKey]) => {
       const [rounds, roundPlayers, events, damage] = await Promise.all([
-        supabase.from("match_rounds").select("round_number, winner_side").eq("match_id", matchId),
+        supabase
+          .from("match_rounds")
+          .select("round_number, winner_side, metadata")
+          .eq("match_id", matchId),
         supabase
           .from("round_players")
           .select("round_number, participant_key, side")

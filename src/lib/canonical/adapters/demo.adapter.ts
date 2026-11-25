@@ -127,7 +127,8 @@ export function demoToCanonicalBundle(input: DemoAdapterInput): CanonicalMatchBu
     bombDefused: round.bombDefused,
     bombExploded: round.bombExploded,
     quality: sourceQuality,
-    metadata: {},
+    // R-07: the winner's origin and status travel with the round (match_rounds.metadata).
+    metadata: round.winnerEvidence ? { winnerEvidence: round.winnerEvidence } : {},
   }));
 
   const roundPlayers: CanonicalRoundPlayer[] = [];

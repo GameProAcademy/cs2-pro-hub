@@ -5,6 +5,7 @@
  * parser, a database or a network. The database never sees parser-internal
  * field names.
  */
+import { winnerEvidenceFromParser } from "@/lib/rounds/winnerEvidence";
 import { MIN_VALID_ROUNDS, SCHEMA_VERSION } from "@/config/pipeline";
 import { PipelineError } from "@/lib/pipeline/errors";
 import { hasUtilityEvidence } from "@/lib/pipeline/evidence";
@@ -245,24 +246,30 @@ export function normalizeParserOutput(raw: RawParserOutput): CanonicalMatch {
   const rounds: CanonicalRound[] = [...raw.rounds]
     .filter((r) => Number.isInteger(r.number) && r.number > 0)
     .sort((a, b) => a.number - b.number)
-    .map((r) => ({
-      roundNumber: r.number,
-      winnerTeam: r.winner_team ?? null,
-      winnerSide: toSide(r.winner_side),
-      startTick: num(r.start_tick),
-      endTick: num(r.end_tick),
-      freezeEndTick: num(r.freeze_end_tick),
-      freezeEndTimeSeconds: num(r.freeze_end_time_seconds),
-      durationSeconds: num(r.duration_seconds),
-      bombPlanted: bool(r.bomb_planted),
-      bombDefused: bool(r.bomb_defused),
-      bombExploded: bool(r.bomb_exploded),
+    .map((r) => {
+      const winnerEvidence = winnerEvidenceFromParser(r);
+      return {
+        roundNumber: r.number,
+        winnerTeam: r.winner_team ?? null,
+        // R-07: a winner only when the evidence says confirmed; never a source picked in a conflict.
+        winnerSide:
+          winnerEvidence && winnerEvidence.status !== "confirmed" ? null : toSide(r.winner_side),
+        winnerEvidence,
+        startTick: num(r.start_tick),
+        endTick: num(r.end_tick),
+        freezeEndTick: num(r.freeze_end_tick),
+        freezeEndTimeSeconds: num(r.freeze_end_time_seconds),
+        durationSeconds: num(r.duration_seconds),
+        bombPlanted: bool(r.bomb_planted),
+        bombDefused: bool(r.bomb_defused),
+        bombExploded: bool(r.bomb_exploded),
 
-      moneyStart: r.money_start ?? {},
-      moneyEnd: r.money_end ?? {},
-      equipmentValue: r.equipment_value ?? {},
-      sides: mapSides(r.sides),
-    }));
+        moneyStart: r.money_start ?? {},
+        moneyEnd: r.money_end ?? {},
+        equipmentValue: r.equipment_value ?? {},
+        sides: mapSides(r.sides),
+      };
+    });
 
   let unsupportedEvents = 0;
   const events: CanonicalEvent[] = [];

@@ -64,9 +64,12 @@ def test_boundaries_are_observed_from_game_state_transitions():
     assert [row["tick"] for row in out["round_starts"]] == [10, 40, 70]
     assert all(row["derived_from"] == "game_state.is_freeze_period" for row in out["round_starts"])
     assert out["round_ends"] == [
-        {"tick": 30, "derived_from": "game_state.total_rounds_played", "reason": 9, "winner": 2},
-        # round_win_status and the score delta disagree: the winner stays unknown.
-        {"tick": 60, "derived_from": "game_state.total_rounds_played", "reason": 7},
+        {"tick": 30, "derived_from": "game_state.total_rounds_played", "reason": 9, "winner": 2,
+         "winner_check": "agree"},
+        # round_win_status and the score delta disagree: the winner stays unknown (R-07: the
+        # disagreement is recorded, so the round reads "inconclusive", not "absent").
+        {"tick": 60, "derived_from": "game_state.total_rounds_played", "reason": 7,
+         "winner_check": "disagree"},
     ]
 
 

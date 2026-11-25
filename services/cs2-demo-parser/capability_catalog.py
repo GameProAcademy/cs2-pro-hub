@@ -95,7 +95,7 @@ USERCMD_FIELDS = (
     "weapon_select", "input_history", "subtick_moves",
 )
 GRENADE_FIELDS = ("entity_id", "grenade_entity_id", "grenade_type", "name", "steamid", "thrower_steamid", "tick", "x", "y", "z", "X", "Y", "Z")
-ROUND_FIELDS = ("number", "start_tick", "end_tick", "winner", "winner_side", "winner_team", "duration_seconds", "bomb_planted", "bomb_defused", "bomb_exploded")
+ROUND_FIELDS = ("number", "start_tick", "end_tick", "winner", "winner_side", "winner_team", "duration_seconds", "bomb_planted", "bomb_defused", "bomb_exploded", "winner_method", "winner_status", "winner_sources")
 PARSER_APIS = ("parse_header", "list_updated_fields", "list_game_events", "parse_event", "parse_events", "parse_grenades", "parse_item_drops", "parse_player_info", "parse_skins", "parse_ticks", "parse_voice")
 
 EVENT_TYPES = (

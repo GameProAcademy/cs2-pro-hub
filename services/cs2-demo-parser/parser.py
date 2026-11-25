@@ -605,6 +605,12 @@ def _parse_round_state_transitions(
                                  and team_scores[team] - before[team] == 1]
                     if status in _SIDE_TEAM_NUMBERS and changed == [status] and increased == [status]:
                         end["winner"] = status
+                        end["winner_check"] = "agree"
+                    elif status in _SIDE_TEAM_NUMBERS or changed or increased:
+                        # R-07: the two observations exist but do not agree: inconclusive, no winner.
+                        end["winner_check"] = "disagree"
+                    else:
+                        end["winner_check"] = "missing"
                     ends.append(end)
                     end_counters[tick] = played
                 # D30: the game's own round counter going DOWN is a reset (match restart
@@ -1256,6 +1262,7 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
     raw["grenade_error"] = grenade_error
     raw["round_state_transitions"] = None
     raw["round_state_error"] = None
+    raw["round_state_audit"] = None
     if not raw["round_starts"] and not raw["round_ends"]:
         # The demo does not advertise round lifecycle events: observe the
         # boundaries from game-rules state (one bounded pass over the demo).
@@ -1264,6 +1271,14 @@ def extract_raw_material(demo: Any) -> dict[str, Any]:
         raw["round_state_error"] = round_state_error
         if round_state_error is not None:
             warnings.append("round_state_transitions_unavailable")
+    else:
+        # R-07 (round-winner-evidence-v1): the same game-state reading, as a SECOND source for the
+        # round winner only. Kept apart from round_state_transitions so boundaries and D30 resets of
+        # an event demo do not change; it never feeds RAW evidence.
+        audit, audit_error = _parse_round_state_transitions(demo, raw["players"])
+        raw["round_state_audit"] = audit
+        if audit_error is not None:
+            warnings.append("round_state_audit_unavailable")
     derive_round_streams_from_tick_evidence(raw)
     apply_match_reset_voiding(raw)
     return raw

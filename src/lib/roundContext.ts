@@ -16,6 +16,7 @@
  * Team identity across halves is only CHECKED (two groups that always face each other); the match
  * result, the score and team names stay out (admission limitation L04).
  */
+import { determinedWinnerSide } from "@/lib/rounds/winnerEvidence";
 import { enemyHpByRound, type DamageHit } from "@/lib/metrics/enemyDamage";
 
 export const ROUND_CONTEXT_VERSION = "round-context-v2";
@@ -34,6 +35,8 @@ export type RoundOutcome = "WON" | "LOST" | "UNKNOWN";
 export interface RoundRow {
   round_number: number;
   winner_side: string | null;
+  /** R-07: carries `winnerEvidence`; a non-confirmed status means no winner. */
+  metadata?: unknown;
 }
 export interface RoundPlayerRow {
   round_number: number;
@@ -125,7 +128,7 @@ const round2 = (x: number) => Math.round(x * 100) / 100;
 export function buildMatchRounds(input: MatchRoundInput): MatchRoundContext {
   const me = input.participantKey;
   const winner = new Map<number, SideState>();
-  for (const r of input.rounds) winner.set(r.round_number, asSide(r.winner_side));
+  for (const r of input.rounds) winner.set(r.round_number, determinedWinnerSide(r) ?? "UNKNOWN");
 
   const mySide = new Map<number, SideState>();
   for (const rp of input.roundPlayers) {

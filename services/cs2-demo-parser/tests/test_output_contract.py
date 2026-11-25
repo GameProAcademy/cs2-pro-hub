@@ -61,6 +61,9 @@ POSITION_FIELDS = {"position", "victim_position"}
 ALLOWED_EVENT_FIELDS = STRING_FIELDS | NUMBER_FIELDS | BOOL_FIELDS | POSITION_FIELDS
 ALLOWED_ROUND_FIELDS = {
     "number",
+    "winner_method",
+    "winner_status",
+    "winner_sources",
     "winner_team",
     "winner_side",
     "start_tick",

@@ -8,6 +8,7 @@
  * read, plus every kill of the match (needed for the round's opening kill); the response carries no
  * other player's identity — duels reference only round and tick.
  */
+import { determinedWinnerSide } from "@/lib/rounds/winnerEvidence";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -168,7 +169,7 @@ export async function loadCombatInput(
   const [rounds, roundPlayers, kills, damage, shots, shotProbe, groupProbe] = await Promise.all([
     supabase
       .from("match_rounds")
-      .select("round_number, start_tick, end_tick, winner_side, win_reason")
+      .select("round_number, start_tick, end_tick, winner_side, win_reason, metadata")
       .eq("match_id", matchId),
     supabase
       .from("round_players")
@@ -229,7 +230,7 @@ export async function loadCombatInput(
         roundNumber: r.round_number,
         startTick: r.start_tick,
         endTick: r.end_tick,
-        winnerSide: asSide(r.winner_side),
+        winnerSide: determinedWinnerSide(r),
         winReason: r.win_reason,
       })),
       roundPlayers: (roundPlayers.data ?? []).map((p) => ({
