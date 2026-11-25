@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-24 (America/Sao_Paulo) — UX-1.0 CONCLUÍDO NO EXECUTÁVEL (`e970e64` em produção) · por: sessão Claude
+Atualizado em: 2026-11-25 (America/Sao_Paulo) — R-07 CONCLUÍDO E VALIDADO EM PRODUÇÃO (worker R5.8.32) · por: sessão Claude
 `session_012i4uaf82YyjhPZuSt2ZHhn`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -15,16 +15,16 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 | Item                               | Valor                                                                                                                                                                                                                            |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                                                                       |
-| Etapa atual                        | UX-1.0 fechado; fase visual em produção (#376); R-07 bloqueado por governança do inventário (#372); B aguarda jogadores reais                                                                                                    |
-| Última etapa concluída             | #366–#370: ingestão enemy-hp provada, Coach com tela validado, HS sem arredondamento duplo, seletor sem SteamID, L02 e R-25 — checkpoint UX-1.0 §2.12–§2.13                                                                      |
-| Operações em andamento             | Nenhuma. Último E2E: 44438464636 em `f5fc22b1`, 12/12                                                                                                                                                                            |
+| Etapa atual                        | R-07 concluído e validado em produção (R5.8.32); próxima frente: conclusão da fase visual (Início, Treino, Raio-X, Coach)                                                                                                        |
+| Última etapa concluída             | R-07: #379/#381/#383–#386 (O8/O8-A), release R5.8.32 (#387), identidade do app trocada, demo Nuke validada — UX-1.0 §2.15, `docs/r07/R07_PRODUCTION_EVIDENCE.md`                                                                 |
+| Operações em andamento             | Nenhuma                                                                                                                                                                                                                          |
 | Processos em execução              | Nenhum                                                                                                                                                                                                                           |
-| Branch ativa                       | `docs/ux1-final`                                                                                                                                                                                                                 |
-| Último commit confirmado em `main` | `e970e64` (merge do #370)                                                                                                                                                                                                        |
-| Build validado em produção         | Deploy `7ad1b011…` de `e970e64` validado em 2026-11-25 (§2.12). Worker inalterado: Railway `584ea563` (R5.8.31)                                                                                                                  |
+| Branch ativa                       | `docs/r07-closure`                                                                                                                                                                                                               |
+| Último commit confirmado em `main` | `9e6d6e5f` (merge do #387)                                                                                                                                                                                                       |
+| Build validado em produção         | App: deploy `c0d4290c` com os três valores R5.8.32. Worker: Railway `c372485e` (R5.8.32, `git:4f7466ec`), attestation `3ee7f9e8` VERIFIED                                                                                        |
 | Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                                                               |
 | Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                               |
-| **Próxima ação exata**             | Aprovação da proposta visual (https://claude.ai/artifact/QU1HGQ5xpk51EtNocVp3a8) e decisão sobre R-07                                                                                                                            |
+| **Próxima ação exata**             | Fase visual: inventário de `main` e um PR por área (Início, Treino, Raio-X, Coach), depois validação em produção desktop e mobile                                                                                                |
 | Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); UX-1.0 #350–#354; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`, `20261124060000`; backfill `enemy-hp-v1` (11 linhas, guardado por `damage_enemy_hp IS NULL`) |
 | Ações manuais necessárias          | Nenhuma                                                                                                                                                                                                                          |
 
@@ -43,7 +43,7 @@ vazia **não** é o banco de produção) · Parser: Railway (`cs2-demo-parser`).
 - **PM1** (4.2.1–4.2.2): concluído e validado em produção (`docs/pm1/PM1_EXECUTION_REPORT.md`).
 - **PM6** (compatibilidade de demos, integridade de partida, nicks, segurança): **concluído** em 2026-11-14 (#290 `66d4af1d`; `docs/pm6/PM6_FINAL_REPORT.md` §11, "pronto para o PM2, com ressalvas classificadas").
 - **PM2** (4.2.3–4.2.4, módulos B e I): **COMPLETE** em 2026-11-17 (`docs/pm2/PM2_FINAL_REPORT.md` §30).
-- Parser em produção: R5.8.31 (`0c646583`, demoparser2 0.42.2; Railway `584ea563`). HISTÓRICO: R5.8.30 `768646ea` / `3335c88d`.
+- Parser em produção: R5.8.32 (`4f7466ec`, demoparser2 0.42.2; Railway `c372485e`), com evidência de vencedor por round (R-07). HISTÓRICO: R5.8.31 `0c646583` / `584ea563`; R5.8.30 `768646ea` / `3335c88d`.
 - **PM3** (4.2.5–4.2.6, módulos C e D): **concluído** em 2026-11-17 (`docs/pm3/PM3_REPORT.md` C6, #318 `10e90693`).
 - **PM4** (4.2.7–4.2.8, módulos E, F, G e histórico/DNA de J): **concluído** em 2026-11-17 (`docs/pm4/PM4_REPORT.md` C6).
 - **PM5** (4.2.9–4.2.10, módulos H, I e J; FACEIT; Coach; revisão mensal): **encerrado** em 2026-11-18 (`docs/pm5/PM5_REPORT.md` C6, #342 `10da2e7f`). FACEIT: conectar/desconectar/reconectar validados pelo usuário; importação de partidas reais e login novo por FACEIT não validados; benchmark profissional indisponível; revisão mensal só como prévia, sem envio.

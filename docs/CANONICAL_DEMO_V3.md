@@ -307,3 +307,12 @@ Tests in `scripts/tests/test_o8a_jsonb_numbers.py` (29). They include 24 cases m
 Every round is `confirmed` by `game_state`, and the winners give the official scores (Dust2 13:3, Mirage 13:10). No `canonical_v3_withheld`.
 
 **Gate:** server **PASS**, browser **PASS**, evidence demos `dust2` and `mirage`. The v2 inventory, matrix and catalogue are identical to `main`, and the v2 gate stays BLOCKED.
+
+### 8.4 Production validation (2026-11-25)
+
+Worker R5.8.32 (`c372485e`, `git:4f7466ec…`) released, database re-pinned (#387), app identity values switched and
+published, fresh attestation VERIFIED. A new demo (Nuke, job `12903805`) produced 20/20 rounds with
+`round-winner-evidence-v1` `confirmed` by `game_state`, winners equal to an independent elimination/bomb check
+(20/20), score 13–7 for the selected player, no `canonical_v3_withheld`, and every historical analytic table
+byte-identical (md5) to the pre-demo baseline. Match-level score stays excluded by admission limitation L04, as for
+every earlier demo. Details: `docs/r07/R07_PRODUCTION_EVIDENCE.md`.
