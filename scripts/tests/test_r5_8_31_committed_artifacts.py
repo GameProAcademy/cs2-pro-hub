@@ -131,19 +131,24 @@ def test_rollback_restores_the_r5_8_30_bodies_and_fails_closed():
 
 
 def test_every_active_repository_pin_names_the_released_runtime():
+    """R5.8.31 is historical since R5.8.32 (R-07 round winner evidence): no active pin may still name it."""
+    successor = json.loads((ROOT / "docs/reference/r5_8_32/spec.json").read_text(encoding="utf-8"))  # active head
+    assert successor["observed"]["before"]["deployment_id"] == NEW_DEPLOYMENT
     for path in ("scripts/parser_runtime_attestation.py", "scripts/h3e91_live_preflight.py",
                  "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert NEW_DEPLOYMENT in text and OLD_DEPLOYMENT not in text, path
-        assert NEW_COMMIT in text and OLD_COMMIT not in text, path
+        assert successor["deployment_id"] in text, path
+        assert NEW_DEPLOYMENT not in text and OLD_DEPLOYMENT not in text, path
+        assert NEW_COMMIT not in text and OLD_COMMIT not in text, path
     adapter = (ROOT / "src/lib/pipeline/parser/adapter.ts").read_text(encoding="utf-8")
-    assert f'DEPLOYED_WORKER_REVISION = "git:{NEW_COMMIT}"' in adapter
-    assert f'DEPLOYED_WORKER_BUILD_REVISION = "git:{NEW_COMMIT}"' in adapter
+    assert f'DEPLOYED_WORKER_REVISION = "git:{successor["semantic_commit"]}"' in adapter
+    assert f'DEPLOYED_WORKER_BUILD_REVISION = "git:{successor["build_commit"]}"' in adapter
+    # raw_evidence.py stays active from R5.8.31; parser.py moved on again in R5.8.32.
     for path in ("scripts/parser_runtime_attestation.py", "src/lib/parserAttestation.ts"):
         text = (ROOT / path).read_text(encoding="utf-8")
-        assert NEW_PARSER in text and OLD_PARSER not in text, path
         assert NEW_RAW in text and OLD_RAW not in text, path
-        for name, blob in SPEC["critical_hashes"].items():
+        assert NEW_PARSER not in text and OLD_PARSER not in text, path
+        for name, blob in successor["critical_hashes"].items():
             assert blob in text, (path, name)
 
 

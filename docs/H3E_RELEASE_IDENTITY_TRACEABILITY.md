@@ -1195,3 +1195,30 @@ Owner authorization: "PROMPT MESTRE" of 2026-10-18 (Railway config/deploy, manag
   - `DEMO_PARSER_EXPECTED_BUILD_REVISION` = `git:0c646583dc98426d4a2298a8797658253ad565c0`;
   - `H3E91_EXPECTED_WORKER_BUILD_COMMIT` = `0c646583dc98426d4a2298a8797658253ad565c0`.
 - Rollback: Railway `3335c88d` (and the service source back to `768646ea`), plus `docs/reference/r5_8_31/rollback.sql`, plus the R5.8.30 secret values.
+
+## 2026-11-25 — R5.8.32: R-07 round winner evidence (controlled)
+
+- Change (PR #379, merge `4f7466ec`), for R-07 O8/O8-A:
+  - `parser.py` audits the game-state round winner per round (`round_state_audit`, `winner_check`).
+  - `adapter.py` emits `round-winner-evidence-v1` (`winner_method`, `winner_status`, `winner_sources`); a winner is only confirmed when the evidence confirms it, never inferred, and absent stays absent.
+  - The `raw_evidence.py`, `worker.py` and `settings.py` blobs are unchanged.
+- Release:
+  - Queue idle (no queued or processing jobs).
+  - Merge with the service source pinned (`0c646583`) and the watch-pattern freeze in place: nothing deployed.
+  - `PARSER_REVISION`/`PARSER_BUILD_REVISION` = `git:4f7466ec…` with skipped deploys.
+  - **Persistent source aligned in the same operation:** `connect-service-source` to `commitSha 4f7466ec…`.
+    - The deployment created by that source change, `19343205`, was **SKIPPED** by the watch-pattern freeze and built nothing.
+    - Exactly one deployment was then triggered through the Railway agent: `c372485e`, SUCCESS, created 19:26:23Z. This is the only build of the release; `584ea563` is REMOVED.
+  - Both `/version` hosts (2026-11-25 19:33Z): demoparser2 0.42.2, revision = semantic = build = `git:4f7466ec…`, `build.commit` `4f7466ec…`, `embedded` true, `source` railway, `declared_revision_matches` true.
+- Pins:
+  - deployment `584ea563…` → `c372485e…`;
+  - commit `0c646583…` → `4f7466ec…` (4 in the recorder, 3 in the assertion);
+  - parser.py `421dfd95…` → `0a039253…`;
+  - adapter.py `1eaf3840…` → `b95b430f…`;
+  - the raw_evidence.py, worker.py, settings.py and workflow blobs and parser version 0.42.2 are unchanged.
+- R5.8.32 migration (`supabase/migrations/20261125193500_r5_8_32_repin_runtime_release.sql`; spec and rollback in `docs/reference/r5_8_32/`):
+  - recorder `515f433f…` → `e477fc60…`. This equals `r5_8_11.target_md5` and the read-only md5 of the managed recorder with the four pins replaced.
+  - assertion `e35c5ff8…` → `dd1f25cc…`; workflow guard `f74d8af9…` unchanged.
+  - Production dry run before merge: the full DO body reached `R5_8_32_DRY_RUN_OK_ROLLED_BACK`, and both md5s were unchanged afterwards.
+- App identity values (set in the app backend by the release operator, then published): the three expected-worker values move to the released commit identity recorded in `docs/reference/r5_8_32/spec.json`. Their values are not repeated in logs or reports.
+- Rollback: Railway `584ea563` (and the service source back to `0c646583`), plus `docs/reference/r5_8_32/rollback.sql`, plus the R5.8.31 app identity values.
