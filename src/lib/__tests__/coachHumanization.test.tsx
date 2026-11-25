@@ -36,9 +36,9 @@ const LOCALES: Locale[] = ["pt-BR", "pt-PT", "en", "es", "fr"];
 
 describe("name resolution", () => {
   it("never uses an e-mail, its local part, a UUID, a Steam id or a link", () => {
-    expect(sanitizeCoachName("thiago1010@msn.com")).toBeNull();
-    expect(sanitizeCoachName("thiago1010", "thiago1010@msn.com")).toBeNull();
-    expect(sanitizeCoachName("Thiago1010", "thiago1010@msn.com")).toBeNull();
+    expect(sanitizeCoachName("jogador1010@example.com")).toBeNull();
+    expect(sanitizeCoachName("jogador1010", "jogador1010@example.com")).toBeNull();
+    expect(sanitizeCoachName("Jogador1010", "jogador1010@example.com")).toBeNull();
     expect(sanitizeCoachName("4f0c2a8e-1d2b-4c3d-9e8f-0a1b2c3d4e5f")).toBeNull();
     expect(sanitizeCoachName("76561198000000001")).toBeNull();
     expect(sanitizeCoachName("https://evil.example")).toBeNull();
@@ -52,7 +52,7 @@ describe("name resolution", () => {
     expect(sanitizeCoachName("  João   Pedro ")).toBe("João Pedro");
     expect(sanitizeCoachName("**Zoë**")).toBe("Zoë");
     expect(sanitizeCoachName("s1mple")).toBe("s1mple");
-    expect(sanitizeCoachName("lojacriativa", "outro@live.com")).toBe("lojacriativa");
+    expect(sanitizeCoachName("lojacriativa", "outro@example.net")).toBe("lojacriativa");
     expect(sanitizeCoachName("Ana\u0000​")).toBe("Ana");
   });
 
@@ -62,7 +62,7 @@ describe("name resolution", () => {
       playerNickname: "ThiCS",
       accountNickname: "Tico",
       displayName: "Thiago Silva",
-      email: "thiago1010@msn.com",
+      email: "jogador1010@example.com",
     };
     expect(resolveCoachName(base)).toEqual({ name: "Thi", source: "PREFERRED" });
     expect(resolveCoachName({ ...base, preferred: null })).toEqual({
@@ -79,9 +79,9 @@ describe("name resolution", () => {
     // Display name that is the e-mail (a common signup default) → neutral fallback.
     expect(
       resolveCoachName({
-        email: "thiago1010@msn.com",
-        displayName: "thiago1010@msn.com",
-        accountNickname: "thiago1010",
+        email: "jogador1010@example.com",
+        displayName: "jogador1010@example.com",
+        accountNickname: "jogador1010",
       }),
     ).toEqual({ name: null, source: null });
   });
@@ -309,7 +309,7 @@ describe("label, identity and preferences UI", () => {
     expect(preferencesFrom({ maps: [], preferredName: " Zoë " })).toMatchObject({
       preferredName: "Zoë",
     });
-    for (const bad of ["a@b.com", "76561198000000001", "https://x.y", 7, "x".repeat(80)])
+    for (const bad of ["a@b.example", "76561198000000001", "https://x.y", 7, "x".repeat(80)])
       expect(preferencesFrom({ maps: [], preferredName: bad })).toEqual({ ok: false });
   });
 });

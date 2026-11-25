@@ -214,7 +214,7 @@ def main() -> None:
             return as_auth(user, f"UPDATE public.coach_preferences SET preferred_name = {lit} WHERE player_id = '{player}';")[0]
 
         checks["accepts_plain_names"] = all(set_name(ua, pa, n) == 0 for n in ("Thiago", "João Pedro", "s1mple", "Zoë"))
-        bad = ["thiago@msn.com", "<b>x</b>", "**Thiago**", " Thiago", "x" * 33, "76561198000000001",
+        bad = ["jogador@example.com", "<b>x</b>", "**Thiago**", " Thiago", "x" * 33, "76561198000000001",
                "https://evil.example", "a\nb", "", "na_me"]
         checks["rejects_email_markup_ids_links"] = all(set_name(ua, pa, n) != 0 for n in bad)
         checks["clear_name"] = set_name(ua, pa, None) == 0
