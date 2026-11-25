@@ -4,7 +4,7 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-25 (America/Sao_Paulo) — R-07 CONCLUÍDO E VALIDADO EM PRODUÇÃO (worker R5.8.32) · por: sessão Claude
+Atualizado em: 2026-11-25 (America/Sao_Paulo) — R-07 e FASE UI/UX VISUAL CONCLUÍDOS E VALIDADOS EM PRODUÇÃO · por: sessão Claude
 `session_012i4uaf82YyjhPZuSt2ZHhn`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
@@ -15,16 +15,16 @@ PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro d
 | Item                               | Valor                                                                                                                                                                                                                            |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                                                                       |
-| Etapa atual                        | R-07 concluído e validado em produção (R5.8.32); próxima frente: conclusão da fase visual (Início, Treino, Raio-X, Coach)                                                                                                        |
-| Última etapa concluída             | R-07: #379/#381/#383–#386 (O8/O8-A), release R5.8.32 (#387), identidade do app trocada, demo Nuke validada — UX-1.0 §2.15, `docs/r07/R07_PRODUCTION_EVIDENCE.md`                                                                 |
+| Etapa atual                        | R-07 (R5.8.32) e fase UI/UX visual concluídos e validados em produção                                                                                                                                                            |
+| Última etapa concluída             | Fase visual: #389 Início, #390 Treino, #391 Raio-X, #392 Coach e correções #393 — UX-1.0 §2.16, `docs/ux1/VISUAL_PHASE_VALIDATION.md`                                                                                            |
 | Operações em andamento             | Nenhuma                                                                                                                                                                                                                          |
 | Processos em execução              | Nenhum                                                                                                                                                                                                                           |
-| Branch ativa                       | `docs/r07-closure`                                                                                                                                                                                                               |
-| Último commit confirmado em `main` | `9e6d6e5f` (merge do #387)                                                                                                                                                                                                       |
-| Build validado em produção         | App: deploy `c0d4290c` com os três valores R5.8.32. Worker: Railway `c372485e` (R5.8.32, `git:4f7466ec`), attestation `3ee7f9e8` VERIFIED                                                                                        |
+| Branch ativa                       | `docs/visual-phase-closure`                                                                                                                                                                                                      |
+| Último commit confirmado em `main` | `3ff7bf69` (merge do #393)                                                                                                                                                                                                       |
+| Build validado em produção         | App: deploy `ac6cde83` de `3ff7bf69` (bundle `index-BGY-bdOx`), validado em 2026-11-25. Worker: Railway `c372485e` (R5.8.32, `git:4f7466ec`), attestation `3ee7f9e8` VERIFIED                                                    |
 | Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                                                               |
 | Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                               |
-| **Próxima ação exata**             | Fase visual: inventário de `main` e um PR por área (Início, Treino, Raio-X, Coach), depois validação em produção desktop e mobile                                                                                                |
+| **Próxima ação exata**             | Nenhuma pendente nas frentes R-07 e visual; aguardam o dono: Experimento B (R-15) e uma demo pendente de identificação (#368)                                                                                                    |
 | Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); UX-1.0 #350–#354; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`, `20261124060000`; backfill `enemy-hp-v1` (11 linhas, guardado por `damage_enemy_hp IS NULL`) |
 | Ações manuais necessárias          | Nenhuma                                                                                                                                                                                                                          |
 

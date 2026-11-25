@@ -333,6 +333,23 @@ Substitui o rascunho do #382, que descrevia o estado antes da aprovação do O8-
 
 Evidência completa: `docs/r07/R07_PRODUCTION_EVIDENCE.md`. **Estado:** validado em produção.
 
+### 2.16 Fase UI/UX Visual concluída (2026-11-25)
+
+- **PRs:** #389 Início, #390 Treino, #391 Raio-X e #392 Coach, todos com "Main required gates" verde.
+- **Publicação:** bundle `index-Cx-6o5qv` (deploy `6e21ab6d`).
+- **Inspeção em produção:** encontrou dois ajustes, corrigidos no #393:
+  - a barra do índice DNA do Raio-X sobrepunha o número;
+  - o cabeçalho do Coach ficou mais denso no mobile.
+- **Regressão:** 13 telas × 6 larguras:
+  - sem transbordo e sem texto < 12 px;
+  - selos antigos: Início 5 → 0, Partidas 7 → 0;
+  - as 7 abas da Sala iguais ao "antes".
+- **Mobile:** estrutura e navegação inalteradas.
+
+Métricas, metodologia do Treino, critérios do Raio-X e funcionamento do Coach não mudaram.
+
+Evidência: `docs/ux1/VISUAL_PHASE_VALIDATION.md`. **Estado:** validado em produção.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
@@ -346,4 +363,4 @@ Dependem do dono:
 1. Experimento B (R-15) com 3 a 5 jogadores reais.
 2. Uma demo de teste que fique pendente de identificação, para o teste controlado de seleção do #368.
 
-Executáveis: continuar a fase visual (Início, Treino, Raio-X e Coach com os novos componentes), uma etapa por PR.
+Executáveis: nenhum item visual pendente; a fase visual está concluída (§2.16).
