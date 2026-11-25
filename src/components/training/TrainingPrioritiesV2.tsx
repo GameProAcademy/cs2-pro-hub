@@ -9,6 +9,8 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { DataStateBadge } from "@/components/common/DataState";
+import { ToneBadge } from "@/components/common/VisualBadges";
 import { ErrorState, LoadingState } from "@/components/common/States";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
@@ -43,6 +45,7 @@ export function TrainingPrioritiesBody({ r }: { r: PriorityResultV2 }) {
   return (
     <ChartCard
       showDemoTag={false}
+      icon="target"
       title={t("training.v2.title")}
       subtitle={t("training.v2.subtitle")}
     >
@@ -52,9 +55,10 @@ export function TrainingPrioritiesBody({ r }: { r: PriorityResultV2 }) {
             {r.priorities.map((p, i) => (
               <li
                 key={p.key}
-                className="rounded-lg border border-primary/30 p-3"
+                className="surface-panel relative overflow-hidden rounded-lg border border-primary/30 p-4 pl-5"
                 data-priority-v2={p.key}
               >
+                <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-primary/70" />
                 <SignalLine s={p} rank={i + 1} />
               </li>
             ))}
@@ -71,7 +75,7 @@ export function TrainingPrioritiesBody({ r }: { r: PriorityResultV2 }) {
               aria-expanded={open}
               aria-controls="training-v2-observing"
               onClick={() => setOpen((o) => !o)}
-              className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-foreground"
+              className="inline-flex min-h-11 items-center gap-2 rounded-md px-1 text-sm font-medium text-foreground hover:text-primary"
             >
               <ChevronDown
                 className={cn("size-4 transition-transform", open && "rotate-180")}
@@ -80,7 +84,10 @@ export function TrainingPrioritiesBody({ r }: { r: PriorityResultV2 }) {
               {fill(t("training.v2.observing"), { n: r.observing.length })}
             </button>
             {open ? (
-              <ul id="training-v2-observing" className="mt-2 divide-y divide-border">
+              <ul
+                id="training-v2-observing"
+                className="mt-2 divide-y divide-border rounded-lg border border-dashed border-border-strong px-3"
+              >
                 {r.observing.map((s) => (
                   <li
                     key={s.key}
@@ -101,7 +108,7 @@ export function TrainingPrioritiesBody({ r }: { r: PriorityResultV2 }) {
   );
 }
 
-function SignalLine({ s, rank }: { s: PrioritySignal; rank?: number }) {
+export function SignalLine({ s, rank }: { s: PrioritySignal; rank?: number }) {
   const t = useT();
   const { intlTag, locale } = useI18n();
   const pct = (v: number) => formatNumber(Math.max(0, Math.min(1, v)) * 100, intlTag, 1);
@@ -118,23 +125,35 @@ function SignalLine({ s, rank }: { s: PrioritySignal; rank?: number }) {
       ].filter(Boolean)
     : [];
   return (
-    <div className="space-y-1 text-sm">
-      <div className="flex flex-wrap items-baseline gap-x-2">
-        {rank ? <span className="font-mono text-xs text-muted-foreground">#{rank}</span> : null}
+    <div className="space-y-2 text-sm">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        {rank ? (
+          <span
+            className="num-display flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/12 text-xs font-semibold text-primary"
+            aria-label={`#${rank}`}
+            data-priority-rank={rank}
+          >
+            {rank}
+          </span>
+        ) : null}
         <span className="font-medium text-foreground">{name}</span>
-        <span className="text-xs text-muted-foreground">{t(dnaLabelKey(s.dimension))}</span>
+        <ToneBadge tone="context">{t(dnaLabelKey(s.dimension))}</ToneBadge>
+        <SignalStateBadge s={s} ranked={Boolean(rank)} />
       </div>
       {s.value !== null ? (
-        <p className="font-mono text-xs text-foreground" data-signal-value>
-          {s.interval
-            ? fill(t("training.v2.value"), {
-                v: pct(s.value),
-                a: pct(s.interval[0]),
-                b: pct(s.interval[1]),
-                r: pct(s.reference),
-              })
-            : `${pct(s.value)}%`}
-        </p>
+        <>
+          <p className="font-mono text-xs text-foreground" data-signal-value>
+            {s.interval
+              ? fill(t("training.v2.value"), {
+                  v: pct(s.value),
+                  a: pct(s.interval[0]),
+                  b: pct(s.interval[1]),
+                  r: pct(s.reference),
+                })
+              : `${pct(s.value)}%`}
+          </p>
+          <ReferenceGauge s={s} />
+        </>
       ) : null}
       <p className="text-xs text-muted-foreground">
         {fill(t("training.v2.sample"), { n: s.sample, unit, m: s.matches })}
@@ -155,6 +174,59 @@ function SignalLine({ s, rank }: { s: PrioritySignal; rank?: number }) {
           {t("training.v2.open")}
         </Link>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Visual phase: the measurement state of the signal, with the shared data-state words. A value
+ * below the show minimum is "insufficient sample" (dashed neutral, never a zero); a shown value
+ * is derived (a rate over the player's own events). Recommended items need no extra badge.
+ */
+function SignalStateBadge({ s, ranked }: { s: PrioritySignal; ranked: boolean }) {
+  if (ranked) return null;
+  if (s.value === null) return <DataStateBadge status="INSUFFICIENT_SAMPLE" />;
+  return <DataStateBadge status="DERIVED" />;
+}
+
+/**
+ * Visual phase: the same numbers as the text line drawn on one 0–100% track: the interval as a
+ * band, the value as a mark and the fixed reference as a tick. Decorative (aria-hidden): the text
+ * above already states every number; nothing here is computed beyond placing them.
+ */
+function ReferenceGauge({ s }: { s: PrioritySignal }) {
+  if (s.value === null) return null;
+  const at = (v: number) => `${Math.max(0, Math.min(1, v)) * 100}%`;
+  const below = s.interval ? s.interval[1] < s.reference : s.value < s.reference;
+  return (
+    <div
+      className="relative h-2 w-full max-w-md rounded-full bg-secondary"
+      aria-hidden
+      data-reference-gauge
+    >
+      {s.interval ? (
+        <span
+          className={cn(
+            "absolute inset-y-0 rounded-full",
+            below ? "bg-primary/35" : "bg-context/35",
+          )}
+          style={{
+            left: at(s.interval[0]),
+            width: `calc(${at(s.interval[1])} - ${at(s.interval[0])})`,
+          }}
+        />
+      ) : null}
+      <span
+        className={cn(
+          "absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background",
+          below ? "bg-primary" : "bg-context",
+        )}
+        style={{ left: at(s.value) }}
+      />
+      <span
+        className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 rounded-full bg-foreground/70"
+        style={{ left: at(s.reference) }}
+      />
     </div>
   );
 }

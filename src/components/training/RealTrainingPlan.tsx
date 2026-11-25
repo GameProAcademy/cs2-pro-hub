@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
+import { ToneBadge } from "@/components/common/VisualBadges";
+import { GameIcon } from "@/components/common/GameIcon";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AdaptiveTraining } from "@/components/training/AdaptiveTraining";
 import { TrainingPrioritiesV2 } from "@/components/training/TrainingPrioritiesV2";
@@ -58,7 +60,10 @@ export function RealTrainingPlan() {
         <AdaptiveTraining />
         {/* GamePro catalogue content (practice and lessons by week) stays available; its own
             priority box, a second list, is no longer shown (UX-1.7). */}
-        <h2 className="pt-2 text-lg font-semibold">{t("training.adaptive.catalogHeading")}</h2>
+        <h2 className="flex items-center gap-2 border-t border-border pt-6 font-display text-lg font-semibold text-foreground">
+          <GameIcon name="rounds" className="size-4 text-primary" />
+          {t("training.adaptive.catalogHeading")}
+        </h2>
         {query.isLoading ? (
           <LoadingState label={t("common.loading")} />
         ) : query.isError || !query.data ? (
@@ -120,7 +125,7 @@ function PlanView({
         {t("training.real.accessNote")}
       </p>
       {plan.provisional ? (
-        <p className="rounded-md border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+        <p className="rounded-md border border-warning/25 bg-warning/8 px-3 py-2 text-xs text-muted-foreground">
           {fill(t("training.real.provisional"), { matches })}
         </p>
       ) : null}
@@ -131,7 +136,7 @@ function PlanView({
       ) : null}
 
       <section className="grid gap-4">
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="surface-panel rounded-lg border border-border p-4">
           <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
             {t("training.real.goals")}
           </h2>
@@ -148,8 +153,11 @@ function PlanView({
           <p className="text-xs text-muted-foreground">{t("training.real.frequency")}</p>
           <ol className="space-y-4">
             {plan.weeks.map((w) => (
-              <li key={w.week} className="rounded-lg border border-border bg-card p-4">
-                <h3 className="text-sm font-semibold text-foreground">
+              <li key={w.week} className="surface-panel rounded-lg border border-border p-4">
+                <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
+                  <span className="num-display flex size-6 items-center justify-center rounded-md bg-primary/12 text-xs text-primary">
+                    {w.week}
+                  </span>
                   {`${t("training.real.week")} ${w.week} — ${
                     w.focus === "consolidation"
                       ? t("training.real.focusConsolidation")
@@ -190,7 +198,7 @@ function PlanView({
             ))}
           </ol>
           {plan.complementary.length ? (
-            <section className="rounded-lg border border-border bg-card p-4">
+            <section className="surface-panel rounded-lg border border-border p-4">
               <h2 className="text-sm font-semibold text-foreground">
                 {t("training.real.complementary")}
               </h2>
@@ -213,13 +221,13 @@ function PlanView({
 function CatalogItem({ item, why }: { item: Recommendation; why: string }) {
   const t = useT();
   return (
-    <li className="rounded-md border border-border/60 p-3 text-sm">
+    <li className="rounded-md border border-border bg-elevated/30 p-3 text-sm hover:border-primary/35">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
           <p className="font-medium text-foreground">{item.title}</p>
-          <p className="font-mono text-xs uppercase tracking-wider text-primary">
+          <ToneBadge tone="brand" className="font-mono uppercase tracking-wider">
             {t(`catalog.track.${item.track}` as TranslationKey)}
-          </p>
+          </ToneBadge>
           {why ? <p className="text-xs text-muted-foreground">{why}</p> : null}
         </div>
         <a
