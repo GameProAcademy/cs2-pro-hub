@@ -17,7 +17,7 @@ const state = {
   emailUsed: false,
   createFails: false,
   finalizeFails: false,
-  account: { playerId: "f-123", email: "new@x.io", emailVerified: true, nickname: "nick" } as {
+  account: { playerId: "f-123", email: "new@x.example", emailVerified: true, nickname: "nick" } as {
     playerId: string;
     email: string | null;
     emailVerified: boolean;
@@ -108,7 +108,7 @@ beforeEach(() => {
     emailUsed: false,
     createFails: false,
     finalizeFails: false,
-    account: { playerId: "f-123", email: "new@x.io", emailVerified: true, nickname: "nick" },
+    account: { playerId: "f-123", email: "new@x.example", emailVerified: true, nickname: "nick" },
   });
   calls.length = 0;
   logs.length = 0;
@@ -187,7 +187,7 @@ describe("callback of a LOGIN attempt", () => {
   it("creates an account only with a FACEIT-verified e-mail nobody uses, links and syncs it", async () => {
     const r = await completeFaceitLogin(cb(), await attempt(), "c");
     expect(fakeDb.auth.admin.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "new@x.io", email_confirm: true }),
+      expect.objectContaining({ email: "new@x.example", email_confirm: true }),
     );
     expect(finalizeFaceitConnection).toHaveBeenCalled();
     expect(enqueueFaceitSync).toHaveBeenCalled();
@@ -203,7 +203,12 @@ describe("callback of a LOGIN attempt", () => {
     expect(loc(await completeFaceitLogin(cb(), await attempt(), "c"))).toContain(
       "faceit=email_not_verified",
     );
-    state.account = { playerId: "f-123", email: "used@x.io", emailVerified: true, nickname: null };
+    state.account = {
+      playerId: "f-123",
+      email: "used@x.example",
+      emailVerified: true,
+      nickname: null,
+    };
     state.emailUsed = true;
     expect(loc(await completeFaceitLogin(cb(), await attempt(), "c"))).toContain(
       "faceit=account_exists",
@@ -238,21 +243,21 @@ describe("callback of a LOGIN attempt", () => {
     state.connection = null;
     await completeFaceitLogin(cb(), await attempt(), "c");
     const all = logs.join("\n");
-    for (const secret of ["HASHEDtoken", "ACCESS", NONCE, "new@x.io", "@mail.io"])
+    for (const secret of ["HASHEDtoken", "ACCESS", NONCE, "new@x.example", "@mail.io"])
       expect(all).not.toContain(secret);
   });
 });
 
 describe("pure helpers", () => {
   it("trusts an e-mail as verified only on email_verified === true", () => {
-    expect(faceitAccountContact({ email: "A@B.io", email_verified: true })).toMatchObject({
-      email: "a@b.io",
+    expect(faceitAccountContact({ email: "A@B.example", email_verified: true })).toMatchObject({
+      email: "a@b.example",
       emailVerified: true,
     });
-    expect(faceitAccountContact({ email: "a@b.io", email_verified: "true" }).emailVerified).toBe(
-      false,
-    );
-    expect(faceitAccountContact({ email: "a@b.io" }).emailVerified).toBe(false);
+    expect(
+      faceitAccountContact({ email: "a@b.example", email_verified: "true" }).emailVerified,
+    ).toBe(false);
+    expect(faceitAccountContact({ email: "a@b.example" }).emailVerified).toBe(false);
     expect(faceitAccountContact({ email: "not-an-email", email_verified: true })).toMatchObject({
       email: null,
       emailVerified: false,

@@ -397,7 +397,7 @@ export const demoCoachMessages: CoachMessage[] = [
 
 export const demoProfile: PlayerProfile = {
   name: "Jogador Demonstração",
-  email: "jogador@exemplo.com",
+  email: "jogador@example.com",
   country: "Brasil",
   platform: "FACEIT",
   level: "FACEIT Level 8",

@@ -159,11 +159,11 @@ def main() -> None:  # noqa: PLR0915
         master, admin, player = (str(uuid.uuid4()) for _ in range(3))
         users = [str(uuid.uuid4()) for _ in range(6)]
         inactive = str(uuid.uuid4())
-        q(f"INSERT INTO public.profiles (id, email, locale) VALUES ('{master}','m@x.io','pt-BR'),('{admin}','a@x.io','pt-BR'),('{player}','p@x.io','en');")
+        q(f"INSERT INTO public.profiles (id, email, locale) VALUES ('{master}','m@x.example','pt-BR'),('{admin}','a@x.example','pt-BR'),('{player}','p@x.example','en');")
         q("INSERT INTO public.profiles (id, email, locale, country, last_login_at) VALUES " + ",".join(
-            f"('{u}','u{i}@x.io','{'en' if i % 2 else 'pt-BR'}','{'BR' if i < 3 else 'PT'}', now() - interval '{i} days')"
+            f"('{u}','u{i}@x.example','{'en' if i % 2 else 'pt-BR'}','{'BR' if i < 3 else 'PT'}', now() - interval '{i} days')"
             for i, u in enumerate(users)) + ";")
-        q(f"INSERT INTO public.profiles (id, email, status) VALUES ('{inactive}','i@x.io','inactive');")
+        q(f"INSERT INTO public.profiles (id, email, status) VALUES ('{inactive}','i@x.example','inactive');")
         q(f"INSERT INTO public.user_roles VALUES ('{master}','admin_master'),('{admin}','admin'),('{player}','player');")
         pp = {u: str(uuid.uuid4()) for u in users}
         q("INSERT INTO public.player_profiles VALUES " + ",".join(f"('{p}','{u}')" for u, p in pp.items()) + ";")
@@ -291,7 +291,7 @@ def _phase_two(ctx: dict, checks: dict[str, bool]) -> None:  # noqa: PLR0915
                                                            "notification_campaign_translation_approved",
                                                            "notification_campaign_translation_saved"))
     checks["audit_without_content"] = q(
-        "SELECT count(*) FROM public.admin_audit_logs WHERE metadata::text ~* 'Novidade|Texto|test text|@x.io';") == "0"
+        "SELECT count(*) FROM public.admin_audit_logs WHERE metadata::text ~* 'Novidade|Texto|test text|@x.example';") == "0"
 
     # Recipient reads the approved text of a campaign they received, not of others.
     rc, out, _ = as_auth(users[2], f"SELECT count(*) FROM public.notification_campaign_translations WHERE campaign_id = '{c2}';")
