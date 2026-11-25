@@ -257,3 +257,22 @@ The server gate is **BLOCKED** by two fields outside O8. The committed 2026-10-2
 2. `CanonicalEvent.data`: the round trip reads DIFFERENT only because the harness prints floats inside jsonb with 6 decimals, while PostgreSQL keeps the full value. The values are equal: with the exact float text, 0 of 3 496 (Dust2) rows differ. Fixing the harness measurement is outside R-07.
 
 Neither is weakened here. The R-07 release waits for the owner's decision on both.
+
+### 8.2 O8-A item 1: `incendiary` in the event allowlist
+
+Owner decision O8-A (`docs/decisions/O8A_V3_COMPATIBILITY_FIXES.md`). Only this type was added to `EVENT_TYPES` in `scripts/canonical_v3/harness.py`; the other types are unchanged.
+
+| Point in the pipeline | Where                                                                                                                                               | What happens                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Produced              | `services/cs2-demo-parser/adapter.py`: `inferno_startburn` is in the parsed game events and in `_GRENADE_EVENTS` (D35: its `userid` is the thrower) | The parser emits the CS2 game event fired when a molotov or incendiary grenade starts burning |
+| Named                 | `src/lib/pipeline/normalizer.ts`, `EVENT_ALIASES`: `inferno_startburn` becomes `incendiary`                                                         | Canonical event type of a burn start                                                          |
+| Validated             | the same file's `EVENT_TYPES`, and `CanonicalEventType` in `src/lib/canonical/canonical.types.ts`                                                   | A type outside the list is not a canonical event                                              |
+| Used                  | `src/lib/pipeline/evidence.ts`: `UTILITY_EVENT_TYPES` and `UTILITY_DAMAGE_EVENT_TYPES`                                                              | A burn is utility usage, counted exactly like `molotov`                                       |
+| Persisted             | `round_events.event_type` CHECK, which lists `incendiary`                                                                                           | Stored as the text `incendiary`                                                               |
+
+The 2026-10-28 evidence had no `incendiary` row. The re-run with the current parser does.
+
+Tests in `scripts/tests/test_o8a_event_type_incendiary.py`:
+
+- the set difference with the previous allowlist is exactly `{incendiary}`;
+- `Incendiary`, `incendiary ` (with a trailing space), `inferno_startburn`, `fire`, `""`, `null` and `unknown` are still rejected.

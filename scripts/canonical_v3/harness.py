@@ -38,7 +38,11 @@ ROUND_TRIP_EXCLUDED = {
     "CanonicalMatch.playedAt": "persisted as matches.played_at only when non-null (COALESCE)",
 }
 EVENT_TYPES = {"kill", "damage", "flash", "he", "smoke", "molotov", "decoy", "weapon_fire", "bomb_plant",
-               "bomb_defuse", "bomb_explode", "round_start", "round_end", "grenade"}
+               "bomb_defuse", "bomb_explode", "round_start", "round_end", "grenade",
+               # O8-A (owner, 2026-11-25): the parser's inferno_startburn, aliased to `incendiary` by the
+               # app normalizer (src/lib/pipeline/normalizer.ts EVENT_ALIASES) and accepted by the
+               # round_events.event_type CHECK. Only this type was added.
+               "incendiary"}
 STEAM = re.compile(r"^7656119\d{10}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
