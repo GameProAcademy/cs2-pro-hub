@@ -103,4 +103,6 @@ export const demoFlowPtBR = {
   "demoFlow.resumed": "Retomamos o acompanhamento desta demo.",
   "demoFlow.leaveWarning":
     "O envio da demo ainda está em andamento. Sair agora interrompe o envio.",
+  "pipeline.identify.unnamed": "Jogador sem nome {n}",
+  "pipeline.identify.unnamedSuggested": "um jogador sem nome",
 } as const;

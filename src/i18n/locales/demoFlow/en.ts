@@ -102,4 +102,6 @@ export const demoFlowEn: Record<keyof typeof demoFlowPtBR, string> = {
   "demoFlow.reconnecting": "No connection. Trying to reconnect and resume tracking…",
   "demoFlow.resumed": "We resumed tracking this demo.",
   "demoFlow.leaveWarning": "The demo upload is still running. Leaving now stops the upload.",
+  "pipeline.identify.unnamed": "Unnamed player {n}",
+  "pipeline.identify.unnamedSuggested": "an unnamed player",
 };
