@@ -83,10 +83,28 @@ Workflow `Upload smoke E2E` (sem escrita), execução `45808610430`, contra `gam
 
 O modal, a identificação e as etapas estão cobertos pelo travamento de bytes e de render SSR acima.
 
+## Correções pontuais (PR #402, merge `bba790fe`, deploy `8f8f51bd`)
+
+1. `analyze.ready` passou a "Demo enviada" (en "Demo sent", es "Demo enviada", fr "Démo envoyée", pt-PT "Demo
+   enviada"). Só texto, autorizado; o fixture de proteção mudou apenas essa chave nos 5 idiomas.
+2. A coluna "Como funciona" cobria "Fontes de dados" durante a rolagem. Causa: o `sticky` estava no item da grade, cujo
+   contêiner é a grade inteira. Agora o `aside` ocupa só a linha de cima (`xl:self-stretch`) e um filho é sticky.
+   Auditoria local com o CSS de produção: 0 px de sobreposição a 1280 e 1440 px (estrutura antiga: 487 px).
+3. A linha "Perfil público" e o formulário de link saíram de "Fontes de dados" (a posse da conta FACEIT vem da
+   integração oficial). Só apresentação: o id `public_profile`, o registro e o validador interno continuam.
+
+Produção, execução `45900198661` do smoke sem escrita:
+
+- página, seletor de arquivo e formato inválido: PASS;
+- versão publicada confirmada, perfil público removido, FACEIT e Gamers Club presentes: PASS;
+- 0 requisições de gravação;
+- 360 a 1024 px: coluna oculta, 0 transbordo e 0 texto < 12 px;
+- 1280 e 1440 px: coluna visível, 0 px de sobreposição com "Fontes de dados" em toda a rolagem.
+
 ## Pendências
 
-- **Texto protegido ainda errado:** depois de escolher o arquivo, `analyze.ready` diz "pronto para envio
-  (processamento indisponível nesta etapa)". Não foi autorizado; precisa de decisão do dono.
+- **"Demo enviada" não exercido em produção:** só aparece depois de escolher um `.dem`, o que dispararia um envio real.
+  Está coberto pelos testes unitários.
 - **Peculiaridade anterior mantida:** `lg:col-span-3` no card de fontes cria duas colunas implícitas vazias entre
   1024 e 1279 px, e o card de envio fica mais estreito que o de fontes (140 px de diferença, medido a 1536 px antes
   desta etapa; a partir de 1280 px a grade explícita nova substitui esse efeito). Mantido porque o layout até
