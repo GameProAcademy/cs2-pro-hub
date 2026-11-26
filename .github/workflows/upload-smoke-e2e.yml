@@ -1,0 +1,66 @@
+name: Upload smoke E2E
+
+# No-write browser smoke of the protected /upload flows (selection, invalid format, modal open/close,
+# breakpoints). Manual only: it signs in to a real deployment with account A of the PM2 suite.
+# It never sends a file and never confirms, declines, cancels or retries anything; any request that
+# could write fails the run. No trace, video or screenshot (public repository): the only artifact is a
+# JSON summary with statuses and counts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Deployment to test"
+        required: true
+        default: "https://gamepro.network"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upload-smoke-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      E2E_BASE_URL: ${{ inputs.base_url }}
+      E2E_UPLOAD_SMOKE: "1"
+      E2E_A_EMAIL: ${{ secrets.PM2_E2E_A_EMAIL }}
+      E2E_A_PASSWORD: ${{ secrets.PM2_E2E_A_PASSWORD }}
+      E2E_SUMMARY_PATH: ${{ github.workspace }}/upload-smoke-summary.json
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Require the account
+        run: |
+          if [ -z "$E2E_A_EMAIL" ] || [ -z "$E2E_A_PASSWORD" ]; then
+            echo "::error::MANUAL_REQUIRED: repository secrets PM2_E2E_A_EMAIL / PM2_E2E_A_PASSWORD"
+            exit 1
+          fi
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Install Playwright (pinned in e2e/package.json)
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run
+        run: npx playwright test upload-smoke
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f "$E2E_SUMMARY_PATH" ]; then
+            { echo '## Upload smoke E2E'; echo; echo "Target: \`$E2E_BASE_URL\` · commit \`$GITHUB_SHA\`"; echo; echo '```json'; cat "$E2E_SUMMARY_PATH"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: upload-smoke-summary
+          path: ${{ github.workspace }}/upload-smoke-summary.json
+          if-no-files-found: ignore
+          retention-days: 30
