@@ -162,7 +162,7 @@ export const fr: Dictionary = {
   "analyze.demo.eligibility":
     "Pour une analyse fiable, envoyez des démos de parties terminées officiellement, y compris les parties terminées par abandon (surrender), à condition qu'elles comptent au moins 9 manches valides. Les démos interrompues sans fin officielle, incomplètes ou corrompues ne peuvent pas être analysées.",
   "analyze.notSent": "L'envoi commence dès que vous sélectionnez le fichier.",
-  "analyze.ready": "prêt à être envoyé (traitement indisponible à cette étape)",
+  "analyze.ready": "Démo envoyée",
   "analyze.pipelineTitle": "État du traitement",
   "analyze.pipelineSubtitle": "Ce qui existe aujourd'hui à cette étape du produit",
   "analyze.pipeline.validation": "Validation du fichier",

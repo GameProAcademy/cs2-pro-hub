@@ -77,7 +77,7 @@ describe("/upload layout (E2)", () => {
 
   it("the aside exists only from 1280 px; below it the column and its classes are unchanged", () => {
     expect(ROUTE).toMatch(
-      /<aside className="hidden xl:sticky xl:top-24 xl:block">\s*<UploadLoop \/>/,
+      /<aside className="hidden xl:block xl:self-stretch" data-upload-loop-rail>\s*<div className="xl:sticky xl:top-24">\s*<UploadLoop \/>/,
     );
     expect(ROUTE).toContain(
       'className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start"',
@@ -88,5 +88,17 @@ describe("/upload layout (E2)", () => {
     );
     expect(ROUTE).toContain('className="lg:col-span-3 xl:col-span-2"');
     expect(ROUTE).toContain("<DemoIngestPanel identifyJobId={identify} />");
+  });
+
+  it("the sticky column is bounded by the intake row, never by the whole grid", () => {
+    // A sticky element is limited by its containing block. On the grid item itself that block
+    // is the whole grid (intake row + "Fontes de dados"), which let the column slide over the
+    // sources card. The aside now stretches over the intake row only and the sticky element
+    // is its child, so it stops at the end of that row.
+    const aside = ROUTE.slice(ROUTE.indexOf("<aside"), ROUTE.indexOf("</aside>"));
+    expect(aside).not.toMatch(/<aside[^>]*sticky/);
+    expect(aside).toContain("xl:self-stretch");
+    expect(aside.match(/xl:sticky/g)).toHaveLength(1);
+    expect(ROUTE.indexOf("</aside>")).toBeLessThan(ROUTE.indexOf('t("sources.title")'));
   });
 });

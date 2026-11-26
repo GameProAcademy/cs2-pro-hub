@@ -63,4 +63,14 @@ describe("/upload copy (E1)", () => {
       expect(html, l).toContain(dictionaries[l]["gc.architecture.architecture_ready"]);
     }
   });
+
+  it("after selection the file line reads 'Demo enviada' (text only, authorized 2026-11-26)", () => {
+    expect(Object.fromEntries(LOCALES.map((l) => [l, dictionaries[l]["analyze.ready"]]))).toEqual({
+      "pt-BR": "Demo enviada",
+      en: "Demo sent",
+      es: "Demo enviada",
+      fr: "Démo envoyée",
+      "pt-PT": "Demo enviada",
+    });
+  });
 });

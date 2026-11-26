@@ -162,7 +162,7 @@ export const ptPT: Dictionary = {
   "analyze.demo.eligibility":
     "Para uma análise fiável, envie demos de partidas concluídas oficialmente, incluindo partidas terminadas por surrender, desde que tenham pelo menos 9 rondas válidas. Demos interrompidas sem encerramento oficial, incompletas ou corrompidas não podem ser analisadas.",
   "analyze.notSent": "O envio começa assim que seleciona o ficheiro.",
-  "analyze.ready": "pronto para envio (processamento indisponível nesta etapa)",
+  "analyze.ready": "Demo enviada",
   "analyze.pipelineTitle": "Estado do processamento",
   "analyze.pipelineSubtitle": "O que existe hoje nesta etapa do produto",
   "analyze.pipeline.validation": "Validação do ficheiro",

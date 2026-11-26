@@ -7,7 +7,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { GamersClubPanel } from "@/components/integrations/GamersClubPanel";
-import { SourcesPanel } from "@/components/pipeline/SourcesPanel";
+import { DISPLAYED_SOURCES, SourcesPanel } from "@/components/pipeline/SourcesPanel";
 import { I18nProvider } from "@/i18n";
 import { dictionaries, type Locale } from "@/i18n/config";
 import { describeSource } from "@/lib/sources/registry";
@@ -28,12 +28,14 @@ describe("/upload sources (E3)", () => {
       expect(
         states.map((m) => m[2]),
         l,
-      ).toEqual(DATA_SOURCES.map((s) => (describeSource(s).implemented ? "active" : "prepared")));
+      ).toEqual(
+        DISPLAYED_SOURCES.map((s) => (describeSource(s).implemented ? "active" : "prepared")),
+      );
       for (const m of states) expect(m[1]).toBe(m[2] === "active" ? "context" : "neutral");
       expect(html, l).toContain(esc(dictionaries[l]["sources.state.active"]));
       expect(html, l).toContain(esc(dictionaries[l]["sources.state.prepared"]));
       expect(html, l).toContain(esc(dictionaries[l]["sources.notAvailable"]));
-      expect(html, l).toContain('id="public-profile-url"');
+      expect(html, l).toContain(esc(dictionaries[l]["sources.privacy"]));
     }
   });
 
@@ -55,5 +57,27 @@ describe("/upload sources (E3)", () => {
         /nenhuma integra|no external|ninguna integra|aucune int|única fonte|only working|única fuente|seule source/i,
       );
     }
+  });
+
+  it("the public profile source and its link form are no longer shown (presentation only)", () => {
+    // The internal id stays registered; only the /upload list hides it.
+    expect(DATA_SOURCES).toContain("public_profile");
+    expect(DISPLAYED_SOURCES).toEqual(["demo", "faceit", "gamers_club", "steam"]);
+    for (const l of LOCALES) {
+      const html = render(l, <SourcesPanel />);
+      expect(html, l).not.toContain(esc(dictionaries[l]["sources.source.public_profile"]));
+      expect(html, l).not.toContain('id="public-profile-url"');
+      expect(html, l).not.toContain(esc(dictionaries[l]["sources.publicProfile.label"]));
+      expect(html, l).not.toContain(esc(dictionaries[l]["sources.publicProfile.validate"]));
+      expect(html, l).not.toContain(esc(dictionaries[l]["sources.publicProfile.notice"]));
+      expect(html, l).not.toMatch(/<input|<button/);
+      for (const kept of ["demo", "faceit", "gamers_club", "steam"] as const)
+        expect(html, l).toContain(esc(dictionaries[l][`sources.source.${kept}`]));
+    }
+  });
+
+  it("Gamers Club keeps its own public-profile form", () => {
+    const html = render("pt-BR", <GamersClubPanel />);
+    expect(html).toMatch(/<input/);
   });
 });
