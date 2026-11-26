@@ -9,12 +9,12 @@
 import { Info, Lock, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { ToneBadge } from "@/components/common/VisualBadges";
 import { Input } from "@/components/ui/input";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { parseGamersClubProfileUrl } from "@/lib/gamersclub/gamersclub.url";
 import { sourceOperationalProfile } from "@/lib/sources/sourceCapabilities";
-import { cn } from "@/lib/utils";
 
 export interface GamersClubPanelProps {
   /** Already-registered locator, when the player has one. */
@@ -40,16 +40,14 @@ export function GamersClubPanel({ profileUrl, externalId, lastSyncAt }: GamersCl
           <h3 className="text-sm font-semibold text-foreground">{t("gc.title")}</h3>
           <p className="text-xs text-muted-foreground">{t("gc.subtitle")}</p>
         </div>
-        <span
-          className={cn(
-            "shrink-0 rounded-md border px-2 py-1 font-mono text-xs uppercase tracking-wider",
-            blocked
-              ? "border-warning/30 bg-warning/10 text-warning"
-              : "border-success/30 bg-success/10 text-success",
-          )}
+        <ToneBadge
+          tone={blocked ? "attention" : "context"}
+          icon={blocked ? "alert" : undefined}
+          className="shrink-0 font-mono uppercase tracking-wider"
+          data-gc-state={blocked ? "blocked" : "connected"}
         >
           {blocked ? t("gc.state.blocked") : t("gc.state.connected")}
-        </span>
+        </ToneBadge>
       </header>
 
       <label className="block space-y-1.5">
