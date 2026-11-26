@@ -367,6 +367,22 @@ Evidência: `docs/ux1/VISUAL_PHASE_VALIDATION.md`. **Estado:** validado em produ
 
 **Privacidade:** 0 SteamIDs nas respostas do servidor (45, somando as duas sessões) e no HTML; o seletor só envia referências opacas `p1…pN`. A escolha da Inferno fica com o dono.
 
+### 2.18 /upload "Analisar meu jogo" — evolução visual (2026-11-26)
+
+- **PRs:** #397 (E0, rede de proteção), #398 (E1, textos), #399 (E2, coluna "Como funciona" a partir de 1280 px),
+  #400 (E3, Fontes de dados), todos com "Main required gates" verde; deploy Lovable `6b55ec29` de `229fe5a8`.
+- **Fluxos congelados intocados:** seleção e envio, modal, identificação e etapas; também `PlayerIdentityPanel`.
+  Bytes, 365 chaves × 5 idiomas e 28 renders SSR travados em `uploadProtectedFlows.test.tsx`. Única exceção
+  autorizada: o texto de `analyze.notSent`.
+- **FACEIT:** implementado em código e conectável, mas em produção as 4 sincronizações acharam 0 partidas e 0 métricas
+  FACEIT chegaram à análise. Só o aviso de fontes foi corrigido (texto); registro e integração iguais.
+- **Produção:** smoke sem escrita (execução `45808610430`): 0 transbordo e 0 texto < 12 px nas 6 larguras, coluna só
+  a 1440 px, 0 requisições de gravação, release com o texto novo.
+- **Pendências do dono:** texto protegido `analyze.ready` ainda diz "processamento indisponível"; testes manuais 5–8
+  com uma demo nova; capturas antes/depois.
+
+Evidência: `docs/ux1/UPLOAD_VISUAL_VALIDATION.md`. **Estado:** publicado e validado em produção.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
@@ -379,5 +395,6 @@ Dependem do dono:
 
 1. Experimento B (R-15) com 3 a 5 jogadores reais.
 2. Escolher o jogador da demo Inferno (job `febd9846`), pendente por decisão do dono (§2.17).
+3. /upload: decidir sobre o texto protegido `analyze.ready` e fazer os testes manuais 5–8 com uma demo nova (§2.18).
 
-Executáveis: nenhum item visual pendente; a fase visual está concluída (§2.16).
+Executáveis: nenhum item visual pendente; a fase visual (§2.16) e a evolução do /upload (§2.18) estão concluídas.
