@@ -107,6 +107,13 @@ test("upload smoke — protected flows, no writes", async ({ page }) => {
   expect(writes.length).toBe(before);
   summary["invalidFormat"] = "PASS";
 
+  // The deployed release carries the E1 copy (proves the run is against the new version).
+  await expect(page.locator("main")).toContainText(
+    "O envio começa assim que você seleciona o arquivo.",
+  );
+  await expect(page.locator("main")).not.toContainText("não é enviado nem processado");
+  summary["releaseCopy"] = "PASS";
+
   // 9. history states
   const pending = page.locator("[data-pending-identity]");
   summary["pendingIdentityJobs"] = await pending.count();
@@ -153,6 +160,8 @@ test("upload smoke — protected flows, no writes", async ({ page }) => {
     expect(audit.overflow, `overflow at ${width}`).toBeLessThanOrEqual(0);
     expect(audit.smallText, `text < 12px at ${width}`).toBe(0);
     expect(audit.ctaTop, `button at ${width}`).not.toBeNull();
+    // E2: the "how it works" column exists only from 1280 px.
+    expect(audit.loop, `loop visibility at ${width}`).toBe(width >= 1280);
     widths[width] = audit;
   }
   summary["widths"] = widths;
@@ -162,4 +171,6 @@ test("upload smoke — protected flows, no writes", async ({ page }) => {
   summary["finishedAt"] = new Date().toISOString();
   const out = process.env["E2E_SUMMARY_PATH"];
   if (out) writeFileSync(out, JSON.stringify(summary, null, 2));
+  // Counts and statuses only (no ids, no account data), so the run log is the evidence too.
+  console.log(`[upload-smoke] ${JSON.stringify(summary)}`);
 });
