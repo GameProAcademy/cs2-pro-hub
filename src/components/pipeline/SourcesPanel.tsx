@@ -1,9 +1,10 @@
 /**
  * Honest data-source surface.
  *
- * The demo path is the only functional one. The other sources are shown as
- * "architecture prepared" — there is no connect button, because there is no
- * integration behind it.
+ * Availability is source-specific: the demo ingestion pipeline is functional, and
+ * FACEIT has its own official OAuth/API integration. Other entries are rendered
+ * according to registry metadata; this panel does not implement or invoke provider
+ * integrations itself.
  *
  * The "public profile" source and its link-format field are no longer shown here (owner
  * decision 2026-11-26): FACEIT ownership is now proven by the official OAuth/API integration.
