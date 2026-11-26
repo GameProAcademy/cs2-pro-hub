@@ -86,7 +86,11 @@ const PROTECTED_PREFIXES = [
  * their CURRENT value through the fixture; listing them here only documents why the
  * fixture entry differs from the 9d86fecf baseline.
  */
-export const AUTHORIZED_CHANGES: Record<string, string> = {};
+export const AUTHORIZED_CHANGES: Record<string, string> = {
+  // The drop zone said the file was neither sent nor processed (copy from when the box was
+  // visual-only); selecting the file starts the upload. Text only, owner decision 2026-11-26.
+  "analyze.notSent": "2026-11-26",
+};
 
 const sha = (algo: "sha1" | "sha256", input: string | Buffer) =>
   createHash(algo).update(input).digest("hex");

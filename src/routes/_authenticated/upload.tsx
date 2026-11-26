@@ -28,19 +28,19 @@ export const Route = createFileRoute("/_authenticated/upload")({
       {
         name: "description",
         content:
-          "Envie sua demo .dem ou seus prints e relatórios de estatísticas de CS2 para análise de performance.",
+          "Envie a demo .dem de uma partida sua de CS2 para gerar diagnóstico e plano de treino.",
       },
       { property: "og:title", content: "Analisar meu jogo — CS2 PRO AI COACH" },
       {
         property: "og:description",
-        content: "Dois caminhos de entrada: demo .dem ou dados e relatórios de estatísticas.",
+        content: "Envie a demo .dem de uma partida sua para análise de performance.",
       },
     ],
   }),
   component: AnalyzePage,
 });
 
-/** Both paths converge into the same future normalization pipeline. */
+/** One path: the real demo ingestion (UX-1 R-19). */
 function AnalyzePage() {
   const t = useT();
   const { identify } = Route.useSearch();
@@ -60,8 +60,8 @@ function AnalyzePage() {
         <div className="grid gap-5">
           <div ref={intakeRef} tabIndex={-1} className="scroll-mt-24 outline-none">
             <ChartCard
-              title={t("pipeline.title")}
-              subtitle={t("pipeline.subtitle")}
+              title={t("analyze.intake.title")}
+              subtitle={t("analyze.intake.subtitle")}
               showDemoTag={false}
             >
               <DemoIngestPanel identifyJobId={identify} />

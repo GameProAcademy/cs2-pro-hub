@@ -129,8 +129,10 @@ export const es: Dictionary = {
 
   "analyze.eyebrow": "Analizar",
   "analyze.title": "Analizar mi juego",
+  "analyze.intake.title": "Enviar demo",
+  "analyze.intake.subtitle": "Archivo .dem de una partida tuya",
   "analyze.description":
-    "Envía una demo o tus datos de estadísticas para generar métricas, diagnóstico y ajustes en tu plan de entrenamiento.",
+    "Envía la demo .dem de una partida tuya: CS2 PRO extrae tus rondas y arma tu diagnóstico y tu plan de entrenamiento.",
   "analyze.demo.title": "Tengo una demo",
   "analyze.demo.description": "Envía una demo .dem para un análisis más profundo.",
   "analyze.demo.cta": "Enviar demo",
@@ -149,7 +151,7 @@ export const es: Dictionary = {
   "analyze.selectFile": "Seleccionar archivo",
   "analyze.demo.eligibility":
     "Para un análisis fiable, sube demos de partidas terminadas oficialmente, incluidas las terminadas por rendición (surrender), siempre que tengan al menos 9 rondas válidas. No se pueden analizar demos interrumpidas sin final oficial, incompletas o dañadas.",
-  "analyze.notSent": "En esta etapa el archivo no se envía ni se procesa.",
+  "analyze.notSent": "El envío empieza en cuanto seleccionas el archivo.",
   "analyze.ready": "listo para enviar (procesamiento no disponible en esta etapa)",
   "analyze.pipelineTitle": "Estado del procesamiento",
   "analyze.pipelineSubtitle": "Lo que existe hoy en esta etapa del producto",
@@ -936,6 +938,9 @@ export const es: Dictionary = {
   "gc.state.syncing": "Sincronizando",
   "gc.state.partial": "Parcial",
   "gc.state.error": "Error",
+  "gc.architecture.implemented": "Integración implementada",
+  "gc.architecture.architecture_ready": "Arquitectura preparada",
+  "gc.architecture.not_implemented": "No implementada",
   "identity.title": "Identidad del jugador",
   "identity.subtitle": "Cómo se relacionan tus cuentas y por qué",
   "identity.confidence": "Confianza",
