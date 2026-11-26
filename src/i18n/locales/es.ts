@@ -855,7 +855,7 @@ export const es: Dictionary = {
   "sources.state.active": "Disponible ahora",
   "sources.state.prepared": "Arquitectura preparada",
   "sources.notAvailable":
-    "Ninguna integración externa está activa. Hoy la única fuente funcional es la demo que subes.",
+    "La demo .dem que subes es la fuente principal del análisis. Tu cuenta de FACEIT se puede conectar en tu Perfil. Las demás fuentes solo tienen la arquitectura preparada.",
   "sources.quality.high": "Evidencia alta",
   "sources.quality.medium": "Evidencia media",
   "sources.quality.low": "Evidencia limitada",

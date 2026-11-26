@@ -9,6 +9,7 @@
 import { CheckCircle2, Link2, Lock } from "lucide-react";
 import { useState } from "react";
 
+import { ToneBadge } from "@/components/common/VisualBadges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useT } from "@/i18n";
@@ -16,7 +17,6 @@ import type { TranslationKey } from "@/i18n/config";
 import { parsePublicProfileUrl, type PublicProfileParseResult } from "@/lib/sources/publicProfile";
 import { describeSource } from "@/lib/sources/registry";
 import { DATA_SOURCES, type DataSource } from "@/lib/sources/sources";
-import { cn } from "@/lib/utils";
 
 const sourceKey = (source: DataSource) => `sources.source.${source}` as TranslationKey;
 
@@ -43,16 +43,13 @@ export function SourcesPanel() {
                   {t(`sources.quality.${descriptor.quality}` as TranslationKey)}
                 </p>
               </div>
-              <span
-                className={cn(
-                  "shrink-0 rounded-md border px-2 py-1 font-mono text-xs uppercase tracking-wider",
-                  descriptor.implemented
-                    ? "border-success/30 bg-success/10 text-success"
-                    : "border-border bg-secondary text-muted-foreground",
-                )}
+              <ToneBadge
+                tone={descriptor.implemented ? "context" : "neutral"}
+                className="shrink-0 font-mono uppercase tracking-wider"
+                data-source-state={descriptor.implemented ? "active" : "prepared"}
               >
                 {descriptor.implemented ? t("sources.state.active") : t("sources.state.prepared")}
-              </span>
+              </ToneBadge>
             </li>
           );
         })}

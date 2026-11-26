@@ -85,9 +85,16 @@ function AnalyzePage() {
               icon="shield"
               showDemoTag={false}
             >
-              <SourcesPanel />
-              <GamersClubPanel />
-              <PlayerIdentityPanel />
+              {/* E3: the three panels touched each other (no gap); now 20 px apart. From 1280 px
+                  the source list and Gamers Club sit side by side; PlayerIdentityPanel (protected
+                  in this stage) keeps its full width and its own markup. */}
+              <div className="space-y-5">
+                <div className="space-y-5 xl:grid xl:grid-cols-2 xl:items-start xl:gap-5 xl:space-y-0">
+                  <SourcesPanel />
+                  <GamersClubPanel />
+                </div>
+                <PlayerIdentityPanel />
+              </div>
             </ChartCard>
           </div>
         </div>

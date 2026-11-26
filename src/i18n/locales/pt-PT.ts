@@ -856,7 +856,7 @@ export const ptPT: Dictionary = {
   "sources.state.active": "Disponível agora",
   "sources.state.prepared": "Arquitetura preparada",
   "sources.notAvailable":
-    "Nenhuma integração externa está ativa. Hoje a única fonte funcional é a demo enviada por ti.",
+    "A demo .dem que envia é a fonte principal da análise. A conta FACEIT pode ser ligada no seu Perfil. As restantes fontes têm apenas a arquitetura preparada.",
   "sources.quality.high": "Evidência alta",
   "sources.quality.medium": "Evidência média",
   "sources.quality.low": "Evidência limitada",
