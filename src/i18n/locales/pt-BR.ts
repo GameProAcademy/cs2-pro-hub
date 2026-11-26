@@ -856,7 +856,7 @@ export const ptBR = {
   "sources.state.active": "Disponível agora",
   "sources.state.prepared": "Arquitetura preparada",
   "sources.notAvailable":
-    "Nenhuma integração externa está ativa. Hoje a única fonte funcional é a demo enviada por você.",
+    "A demo .dem que você envia é a fonte principal da análise. A conta FACEIT pode ser conectada no seu Perfil. As demais fontes têm apenas a arquitetura preparada.",
   "sources.quality.high": "Evidência alta",
   "sources.quality.medium": "Evidência média",
   "sources.quality.low": "Evidência limitada",

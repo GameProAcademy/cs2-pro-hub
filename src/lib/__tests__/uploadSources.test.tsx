@@ -45,4 +45,15 @@ describe("/upload sources (E3)", () => {
       expect(html, l).toContain(esc(dictionaries[l]["gc.state.blocked"]));
     }
   });
+
+  it("the notice no longer contradicts the FACEIT state (text only; registry unchanged)", () => {
+    expect(describeSource("faceit").implemented).toBe(true);
+    for (const l of LOCALES) {
+      const text = dictionaries[l]["sources.notAvailable"];
+      expect(text, l).toContain("FACEIT");
+      expect(text, l).not.toMatch(
+        /nenhuma integra|no external|ninguna integra|aucune int|única fonte|only working|única fuente|seule source/i,
+      );
+    }
+  });
 });
