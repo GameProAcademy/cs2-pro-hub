@@ -131,6 +131,15 @@ export const es: Dictionary = {
   "analyze.title": "Analizar mi juego",
   "analyze.intake.title": "Enviar demo",
   "analyze.intake.subtitle": "Archivo .dem de una partida tuya",
+  "analyze.loop.title": "Cómo funciona",
+  "analyze.loop.linksLabel": "Pantallas que usan la partida analizada",
+  "analyze.loop.send.title": "Envía la demo",
+  "analyze.loop.send.body": "Archivo .dem de una partida terminada.",
+  "analyze.loop.process.title": "Procesamos y te identificamos",
+  "analyze.loop.process.body":
+    "Extraemos y auditamos las rondas e identificamos qué jugador eres tú.",
+  "analyze.loop.use.title": "Diagnóstico y entrenamiento",
+  "analyze.loop.use.body": "Con la partida analizada, mira el resultado en:",
   "analyze.description":
     "Envía la demo .dem de una partida tuya: CS2 PRO extrae tus rondas y arma tu diagnóstico y tu plan de entrenamiento.",
   "analyze.demo.title": "Tengo una demo",

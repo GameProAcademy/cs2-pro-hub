@@ -132,6 +132,15 @@ export const ptPT: Dictionary = {
   "analyze.title": "Analisar o meu jogo",
   "analyze.intake.title": "Enviar demo",
   "analyze.intake.subtitle": "Ficheiro .dem de uma partida sua",
+  "analyze.loop.title": "Como funciona",
+  "analyze.loop.linksLabel": "Ecrãs que usam a partida analisada",
+  "analyze.loop.send.title": "Envie a demo",
+  "analyze.loop.send.body": "Ficheiro .dem de uma partida concluída.",
+  "analyze.loop.process.title": "Processamos e identificamo-lo",
+  "analyze.loop.process.body":
+    "Extraímos e auditamos as rondas e identificamos qual jogador é você.",
+  "analyze.loop.use.title": "Diagnóstico e treino",
+  "analyze.loop.use.body": "Com a partida analisada, veja o resultado em:",
   "analyze.description":
     "Envie a demo .dem de uma partida sua: o CS2 PRO extrai as suas rondas e monta o diagnóstico e o plano de treino.",
   "analyze.demo.title": "Tenho uma demo",
