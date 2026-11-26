@@ -20,7 +20,21 @@ export type GameIconName =
   | "dna"
   | "target"
   | "alert"
-  | "trend";
+  | "trend"
+  // Visual Game Language (2026-11-26): weapon classes, grenades and round events.
+  | "heavy"
+  | "knife"
+  | "flash"
+  | "smoke"
+  | "fire"
+  | "decoy"
+  | "kill"
+  | "headshot"
+  | "assist"
+  | "trade"
+  | "opening"
+  | "clutch"
+  | "defuse";
 
 const PATHS: Record<GameIconName, string[]> = {
   crosshair: [
@@ -56,6 +70,30 @@ const PATHS: Record<GameIconName, string[]> = {
   // Attention (warning tone): the role is never colour alone.
   alert: ["M12 3l10 18H2z", "M12 10v4", "M12 17h.01"],
   trend: ["M3 17l6-6 4 4 8-8", "M15 7h6v6"],
+  heavy: ["M2 11h17l3-2v4h-4l-2 2H9l-1 4H5l1-4H2z", "M6 11V9h8"],
+  knife: ["M4 20l8-8", "M12 12l7-8 1 1-5 9z", "M9 15l2 2"],
+  flash: ["M13 2L4 14h7l-1 8 9-12h-7z"],
+  smoke: ["M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6-1.5A4 4 0 1 1 18 18z"],
+  fire: ["M12 22c4 0 7-3 7-7 0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-2 2-5 5-5 8 0 4 3 7 7 7z"],
+  decoy: [
+    "M12 21a7 7 0 1 0 0-14 7 7 0 0 0 0 14z",
+    "M10 4h4v3",
+    "M10.5 12.5a1.5 1.5 0 1 1 1.5 1.5v1",
+    "M12 17.5h.01",
+  ],
+  kill: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "M9 9l6 6", "M15 9l-6 6"],
+  headshot: ["M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z", "M4 22c1-4 4-6 8-6s7 2 8 6", "M12 7h.01"],
+  assist: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "M12 8v8", "M8 12h8"],
+  trade: ["M4 8h14l-3-3", "M20 16H6l3 3"],
+  opening: ["M14 4h5v16h-5", "M3 12h11", "M10 8l4 4-4 4"],
+  clutch: [
+    "M7 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
+    "M4 20v-5l3-3 3 3v5",
+    "M15 8h6",
+    "M15 12h6",
+    "M15 16h6",
+  ],
+  defuse: ["M14 7l3-3 3 3-3 3", "M17 7L7 17", "M5 15l4 4", "M3 21l3-3"],
 };
 
 export function GameIcon({
