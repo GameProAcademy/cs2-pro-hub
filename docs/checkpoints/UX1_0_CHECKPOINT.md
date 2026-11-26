@@ -350,6 +350,23 @@ Métricas, metodologia do Treino, critérios do Raio-X e funcionamento do Coach 
 
 Evidência: `docs/ux1/VISUAL_PHASE_VALIDATION.md`. **Estado:** validado em produção.
 
+### 2.17 #368 — teste controlado de identificação (2026-11-25, conta de teste)
+
+**Anubis (job `a62995a6`), enviada sem escolher nick:**
+
+- vinculada automaticamente por `confirmed_nickname_history` ao `xeedo`, único nick já confirmado presente entre os 10;
+- o modal perguntou "O jogador xeedo é você?" e o dono confirmou com "Sim, sou eu" (`manual_selected`).
+
+**Defeito reportado pelo dono:** depois do "Sim, sou eu", a lista completa abria rapidamente e se fechava sozinha. Era só exibição: o diálogo caía no ramo da lista depois do `declare()`. Corrigido no #395 (merge `d8ab7445`, deploy `9b547406`, bundle `index-BETTPx_q`): depois do vínculo aparece só o resultado; conflito ou "não encontrado" mantêm a lista.
+
+**Inferno (job `febd9846`), sem nick conhecido, "decidir depois":**
+
+- job `unattached` / `unresolved`;
+- a lista abre com os 10 jogadores, nenhum marcado e o botão desabilitado;
+- as opções carregam só o índice.
+
+**Privacidade:** 0 SteamIDs nas respostas do servidor (45, somando as duas sessões) e no HTML; o seletor só envia referências opacas `p1…pN`. A escolha da Inferno fica com o dono.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
@@ -361,6 +378,6 @@ Evidência: `docs/ux1/VISUAL_PHASE_VALIDATION.md`. **Estado:** validado em produ
 Dependem do dono:
 
 1. Experimento B (R-15) com 3 a 5 jogadores reais.
-2. Uma demo de teste que fique pendente de identificação, para o teste controlado de seleção do #368.
+2. Escolher o jogador da demo Inferno (job `febd9846`), pendente por decisão do dono (§2.17).
 
 Executáveis: nenhum item visual pendente; a fase visual está concluída (§2.16).
