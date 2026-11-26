@@ -72,6 +72,21 @@ export function deriveIdentityUiState(
   return "manual_selection";
 }
 
+/**
+ * What the manual part of the dialog shows. Once a declaration attached the player (from the
+ * suggestion or from the list) the list is not shown again: only the result. A conflict or a
+ * not-found result keeps the list so the player can choose again.
+ */
+export function identityDialogBody(input: {
+  askSuggestion: boolean;
+  attached: boolean;
+  participants: number;
+}): "suggestion" | "list" | "empty" | "result_only" {
+  if (input.attached) return "result_only";
+  if (input.askSuggestion) return "suggestion";
+  return input.participants > 0 ? "list" : "empty";
+}
+
 export function DemoPlayerIdentity({
   jobId,
   recover = false,
@@ -138,6 +153,11 @@ export function DemoPlayerIdentity({
     if (autoOpen && !recover && identity.data && (automatic || needsManual)) setOpen(true);
   }, [identity.data, automatic, needsManual, recover, autoOpen]);
   const started = result?.state === "attached";
+  const body = identityDialogBody({
+    askSuggestion,
+    attached: started,
+    participants: participants.length,
+  });
 
   // Nothing clickable until the job's identity (and its detected players) is loaded.
   if (!identity.data && !identity.isError) return null;
@@ -197,7 +217,7 @@ export function DemoPlayerIdentity({
             </div>
           ) : (
             <div className="space-y-4">
-              {askSuggestion && suggestion ? (
+              {body === "result_only" ? null : body === "suggestion" && suggestion ? (
                 <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/8 p-4">
                   <p className="font-semibold text-foreground">
                     {t("pipeline.identify.suggestion").replace(
@@ -230,8 +250,8 @@ export function DemoPlayerIdentity({
                     </Button>
                   </div>
                 </div>
-              ) : participants.length > 0 ? (
-                <fieldset className="space-y-2">
+              ) : body === "list" ? (
+                <fieldset className="space-y-2" data-identity-list>
                   <legend className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     {t("pipeline.identify.selectLabel")}
                   </legend>
