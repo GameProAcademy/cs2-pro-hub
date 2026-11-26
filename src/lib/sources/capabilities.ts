@@ -8,6 +8,15 @@
  * CRITICAL RULE: missing data is NEVER zero. A source that does not report
  * utility damage yields `utility_damage = null` and `utility: "unavailable"`,
  * never `0`. Turning absence into zero produces mathematically false analyses.
+ *
+ * The demo pipeline remains the richest source of behavioural evidence.
+ * FACEIT has a separate implemented official OAuth/Data API adapter and
+ * synchronization pipeline (see `src/lib/faceit`). Its per-signal capability
+ * values below are intentionally conservative: implementation of an adapter
+ * does not prove that every field is documented, permitted, returned or
+ * consistently available. Promote an `unknown` signal only after validating
+ * the relevant official documentation, permissions and observed API payloads.
+ * These capability declarations are not a runtime sync or coverage report.
  */
 import type { DataSource } from "./sources";
 
@@ -52,10 +61,14 @@ function caps(overrides: Partial<DataCapabilities>, fallback: CapabilityLevel): 
 }
 
 /**
- * Demo is the only source with proven capabilities, because it is the only
- * source with an implemented pipeline. Everything else is `unknown` until its
- * adapter is validated against official documentation, permissions, endpoints,
- * rate limits and terms of use.
+ * Per-signal capability declarations, deliberately separate from adapter
+ * implementation status and observed player coverage.
+ *
+ * The demo pipeline has proven capabilities. FACEIT's adapter and sync
+ * pipeline are implemented, but the signals left as `unknown` have not yet
+ * met this registry's evidence threshold for promotion. Keep them unknown
+ * until official field semantics, permissions and real API payloads are
+ * validated; do not infer support merely from mapper code or UI presence.
  */
 export const SOURCE_CAPABILITIES: Record<DataSource, DataCapabilities> = {
   demo: caps(
