@@ -378,8 +378,9 @@ Evidência: `docs/ux1/VISUAL_PHASE_VALIDATION.md`. **Estado:** validado em produ
   FACEIT chegaram à análise. Só o aviso de fontes foi corrigido (texto); registro e integração iguais.
 - **Produção:** smoke sem escrita (execução `45808610430`): 0 transbordo e 0 texto < 12 px nas 6 larguras, coluna só
   a 1440 px, 0 requisições de gravação, release com o texto novo.
-- **Pendências do dono:** texto protegido `analyze.ready` ainda diz "processamento indisponível"; testes manuais 5–8
-  com uma demo nova; capturas antes/depois.
+- **Correções pontuais (#402, deploy `8f8f51bd`):** "Demo enviada"; coluna limitada à seção de cima (0 px de
+  sobreposição em produção a 1280/1440); "Perfil público" fora de Fontes de dados.
+- **Pendências do dono:** testes manuais 5–8 com uma demo nova; capturas antes/depois.
 
 Evidência: `docs/ux1/UPLOAD_VISUAL_VALIDATION.md`. **Estado:** publicado e validado em produção.
 
@@ -395,6 +396,6 @@ Dependem do dono:
 
 1. Experimento B (R-15) com 3 a 5 jogadores reais.
 2. Escolher o jogador da demo Inferno (job `febd9846`), pendente por decisão do dono (§2.17).
-3. /upload: decidir sobre o texto protegido `analyze.ready` e fazer os testes manuais 5–8 com uma demo nova (§2.18).
+3. /upload: testes manuais 5–8 com uma demo nova (§2.18).
 
 Executáveis: nenhum item visual pendente; a fase visual (§2.16) e a evolução do /upload (§2.18) estão concluídas.
