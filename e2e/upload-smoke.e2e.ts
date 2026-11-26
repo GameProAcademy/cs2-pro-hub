@@ -121,7 +121,7 @@ test("upload smoke — protected flows, no writes", async ({ page }) => {
   await expect(sources.locator("#public-profile-url")).toHaveCount(0);
   await expect(sources.getByRole("button", { name: "Validar link" })).toHaveCount(0);
   await expect(sources.getByText("Perfil público", { exact: true })).toHaveCount(0);
-  await expect(sources.getByText("FACEIT", { exact: true })).toBeVisible();
+  await expect(sources.getByText("FACEIT", { exact: true }).first()).toBeVisible();
   await expect(sources.getByText("Gamers Club", { exact: true }).first()).toBeVisible();
   summary["publicProfileRemoved"] = "PASS";
 
