@@ -309,6 +309,13 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 
 ## RESUMO PARA PRÓXIMA SESSÃO
 
+> Atualização 2026-11-26:
+>
+> - `main` `229fe5a8` + o PR de fechamento do /upload.
+> - /upload "Analisar meu jogo": evolução visual publicada (deploy `6b55ec29`) e validada em produção, com os fluxos
+>   de envio, modal, identificação e etapas travados por teste. Detalhes em `docs/checkpoints/UX1_0_CHECKPOINT.md`
+>   §2.18 e `docs/ux1/UPLOAD_VISUAL_VALIDATION.md`.
+
 > Atualização 2026-11-25:
 >
 > - `main` `d7f039c` + o PR de fechamento.
