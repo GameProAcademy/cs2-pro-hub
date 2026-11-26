@@ -40,12 +40,12 @@ Mudanças de valor e motivo:
 
 ## Componentes compartilhados
 
-| Componente                                                                                     | Arquivo                                                                            |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `GameIcon` (mira, armas por categoria, granada, mapa, rounds, tempo, escudo, bomba, DNA, alvo) | `components/common/GameIcon.tsx`                                                   |
-| `ToneBadge`, `SideBadge` (CT escudo, T bomba), `MapBadge` (sigla + nome, sem arte oficial)     | `components/common/VisualBadges.tsx`                                               |
-| `DataStateBadge` (8 status → tom; sem valor = neutro tracejado)                                | `components/common/DataState.tsx`                                                  |
-| `ChartCard` (painel) e `MetricCard` (KPI)                                                      | restilizados: cabeçalho elevado, régua lima no KPI, borda tracejada quando ausente |
+| Componente                                                                                     | Arquivo                                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GameIcon` (mira, armas por categoria, granada, mapa, rounds, tempo, escudo, bomba, DNA, alvo) | `components/common/GameIcon.tsx`                                                                                                                                               |
+| `ToneBadge`, `SideBadge` (CT escudo, T bomba), `MapBadge` (sigla + nome, sem arte oficial)     | `components/common/VisualBadges.tsx`                                                                                                                                           |
+| `DataStateBadge` (8 status → tom; sem valor = neutro tracejado)                                | `components/common/DataState.tsx`                                                                                                                                              |
+| `ChartCard` (painel) e `MetricCard` (KPI)                                                      | restilizados: cabeçalho elevado, régua lima no KPI, borda tracejada quando ausente; `icon` opcional (ícone de jogo decorativo; no KPI fica neutro quando o valor está ausente) |
 
 **Aplicado em:**
 
@@ -56,6 +56,30 @@ Mudanças de valor e motivo:
 - Utilidade: ícone roxo.
 - Radar DNA: fundo e brilho lima.
 - Navegação: item ativo com régua lima.
+
+**Conclusão da fase (2026-11-25, #389–#392):**
+
+- **Início (#389):**
+  - ícones nos 5 KPIs e nos painéis;
+  - admissão (limitado → atenção + ícone; certificado → contexto) e status de envio (falha → crítico; bloqueado → atenção; processado → marca) como `ToneBadge`;
+  - aviso de partidas limitadas como selo de atenção.
+- **Treino (#390):**
+  - prioridades com posição numerada e régua lima;
+  - medidor de referência decorativo posicionado com os mesmos números do texto;
+  - estados "amostra insuficiente" e "derivado" com as palavras de estado do dado;
+  - plano e sessões com tom;
+  - catálogo com semanas numeradas.
+- **Raio-X (#391):**
+  - camadas numeradas (observado → inferência → recomendação);
+  - ícone por dimensão;
+  - índice DNA em barra com o mesmo número do texto;
+  - estados sem valor como selo neutro tracejado ou de atenção;
+  - CT/T com `SideBadge`.
+- **Coach (#392):**
+  - mensagem do Coach em painel com régua lima e coluna de leitura;
+  - mensagem do jogador em bolha compacta;
+  - Markdown leve com títulos, marcadores, tabelas e código no padrão, ainda só texto.
+- **Ícones novos no `GameIcon`:** `alert` (o alerta nunca depende só da cor) e `trend`.
 
 ## Fora do escopo
 
