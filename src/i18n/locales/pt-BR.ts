@@ -135,6 +135,15 @@ export const ptBR = {
   "analyze.title": "Analisar meu jogo",
   "analyze.intake.title": "Enviar demo",
   "analyze.intake.subtitle": "Arquivo .dem de uma partida sua",
+  "analyze.loop.title": "Como funciona",
+  "analyze.loop.linksLabel": "Telas que usam a partida analisada",
+  "analyze.loop.send.title": "Envie a demo",
+  "analyze.loop.send.body": "Arquivo .dem de uma partida concluída.",
+  "analyze.loop.process.title": "Processamos e identificamos você",
+  "analyze.loop.process.body":
+    "Extraímos e auditamos os rounds e identificamos qual jogador é você.",
+  "analyze.loop.use.title": "Diagnóstico e treino",
+  "analyze.loop.use.body": "Com a partida analisada, veja o resultado em:",
   "analyze.description":
     "Envie a demo .dem de uma partida sua: o CS2 PRO extrai seus rounds e monta o diagnóstico e o plano de treino.",
   "analyze.demo.title": "Tenho uma demo",

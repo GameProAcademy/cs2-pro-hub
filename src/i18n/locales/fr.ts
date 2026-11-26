@@ -132,6 +132,15 @@ export const fr: Dictionary = {
   "analyze.title": "Analyser mon jeu",
   "analyze.intake.title": "Envoyer une démo",
   "analyze.intake.subtitle": "Fichier .dem d'un de vos matchs",
+  "analyze.loop.title": "Comment ça marche",
+  "analyze.loop.linksLabel": "Écrans qui utilisent le match analysé",
+  "analyze.loop.send.title": "Envoyez la démo",
+  "analyze.loop.send.body": "Fichier .dem d'un match terminé.",
+  "analyze.loop.process.title": "Nous la traitons et vous identifions",
+  "analyze.loop.process.body":
+    "Nous extrayons et auditons les rounds et identifions quel joueur vous êtes.",
+  "analyze.loop.use.title": "Diagnostic et entraînement",
+  "analyze.loop.use.body": "Une fois le match analysé, voyez le résultat dans :",
   "analyze.description":
     "Envoyez la démo .dem d'un de vos matchs : CS2 PRO extrait vos rounds et construit votre diagnostic et votre plan d'entraînement.",
   "analyze.demo.title": "J'ai une démo",

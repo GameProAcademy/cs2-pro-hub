@@ -8,6 +8,7 @@ import { DemoIngestPanel } from "@/components/pipeline/DemoIngestPanel";
 import { GamersClubPanel } from "@/components/integrations/GamersClubPanel";
 import { PlayerIdentityPanel } from "@/components/integrations/PlayerIdentityPanel";
 import { SourcesPanel } from "@/components/pipeline/SourcesPanel";
+import { UploadLoop } from "@/components/pipeline/UploadLoop";
 import { useT } from "@/i18n";
 
 interface UploadSearch {
@@ -57,21 +58,31 @@ function AnalyzePage() {
 
         {/* UX-1 R-19: one path — the real demo ingestion. The interface-only "no demo" intake and
             the engineering status card are gone; nothing the player could use was removed. */}
-        <div className="grid gap-5">
+        {/* Visual evolution E2: ≥1280 px adds a "how it works" column next to the intake; below
+            that width the aside is display:none and the page is the same single column. */}
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start">
           <div ref={intakeRef} tabIndex={-1} className="scroll-mt-24 outline-none">
             <ChartCard
               title={t("analyze.intake.title")}
               subtitle={t("analyze.intake.subtitle")}
+              icon="rounds"
               showDemoTag={false}
             >
               <DemoIngestPanel identifyJobId={identify} />
             </ChartCard>
           </div>
 
-          <div className="lg:col-span-3">
+          <aside className="hidden xl:sticky xl:top-24 xl:block">
+            <UploadLoop />
+          </aside>
+
+          {/* lg:col-span-3 is kept as it was (it is what sizes the cards between 1024 and 1279 px
+              today); from 1280 px the explicit two-column grid takes over. */}
+          <div className="lg:col-span-3 xl:col-span-2">
             <ChartCard
               title={t("sources.title")}
               subtitle={t("sources.subtitle")}
+              icon="shield"
               showDemoTag={false}
             >
               <SourcesPanel />
