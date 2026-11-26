@@ -1,5 +1,5 @@
 /**
- * Phase 2.1.2 — Integration Readiness: the Data Source model.
+ * Phase 2.1.2 — Integration Readiness: the shared Data Source model.
  *
  * ARCHITECTURAL RULE (do not break):
  *
@@ -12,8 +12,13 @@
  * analysis_findings, player_dna_snapshots or player_score_snapshots — it must
  * produce canonical data and let the existing pipeline derive everything else.
  *
- * NOTHING here calls an external API. No FACEIT / Gamers Club / Steam client,
- * no OAuth, no scraping, no token storage exists in this phase.
+ * This module defines source identifiers, metadata and shared policies; it does
+ * NOT itself call external APIs. Provider implementations live in dedicated
+ * modules:
+ * - FACEIT: official Data API + OAuth, implemented under src/lib/faceit.
+ * - Steam: OpenID identity linking; no CS2 match-data collection.
+ * - Gamers Club: no permitted automatic collection path is currently available.
+ * Runtime availability is described separately in ./availability.
  */
 
 /** Stable source identifiers. Mirrors the `public.data_source` enum. */
@@ -29,14 +34,17 @@ export function isDataSource(value: unknown): value is DataSource {
  * How trustworthy a source is *as a category*. This is only a starting point:
  * the effective quality of an analysis always comes from the data that was
  * actually collected (see `DataCoverage`), never from the platform name.
+ * This rating is independent from implementation status and per-signal
+ * capability: an implemented integration may still provide only partial data.
  */
 export type SourceQuality = "high" | "medium" | "low" | "variable";
 
 /**
  * Deliberately conservative and honest. Platforms are NOT equivalent:
  * - demo: richest behavioural evidence available to this product.
- * - faceit: may expose matches/stats through authorised APIs, subject to
- *   permissions and availability — unverified until an adapter is validated.
+ * - faceit: official OAuth/Data API integration is implemented; the fields
+ *   actually returned still depend on permissions, endpoint availability and
+ *   observed coverage. See ./capabilities for per-signal validation.
  * - gamers_club: no public API availability is assumed at all.
  * - steam: useful for account identification and public data, NOT a demo
  *   substitute.
@@ -67,9 +75,11 @@ export function preferredSource(a: DataSource, b: DataSource): DataSource {
 }
 
 /**
- * Sources with an implemented, validated adapter.
- * - `demo`: local pipeline.
+ * Sources with an implemented adapter.
+ * - `demo`: local demo pipeline.
  * - `faceit`: official Data API + OAuth (see `src/lib/faceit`).
+ * This registry-level flag describes implementation, not proof that every
+ * signal is available or that every account has completed a successful sync.
  * `gamers_club` is NOT here: there is no official API and the public site
  * answers unauthenticated requests with a Cloudflare challenge, which we are
  * not allowed to bypass. Runtime usability lives in `./availability`.
@@ -106,7 +116,7 @@ export function isConnectionStatus(value: unknown): value is ConnectionStatus {
   return typeof value === "string" && (CONNECTION_STATUSES as readonly string[]).includes(value);
 }
 
-/** Connectable sources. A demo is an upload, not a connection. */
+/** Connectable sources. A demo is an upload, not an account connection. */
 export const CONNECTABLE_SOURCES: readonly Exclude<DataSource, "demo">[] = [
   "faceit",
   "gamers_club",
@@ -114,7 +124,11 @@ export const CONNECTABLE_SOURCES: readonly Exclude<DataSource, "demo">[] = [
   "public_profile",
 ];
 
-/** Connection types each source will eventually support. */
+/**
+ * Connection mechanisms represented by each source in the shared model.
+ * Actual flows are implemented in their provider modules; a listed mechanism
+ * does not by itself guarantee runtime configuration or data availability.
+ */
 export const SOURCE_CONNECTION_TYPES: Record<Exclude<DataSource, "demo">, ConnectionType[]> = {
   faceit: ["oauth", "public_profile"],
   gamers_club: ["public_profile"],
@@ -125,9 +139,9 @@ export const SOURCE_CONNECTION_TYPES: Record<Exclude<DataSource, "demo">, Connec
 };
 
 /**
- * Audit actions future integration flows must record in `admin_audit_logs`.
- * Typed now so the names never drift; no event is emitted in this phase
- * because no integration exists.
+ * Audit action names used by integration flows and their server-side audit
+ * records. The list is a shared type contract; whether a particular action is
+ * emitted is determined by the corresponding provider implementation.
  */
 export const INTEGRATION_AUDIT_ACTIONS = [
   "connection_created",
@@ -144,10 +158,12 @@ export const INTEGRATION_AUDIT_ACTIONS = [
 export type IntegrationAuditAction = (typeof INTEGRATION_AUDIT_ACTIONS)[number];
 
 /**
- * Token policy (documented because it is a security boundary, not a TODO):
- * if OAuth tokens ever become necessary they MUST stay server-side, in a secret
- * store, never in a Data-API readable table, never returned by a loader or
- * server function, never written to localStorage/sessionStorage, never logged
- * and never included in error messages.
+ * Token policy (documented because it is a security boundary):
+ * OAuth credentials and tokens must remain server-side and must never be
+ * exposed through a Data-API readable table, loader, server function response,
+ * localStorage/sessionStorage, logs or error messages. The FACEIT OAuth flow
+ * currently handles its authorization tokens server-side and does not persist
+ * them as reusable client credentials. Any future provider that needs token
+ * persistence must use an approved server-side secret store.
  */
 export const TOKEN_STORAGE_POLICY = "server-side-only-never-exposed" as const;
