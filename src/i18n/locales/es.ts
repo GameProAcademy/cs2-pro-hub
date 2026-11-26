@@ -161,7 +161,7 @@ export const es: Dictionary = {
   "analyze.demo.eligibility":
     "Para un análisis fiable, sube demos de partidas terminadas oficialmente, incluidas las terminadas por rendición (surrender), siempre que tengan al menos 9 rondas válidas. No se pueden analizar demos interrumpidas sin final oficial, incompletas o dañadas.",
   "analyze.notSent": "El envío empieza en cuanto seleccionas el archivo.",
-  "analyze.ready": "listo para enviar (procesamiento no disponible en esta etapa)",
+  "analyze.ready": "Demo enviada",
   "analyze.pipelineTitle": "Estado del procesamiento",
   "analyze.pipelineSubtitle": "Lo que existe hoy en esta etapa del producto",
   "analyze.pipeline.validation": "Validación del archivo",

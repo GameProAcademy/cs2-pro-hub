@@ -159,7 +159,7 @@ export const en: Dictionary = {
   "analyze.demo.eligibility":
     "For a reliable analysis, upload demos of officially finished matches, including matches ended by surrender, as long as they have at least 9 valid rounds. Demos interrupted without an official end, incomplete or corrupted cannot be analysed.",
   "analyze.notSent": "The upload starts as soon as you select the file.",
-  "analyze.ready": "ready to send (processing unavailable at this stage)",
+  "analyze.ready": "Demo sent",
   "analyze.pipelineTitle": "Processing status",
   "analyze.pipelineSubtitle": "What exists today at this product stage",
   "analyze.pipeline.validation": "File validation",

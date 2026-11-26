@@ -72,8 +72,13 @@ function AnalyzePage() {
             </ChartCard>
           </div>
 
-          <aside className="hidden xl:sticky xl:top-24 xl:block">
-            <UploadLoop />
+          {/* The aside stretches over the intake row only (self-stretch) and is the containing
+              block of the sticky wrapper, so the column follows the scroll while the intake row is
+              on screen and stops at the end of it, never over "Fontes de dados". */}
+          <aside className="hidden xl:block xl:self-stretch" data-upload-loop-rail>
+            <div className="xl:sticky xl:top-24">
+              <UploadLoop />
+            </div>
           </aside>
 
           {/* lg:col-span-3 is kept as it was (it is what sizes the cards between 1024 and 1279 px

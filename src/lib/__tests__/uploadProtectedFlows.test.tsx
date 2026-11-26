@@ -90,6 +90,9 @@ export const AUTHORIZED_CHANGES: Record<string, string> = {
   // The drop zone said the file was neither sent nor processed (copy from when the box was
   // visual-only); selecting the file starts the upload. Text only, owner decision 2026-11-26.
   "analyze.notSent": "2026-11-26",
+  // Shown next to the file size after selection; said "ready to send (processing unavailable at
+  // this stage)". Now "Demo enviada" and its translations. Text only, owner decision 2026-11-26.
+  "analyze.ready": "2026-11-26",
 };
 
 const sha = (algo: "sha1" | "sha256", input: string | Buffer) =>

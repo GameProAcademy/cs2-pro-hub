@@ -164,7 +164,7 @@ export const ptBR = {
   "analyze.demo.eligibility":
     "Para uma análise confiável, envie demos de partidas concluídas oficialmente, inclusive partidas encerradas por surrender, desde que tenham pelo menos 9 rounds válidos. Demos interrompidas sem encerramento oficial, incompletas ou corrompidas não podem ser analisadas.",
   "analyze.notSent": "O envio começa assim que você seleciona o arquivo.",
-  "analyze.ready": "pronto para envio (processamento indisponível nesta etapa)",
+  "analyze.ready": "Demo enviada",
   "analyze.pipelineTitle": "Status do processamento",
   "analyze.pipelineSubtitle": "O que existe hoje nesta etapa do produto",
   "analyze.pipeline.validation": "Validação do arquivo",
