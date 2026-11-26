@@ -28,7 +28,7 @@ test.describe.configure({ mode: "serial" });
 test.skip(!enabled, "upload smoke runs only from its own workflow (E2E_UPLOAD_SMOKE=1)");
 test.skip(!email || !password, "MANUAL_REQUIRED: E2E_A_EMAIL / E2E_A_PASSWORD are not configured");
 
-const WIDTHS = [360, 390, 430, 768, 1024, 1440] as const;
+const WIDTHS = [360, 390, 430, 768, 1024, 1280, 1440] as const;
 const STEAM_ID = /\b7656119\d{10}\b/;
 const summary: Record<string, unknown> = { startedAt: new Date().toISOString() };
 const writes: string[] = [];
@@ -114,6 +114,17 @@ test("upload smoke — protected flows, no writes", async ({ page }) => {
   await expect(page.locator("main")).not.toContainText("não é enviado nem processado");
   summary["releaseCopy"] = "PASS";
 
+  // The public-profile source row and its link form are gone; FACEIT and Gamers Club remain.
+  const sources = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Fontes de dados" }) });
+  await expect(sources.locator("#public-profile-url")).toHaveCount(0);
+  await expect(sources.getByRole("button", { name: "Validar link" })).toHaveCount(0);
+  await expect(sources.getByText("Perfil público", { exact: true })).toHaveCount(0);
+  await expect(sources.getByText("FACEIT", { exact: true })).toBeVisible();
+  await expect(sources.getByText("Gamers Club", { exact: true }).first()).toBeVisible();
+  summary["publicProfileRemoved"] = "PASS";
+
   // 9. history states
   const pending = page.locator("[data-pending-identity]");
   summary["pendingIdentityJobs"] = await pending.count();
@@ -162,7 +173,29 @@ test("upload smoke — protected flows, no writes", async ({ page }) => {
     expect(audit.ctaTop, `button at ${width}`).not.toBeNull();
     // E2: the "how it works" column exists only from 1280 px.
     expect(audit.loop, `loop visibility at ${width}`).toBe(width >= 1280);
-    widths[width] = audit;
+    // The sticky column must never overlap "Fontes de dados" anywhere along the scroll.
+    let maxOverlapPx: number | null = null;
+    if (width >= 1280) {
+      maxOverlapPx = await page.evaluate(async () => {
+        const loop = document.querySelector("[data-upload-loop]");
+        const card = [...document.querySelectorAll("section")].find(
+          (s) => s.querySelector("h2")?.textContent === "Fontes de dados",
+        );
+        if (!loop || !card) return -1;
+        let max = 0;
+        for (let y = 0; y <= document.documentElement.scrollHeight; y += 100) {
+          window.scrollTo(0, y);
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+          const l = loop.getBoundingClientRect();
+          const c = card.getBoundingClientRect();
+          if (l.right > c.left && l.left < c.right) max = Math.max(max, l.bottom - c.top);
+        }
+        window.scrollTo(0, 0);
+        return Math.round(max);
+      });
+      expect(maxOverlapPx, `column over the sources card at ${width}`).toBeLessThanOrEqual(0);
+    }
+    widths[width] = { ...audit, maxOverlapPx };
   }
   summary["widths"] = widths;
 
