@@ -108,7 +108,7 @@ export function GamersClubPanel({ profileUrl, externalId, lastSyncAt }: GamersCl
 
       <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
         <Lock className="size-3 shrink-0" aria-hidden />
-        {operational.architecture}
+        {t(`gc.architecture.${operational.architecture}` as TranslationKey)}
       </p>
     </section>
   );

@@ -129,8 +129,10 @@ export const en: Dictionary = {
 
   "analyze.eyebrow": "Analyze",
   "analyze.title": "Analyze my game",
+  "analyze.intake.title": "Send a demo",
+  "analyze.intake.subtitle": ".dem file from one of your matches",
   "analyze.description":
-    "Send a demo or your stats data to generate metrics, diagnosis and adjustments to your training plan.",
+    "Send the .dem demo of one of your matches: CS2 PRO extracts your rounds and builds your diagnosis and training plan.",
   "analyze.demo.title": "I have a demo",
   "analyze.demo.description": "Send a .dem demo for a deeper analysis.",
   "analyze.demo.cta": "Send demo",
@@ -148,7 +150,7 @@ export const en: Dictionary = {
   "analyze.selectFile": "Select file",
   "analyze.demo.eligibility":
     "For a reliable analysis, upload demos of officially finished matches, including matches ended by surrender, as long as they have at least 9 valid rounds. Demos interrupted without an official end, incomplete or corrupted cannot be analysed.",
-  "analyze.notSent": "At this stage the file is neither uploaded nor processed.",
+  "analyze.notSent": "The upload starts as soon as you select the file.",
   "analyze.ready": "ready to send (processing unavailable at this stage)",
   "analyze.pipelineTitle": "Processing status",
   "analyze.pipelineSubtitle": "What exists today at this product stage",
@@ -915,6 +917,9 @@ export const en: Dictionary = {
   "gc.state.syncing": "Syncing",
   "gc.state.partial": "Partial",
   "gc.state.error": "Error",
+  "gc.architecture.implemented": "Integration implemented",
+  "gc.architecture.architecture_ready": "Architecture prepared",
+  "gc.architecture.not_implemented": "Not implemented",
   "identity.title": "Player identity",
   "identity.subtitle": "How your accounts relate, and why",
   "identity.confidence": "Confidence",

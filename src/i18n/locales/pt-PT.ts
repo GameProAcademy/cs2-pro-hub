@@ -130,8 +130,10 @@ export const ptPT: Dictionary = {
 
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar o meu jogo",
+  "analyze.intake.title": "Enviar demo",
+  "analyze.intake.subtitle": "Ficheiro .dem de uma partida sua",
   "analyze.description":
-    "Envie uma demo ou os seus dados de estatísticas para gerar métricas, diagnóstico e ajustes no seu plano de treino.",
+    "Envie a demo .dem de uma partida sua: o CS2 PRO extrai as suas rondas e monta o diagnóstico e o plano de treino.",
   "analyze.demo.title": "Tenho uma demo",
   "analyze.demo.description": "Envie uma demo .dem para uma análise mais profunda.",
   "analyze.demo.cta": "Enviar demo",
@@ -150,7 +152,7 @@ export const ptPT: Dictionary = {
   "analyze.selectFile": "Selecionar ficheiro",
   "analyze.demo.eligibility":
     "Para uma análise fiável, envie demos de partidas concluídas oficialmente, incluindo partidas terminadas por surrender, desde que tenham pelo menos 9 rondas válidas. Demos interrompidas sem encerramento oficial, incompletas ou corrompidas não podem ser analisadas.",
-  "analyze.notSent": "Nesta etapa o ficheiro não é enviado nem processado.",
+  "analyze.notSent": "O envio começa assim que seleciona o ficheiro.",
   "analyze.ready": "pronto para envio (processamento indisponível nesta etapa)",
   "analyze.pipelineTitle": "Estado do processamento",
   "analyze.pipelineSubtitle": "O que existe hoje nesta etapa do produto",
@@ -937,6 +939,9 @@ export const ptPT: Dictionary = {
   "gc.state.syncing": "A sincronizar",
   "gc.state.partial": "Parcial",
   "gc.state.error": "Erro",
+  "gc.architecture.implemented": "Integração implementada",
+  "gc.architecture.architecture_ready": "Arquitetura preparada",
+  "gc.architecture.not_implemented": "Não implementada",
   "identity.title": "Identidade do jogador",
   "identity.subtitle": "Como as suas contas se relacionam e porquê",
   "identity.confidence": "Confiança",
