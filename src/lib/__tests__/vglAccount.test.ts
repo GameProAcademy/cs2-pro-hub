@@ -15,10 +15,10 @@ describe("account screens (VGL)", () => {
     const n = src("src/components/notifications/NotificationComponents.tsx");
     for (const c of NOTIFICATION_CATEGORIES) expect(n).toMatch(new RegExp(`\\b${c}: "`));
     expect(n).toContain('failed={n.type === "demo_failed"}');
-    // Hidden on phones: the mobile baseline of the list is unchanged.
-    expect(n).toContain(
-      '"hidden size-9 shrink-0 items-center justify-center rounded-lg border sm:flex"',
-    );
+    // VGL 2.0 continuation (documented in docs/ux1/VGL2_CONTINUATION.md): the pictogram is now
+    // shown on phones too, with a fixed size, and the actions wrap to their own line.
+    expect(n).toContain('"flex size-9 shrink-0 items-center justify-center rounded-lg border"');
+    expect(n).toContain('"flex w-full flex-wrap gap-1 sm:w-auto"');
   });
 
   it("profile adds the map pool only when there is an identified map (no empty cell)", () => {

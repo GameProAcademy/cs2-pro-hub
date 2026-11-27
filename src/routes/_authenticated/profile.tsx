@@ -9,6 +9,9 @@ import { MapPoolCard, mapPool } from "@/components/real/MapPool";
 import { usePlayerOverview } from "@/components/real/RealData";
 import { AppShell } from "@/components/layout/AppShell";
 import { AvatarCard } from "@/components/profile/AvatarCard";
+import { ProfileHero } from "@/components/profile/ProfileHero";
+import { useAccount } from "@/hooks/useAccount";
+import type { PlayerProfilePayload } from "@/lib/profile.functions";
 import { CodeMultiSelect } from "@/components/profile/CodeMultiSelect";
 import { CountrySelect } from "@/components/profile/CountrySelect";
 import { FaceitPanel } from "@/components/integrations/FaceitPanel";
@@ -197,6 +200,9 @@ function ProfilePage() {
           <ProfileSkeleton />
         ) : (
           <div className="grid gap-5 lg:grid-cols-3">
+            <div className="lg:col-span-3">
+              <ProfileIdentityHero profile={profile ?? null} />
+            </div>
             <ChartCard
               icon="dna"
               title={t("profile.section.identity")}
@@ -423,5 +429,28 @@ function ProfileMapPool() {
     <div className="lg:col-span-3">
       <MapPoolCard rows={q.data.matches} />
     </div>
+  );
+}
+
+/**
+ * VGL 2.0 continuation: the competitive identity hero. Reads the saved profile (never the unsaved
+ * form) and the overview's match rows when they load; nothing else.
+ */
+function ProfileIdentityHero({ profile }: { profile: PlayerProfilePayload | null }) {
+  const t = useT();
+  const q = usePlayerOverview();
+  const { data: account } = useAccount();
+  if (!profile) return null;
+  return (
+    <ProfileHero
+      avatarSource={account?.avatar_url ?? null}
+      displayName={profile.displayName}
+      nickname={profile.nickname}
+      team={profile.team}
+      level={profile.currentLevel ? t(levelLabelKey(profile.currentLevel as never)) : null}
+      platform={profile.mainPlatform ? t(platformLabelKey(profile.mainPlatform as never)) : null}
+      roles={profile.roleCodes.map((c) => t(roleLabelKey(c as never)))}
+      matches={q.data ? q.data.matches : null}
+    />
   );
 }
