@@ -309,6 +309,11 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 
 ## RESUMO PARA PRÓXIMA SESSÃO
 
+> Atualização 2026-11-27 (VGL 3.0):
+>
+> - `main` `aa3129cc` + o PR de fechamento. Publicado e validado em produção (#421–#424). Ver
+>   `docs/checkpoints/UX1_0_CHECKPOINT.md` §2.21 e `docs/ux1/VGL3_FINAL_VALIDATION.md`.
+>
 > Atualização 2026-11-27:
 >
 > - `main` `41417bde` + o PR de fechamento da continuação da VGL 2.0 (#415–#419), publicado (deploy `2c9ead87`)

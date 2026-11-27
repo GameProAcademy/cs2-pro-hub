@@ -438,7 +438,7 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
             {round.timeline.map((e, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2 text-xs" data-feed-item>
                 <KillFeedLine e={e} mySide={side} sentence={eventText(t, e, side)} index={i} />
-                <span className="font-mono text-muted-foreground">{e.tick}</span>
+                <span className="font-mono text-muted-foreground max-sm:hidden">{e.tick}</span>
                 {e.alive ? (
                   <span className="font-mono text-muted-foreground">{`T ${e.alive.T} × CT ${e.alive.CT}`}</span>
                 ) : null}

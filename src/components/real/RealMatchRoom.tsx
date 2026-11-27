@@ -219,11 +219,17 @@ function RoomHeader({ m }: { m: OverviewMatch }) {
               )}
             </p>
           </div>
-          <ScoreLine
-            result={m.resultStatus === "UNRESOLVED_BY_DEMO" ? null : m.result}
-            scorePlayer={m.resultStatus === "UNRESOLVED_BY_DEMO" ? null : m.scorePlayer}
-            scoreOpponent={m.resultStatus === "UNRESOLVED_BY_DEMO" ? null : m.scoreOpponent}
-          />
+          {/* The line above already says when the result is not determined: the score block
+              only appears with a resolved score. */}
+          {m.resultStatus !== "UNRESOLVED_BY_DEMO" &&
+          m.scorePlayer !== null &&
+          m.scoreOpponent !== null ? (
+            <ScoreLine
+              result={m.result}
+              scorePlayer={m.scorePlayer}
+              scoreOpponent={m.scoreOpponent}
+            />
+          ) : null}
         </div>
       </MapArt>
     </header>
