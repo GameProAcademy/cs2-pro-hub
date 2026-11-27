@@ -5,6 +5,8 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Bell, Check, Mail, MailOpen, Trash2 } from "lucide-react";
+
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -257,6 +259,45 @@ export function NotificationBell() {
   );
 }
 
+/** VGL: a game pictogram per real notification category (decorative; the category is written). */
+const CATEGORY_ICON: Record<NotificationView["category"], GameIconName> = {
+  demo_processing: "rounds",
+  analysis_ready: "target",
+  evolution: "trend",
+  training: "crosshair",
+  coach: "dna",
+  account_security: "shield",
+  operational: "clock",
+  announcements: "map",
+  marketing: "map",
+};
+
+function NotificationIcon({
+  category,
+  failed,
+}: {
+  category: NotificationView["category"];
+  failed: boolean;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "hidden size-9 shrink-0 items-center justify-center rounded-lg border sm:flex",
+        failed
+          ? "border-warning/30 bg-warning/10 text-warning"
+          : "border-primary/25 bg-primary/10 text-primary",
+      )}
+      data-notification-icon={failed ? "alert" : CATEGORY_ICON[category]}
+    >
+      <GameIcon
+        name={failed ? "alert" : (CATEGORY_ICON[category] ?? "rounds")}
+        className="size-4"
+      />
+    </span>
+  );
+}
+
 export function NotificationCenter() {
   const t = useT();
   const { intlTag, locale } = useI18n();
@@ -357,6 +398,7 @@ export function NotificationCenter() {
                   !n.readAt && "bg-primary/5",
                 )}
               >
+                <NotificationIcon category={n.category} failed={n.type === "demo_failed"} />
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     {t(`notify.cat.${n.category}` as TranslationKey)} ·{" "}
