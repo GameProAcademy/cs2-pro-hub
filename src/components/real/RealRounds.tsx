@@ -13,7 +13,8 @@ import type { ReactNode } from "react";
 import { ChartCard } from "@/components/common/ChartCard";
 import { GameIcon } from "@/components/common/GameIcon";
 import { HudIcon, SideLogo } from "@/components/cs2/Cs2Art";
-import { KillFeedLine, RoundJump } from "@/components/cs2/MatchTimeline";
+import { KillFeedLine } from "@/components/cs2/MatchTimeline";
+import { RoundFocus } from "@/components/cs2/RoundFocus";
 import { cn } from "@/lib/utils";
 
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
@@ -204,6 +205,21 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
         <Note id="DISCONNECT">{fill(t("rounds.note.disconnect"), { n: s.disconnectRounds })}</Note>
       ) : null}
 
+      <RoundFocus
+        rounds={r.rounds}
+        matchId={r.matchId}
+        map={r.map}
+        describe={(e, side) => eventText(t, e, side)}
+      />
+
+      <ChartCard title={t("rounds.section.list")} subtitle={t("rounds.section.list.subtitle")}>
+        <ol className="divide-y divide-border" data-round-list>
+          {r.rounds.map((round) => (
+            <RoundItem key={round.roundNumber} round={round} matchId={r.matchId} />
+          ))}
+        </ol>
+      </ChartCard>
+
       <ChartCard title={t("rounds.section.team")} subtitle={t("rounds.section.team.subtitle")}>
         <div data-rounds-section="team" className="grid gap-6 lg:grid-cols-2">
           <div>
@@ -329,15 +345,6 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
             })}
           </div>
         </div>
-      </ChartCard>
-
-      <ChartCard title={t("rounds.section.list")} subtitle={t("rounds.section.list.subtitle")}>
-        <RoundJump rounds={r.rounds} />
-        <ol className="divide-y divide-border" data-round-list>
-          {r.rounds.map((round) => (
-            <RoundItem key={round.roundNumber} round={round} matchId={r.matchId} />
-          ))}
-        </ol>
       </ChartCard>
     </div>
   );

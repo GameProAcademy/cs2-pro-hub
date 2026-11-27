@@ -379,6 +379,22 @@
 .vgl-focus {
   animation: vgl-focus 0.9s ease-out 1;
 }
+/* VGL 4.0: radar marker appears with a short ping, in order. */
+@keyframes vgl-ping {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    opacity: 1;
+  }
+}
+.vgl-ping {
+  animation: vgl-ping 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--vgl-i, 0) * 80ms);
+  transform-box: fill-box;
+  transform-origin: center;
+}
 /* Tactical grid used behind headers (radar paper). */
 .vgl-grid {
   background-image:
@@ -402,7 +418,8 @@
   .vgl-sweep,
   .vgl-feed,
   .vgl-score,
-  .vgl-focus {
+  .vgl-focus,
+  .vgl-ping {
     animation: none !important;
   }
   .vgl-lift,
