@@ -131,6 +131,18 @@ export const ptPT: Dictionary = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar o meu jogo",
   "vgl.mapPool.title": "Os seus mapas",
+  "vgl.dna.signature.title": "Assinatura técnica",
+  "vgl.dna.signature.subtitle":
+    "Os seus índices por dimensão comparados entre si, do maior para o menor. São índices do próprio CS2 PRO: não há comparação com outros jogadores.",
+  "vgl.dna.signature.top": "Maiores índices",
+  "vgl.dna.signature.low": "Menores índices medidos",
+  "vgl.dna.signature.compare": "Todas as dimensões",
+  "vgl.dna.signature.notMeasured": "Sem índice: dimensão sem amostra ou não medida.",
+  "vgl.dna.trend.title": "Dimensões ao longo dos snapshots",
+  "vgl.dna.trend.subtitle":
+    "Só snapshots guardados do método atual ({version}) com perfil completo. Cada ponto é um snapshot; as lacunas ficam sem linha e nada é interpolado.",
+  "vgl.dna.trend.needTwo":
+    "Há {n} snapshot(s) comparável(is); são necessários 2 do método atual para mostrar a evolução.",
   "vgl.hero.lastMatch": "Última partida",
   "vgl.hero.openRoom": "Abrir a Sala da Partida",
   "vgl.stat.openings": "Aberturas",

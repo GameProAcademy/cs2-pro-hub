@@ -130,6 +130,18 @@ export const en: Dictionary = {
   "analyze.eyebrow": "Analyze",
   "analyze.title": "Analyze my game",
   "vgl.mapPool.title": "Your maps",
+  "vgl.dna.signature.title": "Technical signature",
+  "vgl.dna.signature.subtitle":
+    "Your indexes per dimension compared with each other, highest to lowest. They are CS2 PRO's own indexes: there is no comparison with other players.",
+  "vgl.dna.signature.top": "Highest indexes",
+  "vgl.dna.signature.low": "Lowest measured indexes",
+  "vgl.dna.signature.compare": "All dimensions",
+  "vgl.dna.signature.notMeasured": "No index: dimension without a sample or not measured.",
+  "vgl.dna.trend.title": "Dimensions across snapshots",
+  "vgl.dna.trend.subtitle":
+    "Only saved snapshots of the current method ({version}) with a complete profile. Each point is a snapshot; gaps stay without a line and nothing is interpolated.",
+  "vgl.dna.trend.needTwo":
+    "There are {n} comparable snapshot(s); 2 of the current method are needed to show the evolution.",
   "vgl.hero.lastMatch": "Latest match",
   "vgl.hero.openRoom": "Open the Match Room",
   "vgl.stat.openings": "Opening kills",

@@ -131,6 +131,18 @@ export const fr: Dictionary = {
   "analyze.eyebrow": "Analyser",
   "analyze.title": "Analyser mon jeu",
   "vgl.mapPool.title": "Vos cartes",
+  "vgl.dna.signature.title": "Signature technique",
+  "vgl.dna.signature.subtitle":
+    "Vos indices par dimension comparés entre eux, du plus haut au plus bas. Ce sont les indices propres à CS2 PRO : aucune comparaison avec d'autres joueurs.",
+  "vgl.dna.signature.top": "Indices les plus hauts",
+  "vgl.dna.signature.low": "Indices mesurés les plus bas",
+  "vgl.dna.signature.compare": "Toutes les dimensions",
+  "vgl.dna.signature.notMeasured": "Sans indice : dimension sans échantillon ou non mesurée.",
+  "vgl.dna.trend.title": "Dimensions au fil des snapshots",
+  "vgl.dna.trend.subtitle":
+    "Uniquement les snapshots enregistrés de la méthode actuelle ({version}) avec un profil complet. Chaque point est un snapshot ; les lacunes restent sans ligne et rien n'est interpolé.",
+  "vgl.dna.trend.needTwo":
+    "Il y a {n} snapshot(s) comparable(s) ; il en faut 2 de la méthode actuelle pour montrer l'évolution.",
   "vgl.hero.lastMatch": "Dernier match",
   "vgl.hero.openRoom": "Ouvrir la Salle du match",
   "vgl.stat.openings": "Ouvertures",
