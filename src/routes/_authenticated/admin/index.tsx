@@ -30,7 +30,11 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div
+      className="surface-panel relative overflow-hidden rounded-lg border border-border p-4"
+      data-admin-stat
+    >
+      <span aria-hidden className="absolute inset-x-0 top-0 h-0.5 bg-primary/60" />
       <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
       <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{value}</p>
     </div>

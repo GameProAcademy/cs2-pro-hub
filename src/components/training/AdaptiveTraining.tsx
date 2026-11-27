@@ -10,6 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { CircleDashed, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
+import { SegmentedCount } from "@/components/cs2/HudKit";
 import { ChartCard } from "@/components/common/ChartCard";
 import { ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -333,6 +334,13 @@ function PlanPanel({ plan }: { plan: PlanView }) {
                   p: formatNumber(plan.adherence.rate * 100, intlTag, 0),
                 })}
           </span>
+          {plan.adherence.rate !== null ? (
+            <SegmentedCount
+              done={plan.adherence.done}
+              due={plan.adherence.due}
+              className="order-last basis-full"
+            />
+          ) : null}
           {plan.nextReview ? (
             <span>
               {fill(t("training.adaptive.nextReview"), { d: formatDate(plan.nextReview, intlTag) })}

@@ -130,6 +130,7 @@ export const en: Dictionary = {
   "analyze.eyebrow": "Analyze",
   "analyze.title": "Analyze my game",
   "vgl.mapPool.title": "Your maps",
+  "vgl3.maps.selected": "Selected",
   "vgl3.briefing.label": "Diagnosis steps",
   "vgl3.coach.maps": "Maps named in this reply",
   "vgl3.coach.mapMatches": "{n} of your matches",
