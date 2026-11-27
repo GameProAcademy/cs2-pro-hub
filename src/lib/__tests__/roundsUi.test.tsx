@@ -178,9 +178,13 @@ describe("rounds page states", () => {
         onSearch={noop}
       />,
     );
-    const links = [...html.matchAll(/data-search="([^"]+)"/g)].map((m) =>
-      JSON.parse(m[1]!.replace(/&quot;/g, '"')),
+    const all = [...html.matchAll(/data-search="([^"]+)"/g)].map(
+      (m) => JSON.parse(m[1]!.replace(/&quot;/g, '"')) as Record<string, unknown>,
     );
+    // VGL 4.0: the round in focus adds its own "open in replay" link for the selected round
+    // (match room tab, no tick); the per-event links are the ones with a tick.
+    expect(all).toContainEqual({ tab: "replay", round: 1 });
+    const links = all.filter((l) => "tick" in l);
     expect(links).toEqual([
       { matchId: MATCH, round: 1, tick: 10100 },
       { matchId: MATCH, round: 2, tick: 20200 },

@@ -10,6 +10,7 @@
 import { MapTile } from "@/components/common/GameVisuals";
 import { MapArt, SideLogo } from "@/components/cs2/Cs2Art";
 import { RoundMarks, RoundMarksLegend, ScoreLine } from "@/components/cs2/MatchTimeline";
+import { MatchOverview, TabIntro } from "@/components/cs2/MatchOverview";
 import { SideBadge, ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { useQuery } from "@tanstack/react-query";
@@ -121,6 +122,7 @@ export function RealMatchRoomPage({
             <RoomHeader m={match} />
             <RoomTabs matchId={matchId} active={tab} />
             <div role="tabpanel" aria-label={t(`room.tab.${tab}` as TranslationKey)}>
+              {tab !== "summary" ? <TabIntro tab={tab} /> : null}
               <EmbeddedScope>
                 {tab === "summary" ? (
                   <RoomSummary m={match} />
@@ -315,6 +317,7 @@ function RoomSummary({ m }: { m: OverviewMatch }) {
           value={num(kd, 2)}
         />
       </section>
+      <MatchOverview m={m} />
       <RoundStrip matchId={m.matchId} />
       <Link
         to="/matches/$matchId"

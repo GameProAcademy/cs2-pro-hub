@@ -213,9 +213,22 @@ export function RoundMarksLegend() {
  * Round navigation for the round list: one chip per round (side colour, won filled). Selecting a
  * round opens its card and brings it into view; nothing is loaded or computed.
  */
-export function RoundJump({ rounds }: { rounds: RoundReport[] }) {
+export function RoundJump({
+  rounds,
+  selected = null,
+  onSelect,
+}: {
+  rounds: RoundReport[];
+  /** VGL 4.0: when given, the chips select a round (round in focus) instead of jumping. */
+  selected?: number | null;
+  onSelect?: (n: number) => void;
+}) {
   const t = useT();
   const go = (n: number) => {
+    if (onSelect) {
+      onSelect(n);
+      return;
+    }
     const el = document.querySelector<HTMLLIElement>(`[data-round="${n}"][data-round-valid]`);
     if (!el) return;
     const d = el.querySelector("details");
@@ -241,6 +254,7 @@ export function RoundJump({ rounds }: { rounds: RoundReport[] }) {
                 type="button"
                 onClick={() => go(r.roundNumber)}
                 aria-label={label}
+                aria-pressed={onSelect ? selected === r.roundNumber : undefined}
                 title={label}
                 data-jump-round={r.roundNumber}
                 className={cn(
@@ -251,6 +265,8 @@ export function RoundJump({ rounds }: { rounds: RoundReport[] }) {
                       ? "border-side-ct text-side-ct"
                       : "border-side-t text-side-t",
                   state === "won" && (r.side === "CT" ? "bg-side-ct/25" : "bg-side-t/25"),
+                  selected === r.roundNumber &&
+                    "ring-2 ring-primary ring-offset-2 ring-offset-background",
                 )}
               >
                 {r.roundNumber}
