@@ -131,6 +131,16 @@ export const ptPT: Dictionary = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar o meu jogo",
   "vgl.mapPool.title": "Os seus mapas",
+  "vgl.evo.compare.title": "Antes → agora",
+  "vgl.evo.compare.subtitle":
+    "Comparação entre o período anterior e o recente, só para as métricas que o relatório considera comparáveis (mesmos filtros e amostra mínima). A seta indica só a direção: subir não é melhor para todas as métricas.",
+  "vgl.evo.compare.before": "Antes",
+  "vgl.evo.compare.now": "Agora",
+  "vgl.evo.compare.none": "Nenhuma métrica tem comparação válida nesta janela.",
+  "vgl.evo.compare.without":
+    "{n} métrica(s) sem comparação válida nesta janela aparecem só na tabela.",
+  "vgl.perf.combat": "Eventos de combate",
+  "vgl.perf.ribbon": "Partidas desta leitura (da mais antiga para a mais recente)",
   "vgl.room.sideRoundsWon": "Rondas ganhas deste lado",
   "vgl.room.sideUnknown": "{n} ronda(s) sem lado ou resultado registado não entram na contagem.",
   "vgl.dna.signature.title": "Assinatura técnica",

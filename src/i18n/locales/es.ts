@@ -130,6 +130,16 @@ export const es: Dictionary = {
   "analyze.eyebrow": "Analizar",
   "analyze.title": "Analizar mi juego",
   "vgl.mapPool.title": "Tus mapas",
+  "vgl.evo.compare.title": "Antes → ahora",
+  "vgl.evo.compare.subtitle":
+    "Comparación entre el período anterior y el reciente, solo para las métricas que el informe considera comparables (mismos filtros y muestra mínima). La flecha indica solo la dirección: subir no es mejor para todas las métricas.",
+  "vgl.evo.compare.before": "Antes",
+  "vgl.evo.compare.now": "Ahora",
+  "vgl.evo.compare.none": "Ninguna métrica tiene una comparación válida en esta ventana.",
+  "vgl.evo.compare.without":
+    "{n} métrica(s) sin comparación válida en esta ventana aparecen solo en la tabla.",
+  "vgl.perf.combat": "Eventos de combate",
+  "vgl.perf.ribbon": "Partidas de esta lectura (de la más antigua a la más reciente)",
   "vgl.room.sideRoundsWon": "Rondas ganadas en este lado",
   "vgl.room.sideUnknown": "{n} ronda(s) sin lado o resultado registrado no entran en el conteo.",
   "vgl.dna.signature.title": "Firma técnica",

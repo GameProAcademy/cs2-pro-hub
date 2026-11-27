@@ -9,12 +9,13 @@ import { MapTile } from "@/components/common/GameVisuals";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { ProBenchmarkCard } from "@/components/benchmarks/ProBenchmarkCard";
 import { MonthlyReviewCard } from "@/components/review/MonthlyReviewCard";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { ChartCard } from "@/components/common/ChartCard";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -241,6 +242,7 @@ function EvolutionReportView({ rep }: { rep: EvolutionReport }) {
       {rep.filters.side !== "ALL" ? <Note id="SIDE">{t("evolution.sideOnlyRating")}</Note> : null}
       <Note id="WEAPON">{t("evolution.weaponNote")}</Note>
 
+      {blocked ? null : <PeriodCompare metrics={rep.metrics} intlTag={intlTag} />}
       {blocked ? null : (
         <ChartCard
           title={t("evolution.section.metrics")}
@@ -341,6 +343,110 @@ function EvolutionReportView({ rep }: { rep: EvolutionReport }) {
       )}
       <p className="text-xs leading-relaxed text-muted-foreground">{t("evolution.notCausal")}</p>
     </div>
+  );
+}
+
+/** VGL 2.0 continuation: a game icon per evolution metric (decorative). */
+const METRIC_ICON: Record<EvolutionMetricKey, GameIconName> = {
+  kd: "kill",
+  adr: "crosshair",
+  kast: "shield",
+  hsPercent: "headshot",
+  rating: "trend",
+  openingWinRate: "opening",
+  deathsPerRound: "skull",
+  tradeKillsPerRound: "trade",
+  clutchWinRate: "clutch",
+  flashAssistsPerRound: "flash",
+};
+
+/**
+ * "Before → now" for the comparisons the report itself marks OK (same filters, comparable
+ * periods). The arrow states the direction only; it is neutral because "up" is not better for
+ * every metric (deaths per round). Metrics without a valid comparison are listed apart.
+ */
+function PeriodCompare({ metrics, intlTag }: { metrics: MetricReport[]; intlTag: string }) {
+  const t = useT();
+  const ok = metrics.filter((m) => m.comparison.status === "OK" && m.comparison.delta !== null);
+  const without = metrics.filter((m) => !ok.includes(m));
+  return (
+    <section
+      className="surface-panel vgl-grid relative overflow-hidden rounded-xl border border-border p-4 sm:p-6"
+      aria-labelledby="period-compare-title"
+      data-period-compare
+    >
+      <h2
+        id="period-compare-title"
+        className="font-display text-lg font-semibold uppercase tracking-wide text-foreground"
+      >
+        {t("vgl.evo.compare.title")}
+      </h2>
+      <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+        {t("vgl.evo.compare.subtitle")}
+      </p>
+      {ok.length ? (
+        <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {ok.map((m, i) => {
+            const c = m.comparison;
+            const unit = m.definition.unit;
+            const dir = c.delta! > 0 ? "UP" : c.delta! < 0 ? "DOWN" : "FLAT";
+            return (
+              <li
+                key={m.key}
+                className="vgl-rise rounded-lg border border-border bg-background/40 p-3"
+                style={{ "--vgl-i": i } as CSSProperties}
+                data-period-metric={m.key}
+                data-period-direction={dir}
+              >
+                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <GameIcon name={METRIC_ICON[m.key]} className="size-4 text-primary" />
+                  {t(`evolution.metric.${m.key}` as TranslationKey)}
+                </p>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("vgl.evo.compare.before")}</p>
+                    <p className="font-mono text-lg tabular-nums text-muted-foreground">
+                      {formatMetric(c.previous.value, unit, intlTag)}
+                    </p>
+                  </div>
+                  <span
+                    aria-hidden
+                    className="mb-1 flex size-8 items-center justify-center rounded-full border border-border-strong text-foreground"
+                  >
+                    {dir === "UP" ? "↗" : dir === "DOWN" ? "↘" : "→"}
+                  </span>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">{t("vgl.evo.compare.now")}</p>
+                    <p className="font-mono text-2xl font-semibold tabular-nums text-foreground">
+                      {formatMetric(c.recent.value, unit, intlTag)}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2 font-mono text-xs text-muted-foreground">
+                  {signed(c.delta!, unit, intlTag)} ·{" "}
+                  {fill(t("evolution.comparison.n"), {
+                    recent: c.recent.matches,
+                    previous: c.previous.matches,
+                  })}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p
+          className="mt-4 rounded-lg border border-dashed border-border-strong px-4 py-3 text-sm text-muted-foreground"
+          data-period-compare-empty
+        >
+          {t("vgl.evo.compare.none")}
+        </p>
+      )}
+      {ok.length && without.length ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {fill(t("vgl.evo.compare.without"), { n: without.length })}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
