@@ -131,6 +131,8 @@ export const ptPT: Dictionary = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar o meu jogo",
   "vgl.mapPool.title": "Os seus mapas",
+  "vgl.room.sideRoundsWon": "Rondas ganhas deste lado",
+  "vgl.room.sideUnknown": "{n} ronda(s) sem lado ou resultado registado não entram na contagem.",
   "vgl.dna.signature.title": "Assinatura técnica",
   "vgl.dna.signature.subtitle":
     "Os seus índices por dimensão comparados entre si, do maior para o menor. São índices do próprio CS2 PRO: não há comparação com outros jogadores.",

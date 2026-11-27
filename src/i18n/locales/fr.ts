@@ -131,6 +131,8 @@ export const fr: Dictionary = {
   "analyze.eyebrow": "Analyser",
   "analyze.title": "Analyser mon jeu",
   "vgl.mapPool.title": "Vos cartes",
+  "vgl.room.sideRoundsWon": "Rounds gagnés de ce côté",
+  "vgl.room.sideUnknown": "{n} round(s) sans côté ou résultat enregistré ne sont pas comptés.",
   "vgl.dna.signature.title": "Signature technique",
   "vgl.dna.signature.subtitle":
     "Vos indices par dimension comparés entre eux, du plus haut au plus bas. Ce sont les indices propres à CS2 PRO : aucune comparaison avec d'autres joueurs.",

@@ -134,6 +134,8 @@ export const ptBR = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar meu jogo",
   "vgl.mapPool.title": "Seus mapas",
+  "vgl.room.sideRoundsWon": "Rounds vencidos neste lado",
+  "vgl.room.sideUnknown": "{n} round(s) sem lado ou resultado registrado não entram na contagem.",
   "vgl.dna.signature.title": "Assinatura técnica",
   "vgl.dna.signature.subtitle":
     "Seus índices por dimensão comparados entre si, do maior para o menor. São índices do próprio CS2 PRO: não há comparação com outros jogadores.",
