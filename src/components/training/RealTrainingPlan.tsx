@@ -1,3 +1,4 @@
+import { TrainingAreas, TrainingOverview } from "@/components/cs2/TrainingKit";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 
@@ -56,8 +57,10 @@ export function RealTrainingPlan() {
         {/* UX-1.7 / R-13: one list, one engine (cs2.training-priority.v2); the adaptive plan
             below is built from it. The catalogue plan (trainingPlan.ts) is no longer a second
             list on this page. */}
+        <TrainingOverview />
         <TrainingPrioritiesV2 />
         <AdaptiveTraining />
+        <TrainingAreas />
         {/* GamePro catalogue content (practice and lessons by week) stays available; its own
             priority box, a second list, is no longer shown (UX-1.7). */}
         <h2 className="flex items-center gap-2 border-t border-border pt-6 font-display text-lg font-semibold text-foreground">
