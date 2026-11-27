@@ -26,6 +26,7 @@ import {
   type SideFilter,
 } from "@/lib/spatial/heatmap";
 import { mapDisplayName } from "@/lib/cs2/maps";
+import { MapTile } from "@/components/common/GameVisuals";
 import { MAP_OVERVIEWS, RADAR_SIZE, type MapLevel } from "@/lib/spatial/maps";
 import { radarAsset } from "@/lib/spatial/radarAssets";
 import {
@@ -276,6 +277,8 @@ function SupportedHeatmap({ h, matches }: { h: HeatmapResult; matches: SpatialMa
       <ChartCard
         title={t(`spatial.layer.${h.layer}`)}
         subtitle={t(`spatial.layer.${h.layer}.semantics`)}
+        icon="map"
+        actions={<MapTile map={h.map} size="sm" showName />}
       >
         <StatusNote h={h} />
         {h.cells.length ? (

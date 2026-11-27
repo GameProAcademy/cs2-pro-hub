@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
 import { ChartCard } from "@/components/common/ChartCard";
+import type { GameIconName } from "@/components/common/GameIcon";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -28,6 +29,20 @@ import { cn } from "@/lib/utils";
 import type { DnaDimension } from "@/types";
 
 export const PLAYER_DNA_QUERY_KEY = ["player", "dna"] as const;
+
+/** VGL: a game pictogram per DNA dimension (decorative; the dimension name stays the title). */
+const DNA_ICON = {
+  aim: "crosshair",
+  dueling: "kill",
+  survivability: "shield",
+  positioning: "map",
+  utility: "grenade",
+  decision_making: "dna",
+  teamplay: "assist",
+  economy: "rounds",
+  clutch: "clutch",
+  consistency: "trend",
+} as const satisfies Record<string, GameIconName>;
 
 export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const { t, intlTag, locale } = useI18n();
@@ -140,6 +155,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
             key={d.dimension}
             showDemoTag={false}
             className={cn(selected === d.dimension && "ring-1 ring-primary/50")}
+            icon={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
             title={t(dnaLabelKey(d.dimension))}
             subtitle={
               d.status === "NOT_MEASURED"
