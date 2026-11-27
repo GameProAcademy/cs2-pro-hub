@@ -111,3 +111,9 @@ granada. Com isso, Partidas, Sala, Duelos, Utilidade, Momentos, Evolução, Mapa
 
 Nenhum arquivo de motor, parser, métrica, banco, integração ou contexto do Coach foi tocado. Valor ausente
 aparece como "—" ou anel tracejado, nunca 0. Nomes de arma ambíguos (`m4a1`, `hkp2000`) não recebem arte.
+
+## VGL 2.0 — continuação (2026-11-27)
+
+Aprofundamento por tela: assinatura e tendência do Player DNA, painel CT/T e rounds táticos na Sala, Coach legível
+sem títulos, HUD de combate em Performance, "antes → agora" em Evolução, cartões de Metas, herói do Perfil e
+Notificações por dia. Detalhes, regras de integridade e validação em `docs/ux1/VGL2_CONTINUATION.md`.
