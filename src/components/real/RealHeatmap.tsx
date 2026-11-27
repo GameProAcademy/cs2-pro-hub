@@ -7,6 +7,7 @@
  */
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { MapIdentityPanel } from "@/components/cs2/MapIdentity";
 import { CircleDashed, MapPinned } from "lucide-react";
 import { useMemo, useState, type CSSProperties } from "react";
 
@@ -119,6 +120,7 @@ export function HeatmapBody({
     <div className="space-y-6" data-heatmap-status={h.events.status} data-map-support={h.support}>
       <MatchSelectSlot>
         <MapGallery maps={r.maps} current={h.map} onPick={(map) => onSearch({ map })} />
+        <MapIdentityPanel map={h.map} support={h.support} />
       </MatchSelectSlot>
       <Filters r={r} h={h} search={search} onSearch={onSearch} />
       {h.support !== "SUPPORTED" ? (
