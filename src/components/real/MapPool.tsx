@@ -4,9 +4,11 @@
  * Matches without an identified map are reported apart and never assigned to a map.
  */
 import { Link } from "@tanstack/react-router";
+import type { CSSProperties } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { MapTile } from "@/components/common/GameVisuals";
+import { MapArt } from "@/components/cs2/Cs2Art";
 import { useT } from "@/i18n";
 import { fill } from "@/lib/format";
 
@@ -46,17 +48,22 @@ export function MapPoolCard({ rows }: { rows: ReadonlyArray<{ map: string | null
       subtitle={t("vgl.mapPool.subtitle")}
     >
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" data-map-pool>
-        {entries.map((e) => (
-          <li key={e.map}>
+        {entries.map((e, i) => (
+          <li key={e.map} className="vgl-rise" style={{ "--vgl-i": i } as CSSProperties}>
             <Link
               to="/maps"
-              className="flex min-h-14 items-center justify-between gap-3 rounded-lg border border-border bg-elevated/40 px-3 py-2 transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              className="vgl-lift block overflow-hidden rounded-xl border border-border hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               data-map-pool-entry={e.map}
             >
-              <MapTile map={e.map} size="md" showName />
-              <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
-                {fill(t("vgl.mapPool.matches"), { n: e.matches })}
-              </span>
+              <MapArt
+                map={e.map}
+                className="flex min-h-16 items-center justify-between gap-3 px-3 py-2.5"
+              >
+                <MapTile map={e.map} size="md" showName />
+                <span className="shrink-0 rounded-md bg-background/80 px-2 py-0.5 font-mono text-sm tabular-nums text-foreground">
+                  {fill(t("vgl.mapPool.matches"), { n: e.matches })}
+                </span>
+              </MapArt>
             </Link>
           </li>
         ))}
