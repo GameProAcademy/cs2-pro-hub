@@ -4,14 +4,15 @@
  * matches without the metric measured do not count, and a short sample says so.
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Trophy } from "lucide-react";
 import { useState } from "react";
 
-import { GameIcon } from "@/components/common/GameIcon";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { ToneBadge } from "@/components/common/VisualBadges";
 import { Button } from "@/components/ui/button";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
-import { fill, formatDate, formatDateTime, formatNumber } from "@/lib/format";
+import { NOT_AVAILABLE_MARK, fill, formatDate, formatDateTime, formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { GOAL_METRICS, type GoalMetric } from "@/lib/notifications/notificationEvents";
 import {
   deleteGoal,
@@ -21,6 +22,15 @@ import {
 } from "@/lib/notifications/notifications.functions";
 
 const GOALS_KEY = ["goals"] as const;
+/** VGL 2.0 continuation: decorative icon per goal metric. */
+const GOAL_ICON: Partial<Record<GoalMetric, GameIconName>> = {
+  rating: "trend",
+  adr: "crosshair",
+  kast: "shield",
+  hsPercent: "headshot",
+  kd: "kill",
+  openingSuccess: "opening",
+};
 const DIGITS: Record<GoalMetric, number> = {
   rating: 2,
   adr: 1,
@@ -124,49 +134,91 @@ export function GoalsPanel() {
           <p className="max-w-md text-sm text-muted-foreground">{t("goals.empty")}</p>
         </div>
       ) : (
-        <ul className="space-y-3">
-          {data.goals.map((g) => (
-            <GoalCard
-              key={g.id}
-              goal={g}
-              onEdit={() =>
-                setDraft({
-                  id: g.id,
-                  metric: g.metric,
-                  direction: g.direction,
-                  target: String(g.target),
-                  windowMatches: g.windowMatches,
-                  deadline: g.deadline ?? "",
-                  reminder: g.reminder,
-                  reminderWeekday: g.reminderWeekday ?? 1,
-                })
-              }
-            />
-          ))}
-        </ul>
+        <div className="space-y-6">
+          {(["ACTIVE", "REACHED"] as const).map((group) => {
+            const list = data.goals.filter((g) =>
+              group === "REACHED"
+                ? g.progress.status === "REACHED"
+                : g.progress.status !== "REACHED",
+            );
+            if (!list.length) return null;
+            return (
+              <section
+                key={group}
+                aria-label={t(`vgl.goals.group.${group}` as TranslationKey)}
+                data-goals-group={group}
+              >
+                <h2 className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  {group === "REACHED" ? (
+                    <Trophy className="size-4 text-primary" aria-hidden />
+                  ) : (
+                    <GameIcon name="target" className="size-4 text-primary" />
+                  )}
+                  {t(`vgl.goals.group.${group}` as TranslationKey)}
+                  <span className="tabular-nums">({list.length})</span>
+                </h2>
+                <ul className="grid gap-3 lg:grid-cols-2">
+                  {list.map((g) => (
+                    <GoalCard
+                      key={g.id}
+                      goal={g}
+                      onEdit={() =>
+                        setDraft({
+                          id: g.id,
+                          metric: g.metric,
+                          direction: g.direction,
+                          target: String(g.target),
+                          windowMatches: g.windowMatches,
+                          deadline: g.deadline ?? "",
+                          reminder: g.reminder,
+                          reminderWeekday: g.reminderWeekday ?? 1,
+                        })
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       )}
       <p className="text-xs text-muted-foreground">{t("goals.progress.source")}</p>
       <section aria-label={t("goals.achievements")} className="space-y-2">
-        <h2 className="text-sm font-semibold">{t("goals.achievements")}</h2>
+        <h2 className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          <Trophy className="size-4 text-primary" aria-hidden />
+          {t("goals.achievements")}
+        </h2>
         {!data.achievements.length ? (
           <p className="text-xs text-muted-foreground">{t("goals.achievements.empty")}</p>
         ) : (
-          <ul className="space-y-1 text-sm">
+          <ul className="grid gap-2 text-sm sm:grid-cols-2">
             {data.achievements.map((a) => (
-              <li key={a.id}>
-                {fill(t("goals.achievement.line"), {
-                  metric: t(`notify.metric.${a.metric}` as TranslationKey),
-                  direction: t(`goals.direction.${a.direction}` as TranslationKey).toLowerCase(),
-                  target: formatNumber(a.target, intlTag, DIGITS[a.metric as GoalMetric] ?? 1),
-                  value: formatNumber(
-                    a.achievedValue,
-                    intlTag,
-                    DIGITS[a.metric as GoalMetric] ?? 1,
-                  ),
-                  sample: a.sampleMatches,
-                  from: formatDate(a.periodFrom, intlTag),
-                  to: formatDate(a.periodTo, intlTag),
-                })}
+              <li
+                key={a.id}
+                className="flex items-start gap-3 rounded-lg border border-primary/25 bg-primary/5 p-3"
+                data-achievement
+              >
+                <span
+                  aria-hidden
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary"
+                >
+                  <Trophy className="size-4" aria-hidden />
+                </span>
+                <span>
+                  {fill(t("goals.achievement.line"), {
+                    metric: t(`notify.metric.${a.metric}` as TranslationKey),
+                    direction: t(`goals.direction.${a.direction}` as TranslationKey).toLowerCase(),
+                    target: formatNumber(a.target, intlTag, DIGITS[a.metric as GoalMetric] ?? 1),
+                    value: formatNumber(
+                      a.achievedValue,
+                      intlTag,
+                      DIGITS[a.metric as GoalMetric] ?? 1,
+                    ),
+                    sample: a.sampleMatches,
+                    from: formatDate(a.periodFrom, intlTag),
+                    to: formatDate(a.periodTo, intlTag),
+                  })}
+                </span>
               </li>
             ))}
           </ul>
@@ -185,14 +237,31 @@ function GoalCard({ goal, onEdit }: { goal: GoalView; onEdit: () => void }) {
   const p = goal.progress;
   const digits = DIGITS[goal.metric];
   return (
-    <li className="rounded-md border border-border p-3">
+    <li
+      className={cn(
+        "vgl-lift relative overflow-hidden rounded-xl border border-border bg-card p-4 pl-5",
+        p.status === "REACHED" && "border-primary/40",
+      )}
+      data-goal-card={p.status}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "absolute left-0 top-0 h-full w-1",
+          p.status === "REACHED"
+            ? "bg-primary"
+            : p.status === "IN_PROGRESS"
+              ? "bg-context"
+              : "bg-border-strong",
+        )}
+      />
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-3">
           <span
             aria-hidden
             className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
           >
-            <GameIcon name="target" className="size-4" />
+            <GameIcon name={GOAL_ICON[goal.metric] ?? "target"} className="size-4" />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-medium">
@@ -226,6 +295,25 @@ function GoalCard({ goal, onEdit }: { goal: GoalView; onEdit: () => void }) {
           </ToneBadge>
         )}
       </div>
+      <dl className="mt-4 grid grid-cols-2 gap-3" data-goal-readout>
+        <div>
+          <dt className="text-xs text-muted-foreground">{t("vgl.goals.current")}</dt>
+          <dd
+            className={cn(
+              "font-mono text-2xl font-semibold tabular-nums",
+              p.value === null ? "text-muted-foreground" : "text-foreground",
+            )}
+          >
+            {p.value === null ? NOT_AVAILABLE_MARK : formatNumber(p.value, intlTag, digits)}
+          </dd>
+        </div>
+        <div className="text-right">
+          <dt className="text-xs text-muted-foreground">{t("vgl.goals.target")}</dt>
+          <dd className="font-mono text-2xl font-semibold tabular-nums text-primary">
+            {formatNumber(goal.target, intlTag, digits)}
+          </dd>
+        </div>
+      </dl>
       <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
         {p.status === "NO_DATA" ? <p>{t("goals.progress.NO_DATA")}</p> : null}
         {p.status === "INSUFFICIENT_SAMPLE" ? (

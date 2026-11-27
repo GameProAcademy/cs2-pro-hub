@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
-import { fill, formatDateTime } from "@/lib/format";
+import { fill, formatDate, formatDateTime } from "@/lib/format";
 import {
   NOTIFICATION_CATEGORIES,
   type NotificationCategory,
@@ -283,7 +283,7 @@ function NotificationIcon({
     <span
       aria-hidden
       className={cn(
-        "hidden size-9 shrink-0 items-center justify-center rounded-lg border sm:flex",
+        "flex size-9 shrink-0 items-center justify-center rounded-lg border",
         failed
           ? "border-warning/30 bg-warning/10 text-warning"
           : "border-primary/25 bg-primary/10 text-primary",
@@ -296,6 +296,18 @@ function NotificationIcon({
       />
     </span>
   );
+}
+
+/** VGL 2.0 continuation: consecutive notifications grouped by their local calendar day (display only). */
+function groupByDay(items: NotificationView[], intlTag: string) {
+  const groups: { day: string; items: NotificationView[] }[] = [];
+  for (const n of items) {
+    const day = formatDate(n.createdAt, intlTag);
+    const last = groups[groups.length - 1];
+    if (last && last.day === day) last.items.push(n);
+    else groups.push({ day, items: [n] });
+  }
+  return groups;
 }
 
 export function NotificationCenter() {
@@ -327,6 +339,21 @@ export function NotificationCenter() {
     return <p className="text-sm text-muted-foreground">{t("notify.unavailable")}</p>;
   return (
     <section className="space-y-4" aria-label={t("notify.title")} data-notification-center>
+      {first ? (
+        <p
+          className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground"
+          data-notification-unread={first.unread}
+        >
+          <span
+            aria-hidden
+            className={cn(
+              "size-2 rounded-full",
+              first.unread > 0 ? "bg-primary" : "bg-border-strong",
+            )}
+          />
+          {unreadLabel(first.unread, locale, t)}
+        </p>
+      ) : null}
       <div
         className="flex flex-wrap items-center gap-2"
         role="group"
@@ -339,12 +366,13 @@ export function NotificationCenter() {
             aria-pressed={category === c}
             onClick={() => setCategory(c)}
             className={cn(
-              "rounded-sm border px-2 py-1 text-xs",
+              "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1 text-xs",
               category === c
                 ? "border-primary/50 bg-primary/10 text-primary"
                 : "border-border text-muted-foreground hover:text-foreground",
             )}
           >
+            {c ? <GameIcon name={CATEGORY_ICON[c] ?? "rounds"} className="size-3.5" /> : null}
             {c ? t(`notify.cat.${c}` as TranslationKey) : t("notify.filter.all")}
           </button>
         ))}
@@ -387,72 +415,103 @@ export function NotificationCenter() {
           <p className="mt-1 text-xs text-muted-foreground">{t("notify.emptyHint")}</p>
         </div>
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border">
-          {items.map((n) => {
-            const text = notificationText(n, t);
-            return (
-              <li
-                key={n.id}
-                className={cn(
-                  "flex flex-col gap-2 p-3 sm:flex-row sm:items-start",
-                  !n.readAt && "bg-primary/5",
-                )}
-              >
-                <NotificationIcon category={n.category} failed={n.type === "demo_failed"} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                    {t(`notify.cat.${n.category}` as TranslationKey)} ·{" "}
-                    <time dateTime={n.createdAt}>{formatDateTime(n.createdAt, intlTag)}</time>
-                  </p>
-                  <p className="text-sm font-medium">{text.title}</p>
-                  <p className="text-sm text-muted-foreground">{text.body}</p>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  <Button asChild size="sm" variant="outline">
-                    <Link
-                      to={n.link}
-                      onClick={() =>
-                        !n.readAt ? void mark.run({ ids: [n.id], read: true }) : undefined
-                      }
+        <div className="space-y-5">
+          {groupByDay(items, intlTag).map((g) => (
+            <section key={g.day} aria-label={g.day} data-notification-day>
+              <h3 className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                {g.day}
+              </h3>
+              <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+                {g.items.map((n) => {
+                  const text = notificationText(n, t);
+                  return (
+                    <li
+                      key={n.id}
+                      className={cn(
+                        "relative flex flex-wrap items-start gap-3 py-3 pl-4 pr-3",
+                        !n.readAt && "bg-primary/5",
+                      )}
+                      data-notification-item={n.readAt ? "read" : "unread"}
                     >
-                      {t("notify.open")}
-                    </Link>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label={n.readAt ? t("notify.markUnread") : t("notify.markRead")}
-                    title={n.readAt ? t("notify.markUnread") : t("notify.markRead")}
-                    onClick={() => mark.run({ ids: [n.id], read: !n.readAt })}
-                  >
-                    {n.readAt ? (
-                      <Mail className="size-3.5" aria-hidden />
-                    ) : (
-                      <MailOpen className="size-3.5" aria-hidden />
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    aria-label={t("notify.delete")}
-                    title={t("notify.delete")}
-                    onClick={async () => {
-                      setDeleteFailed(false);
-                      try {
-                        await deleteNotification({ data: { id: n.id } });
-                        await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
-                      } catch {
-                        setDeleteFailed(true);
-                      }
-                    }}
-                  >
-                    <Trash2 className="size-3.5" aria-hidden />
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "absolute left-0 top-0 h-full w-1",
+                          n.type === "demo_failed"
+                            ? "bg-warning"
+                            : !n.readAt
+                              ? "bg-primary"
+                              : "bg-transparent",
+                        )}
+                      />
+                      <NotificationIcon category={n.category} failed={n.type === "demo_failed"} />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                          {t(`notify.cat.${n.category}` as TranslationKey)} ·{" "}
+                          <time dateTime={n.createdAt}>{formatDateTime(n.createdAt, intlTag)}</time>
+                        </p>
+                        <p
+                          className={cn(
+                            "flex items-center gap-2 text-sm",
+                            n.readAt ? "font-medium" : "font-semibold text-foreground",
+                          )}
+                        >
+                          {!n.readAt ? (
+                            <span aria-hidden className="size-2 shrink-0 rounded-full bg-primary" />
+                          ) : null}
+                          {text.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{text.body}</p>
+                      </div>
+                      <div className="flex w-full flex-wrap gap-1 sm:w-auto">
+                        <Button asChild size="sm" variant="outline">
+                          <Link
+                            to={n.link}
+                            onClick={() =>
+                              !n.readAt ? void mark.run({ ids: [n.id], read: true }) : undefined
+                            }
+                          >
+                            {t("notify.open")}
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={n.readAt ? t("notify.markUnread") : t("notify.markRead")}
+                          title={n.readAt ? t("notify.markUnread") : t("notify.markRead")}
+                          onClick={() => mark.run({ ids: [n.id], read: !n.readAt })}
+                        >
+                          {n.readAt ? (
+                            <Mail className="size-3.5" aria-hidden />
+                          ) : (
+                            <MailOpen className="size-3.5" aria-hidden />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={t("notify.delete")}
+                          title={t("notify.delete")}
+                          onClick={async () => {
+                            setDeleteFailed(false);
+                            try {
+                              await deleteNotification({ data: { id: n.id } });
+                              await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+                            } catch {
+                              setDeleteFailed(true);
+                            }
+                          }}
+                        >
+                          <Trash2 className="size-3.5" aria-hidden />
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
       {pages.hasNextPage ? (
         <Button
