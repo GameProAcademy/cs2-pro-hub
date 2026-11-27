@@ -114,6 +114,53 @@ export function RealProScoreCard() {
   );
 }
 
+/**
+ * VGL: the points column of the table drawn as one segmented bar. Decorative (the table holds the
+ * numbers): each segment is a component's own contribution, unavailable components are left out
+ * and nothing is redistributed. Only for a READY score.
+ */
+export function ContributionBar({
+  components,
+}: {
+  components: ReadonlyArray<{ id: string; available: boolean; contribution: number }>;
+}) {
+  const { t } = useI18n();
+  const parts = components.filter((c) => c.available && c.contribution > 0);
+  const total = parts.reduce((sum, c) => sum + c.contribution, 0);
+  if (!parts.length || total <= 0) return null;
+  return (
+    <div aria-hidden className="space-y-2" data-contribution-bar>
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+        {parts.map((c, i) => (
+          <span
+            key={c.id}
+            className="h-full border-r border-background last:border-r-0"
+            style={{
+              width: `${(c.contribution / total) * 100}%`,
+              backgroundColor: `color-mix(in oklab, var(--primary) ${100 - i * 11}%, var(--card))`,
+            }}
+            title={t(`score.c.${c.id}` as TranslationKey)}
+            data-segment={c.id}
+          />
+        ))}
+      </div>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        {parts.map((c, i) => (
+          <li key={c.id} className="inline-flex items-center gap-1.5">
+            <span
+              className="inline-block size-2.5 rounded-sm"
+              style={{
+                backgroundColor: `color-mix(in oklab, var(--primary) ${100 - i * 11}%, var(--card))`,
+              }}
+            />
+            {t(`score.c.${c.id}` as TranslationKey)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** Performance section body: the number, every component with its sample, and the method. */
 export function RealProScoreDetails() {
   const { t, intlTag } = useI18n();
@@ -136,6 +183,7 @@ export function RealProScoreDetails() {
           {fill(t("score.partialExcluded"), { n: score.partialMatchesExcluded })}
         </p>
       ) : null}
+      {score.state === "READY" ? <ContributionBar components={score.components} /> : null}
       {score.state !== "EMPTY" ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm" data-pro-score-components>

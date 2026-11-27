@@ -6,10 +6,13 @@
  */
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Bookmark, CircleDashed, Trash2 } from "lucide-react";
+import { CircleDashed, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
+import { MapTile } from "@/components/common/GameVisuals";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -365,6 +368,21 @@ function Collections({
   );
 }
 
+/** VGL: pictogram of each moment kind (decorative; the kind is also written in the meta line). */
+const MOMENT_ICON: Record<MomentKind, GameIconName> = {
+  KILL: "kill",
+  DEATH: "skull",
+  OPENING: "opening",
+  TRADE: "trade",
+  CLUTCH: "clutch",
+  MULTIKILL: "kill",
+  UTILITY: "grenade",
+  PLANT: "bomb",
+  DEFUSE: "defuse",
+  ROUND: "rounds",
+  TICK_RANGE: "clock",
+};
+
 function MomentItem({ m, collections }: { m: Moment; collections: MomentCollection[] }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -411,7 +429,18 @@ function MomentItem({ m, collections }: { m: Moment; collections: MomentCollecti
       data-availability={m.availability}
     >
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
-        <Bookmark className="mt-0.5 size-4 text-primary" aria-hidden />
+        <span
+          aria-hidden
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-lg border",
+            m.kind === "UTILITY"
+              ? "border-category-utility/30 bg-category-utility/10 text-category-utility"
+              : "border-primary/25 bg-primary/10 text-primary",
+          )}
+          data-moment-icon={MOMENT_ICON[m.kind]}
+        >
+          <GameIcon name={MOMENT_ICON[m.kind]} className="size-4" />
+        </span>
         <div className="min-w-0 flex-1">
           <div className="font-medium">{m.title}</div>
           <div className="text-xs text-muted-foreground">
@@ -422,6 +451,7 @@ function MomentItem({ m, collections }: { m: Moment; collections: MomentCollecti
               : ""} · {formatDate(m.createdAt, intlTag)}
           </div>
         </div>
+        {m.map ? <MapTile map={m.map} size="sm" className="self-center" /> : null}
         {m.availability === "AVAILABLE" && m.matchId ? (
           <Link
             to="/replay"
