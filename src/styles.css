@@ -344,6 +344,41 @@
   transform: translateY(-2px);
   box-shadow: 0 10px 30px -12px color-mix(in oklab, var(--primary) 35%, transparent);
 }
+/* VGL 3.0: kill-feed line entry, score reveal, round focus after a jump. */
+@keyframes vgl-feed {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes vgl-score {
+  from {
+    opacity: 0;
+    letter-spacing: 0.3em;
+  }
+}
+@keyframes vgl-focus {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+.vgl-feed {
+  animation: vgl-feed 0.3s ease-out both;
+  animation-delay: calc(var(--vgl-i, 0) * 40ms);
+}
+.vgl-score {
+  animation: vgl-score 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.vgl-focus {
+  animation: vgl-focus 0.9s ease-out 1;
+}
 /* Tactical grid used behind headers (radar paper). */
 .vgl-grid {
   background-image:
@@ -364,7 +399,10 @@
   .vgl-ring,
   .vgl-art,
   .vgl-grow,
-  .vgl-sweep {
+  .vgl-sweep,
+  .vgl-feed,
+  .vgl-score,
+  .vgl-focus {
     animation: none !important;
   }
   .vgl-lift,

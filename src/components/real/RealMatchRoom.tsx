@@ -9,6 +9,7 @@
  */
 import { MapTile } from "@/components/common/GameVisuals";
 import { MapArt, SideLogo } from "@/components/cs2/Cs2Art";
+import { RoundMarks, RoundMarksLegend, ScoreLine } from "@/components/cs2/MatchTimeline";
 import { SideBadge, ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { useQuery } from "@tanstack/react-query";
@@ -188,30 +189,42 @@ function RoomHeader({ m }: { m: OverviewMatch }) {
           aria-hidden
           className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary via-primary/40 to-transparent"
         />
-        <div className="flex flex-wrap items-center gap-3">
-          <MapTile map={m.map} size="lg" />
-          <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
-            {roomTitle(m, intlTag)}
-          </h1>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <MapTile map={m.map} size="lg" />
+              <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
+                {roomTitle(m, intlTag)}
+              </h1>
+            </div>
+            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+              <span data-date-source={m.dateSource}>
+                {m.dateSource === "processed" ? t("room.date.processed") : t("room.date.played")}
+              </span>
+              {m.roundsPlayed !== null ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <GameIcon name="rounds" className="size-3.5" />
+                  {fill(t("room.rounds"), { n: m.roundsPlayed })}
+                </span>
+              ) : null}
+              {m.result && m.resultStatus !== "UNRESOLVED_BY_DEMO" ? (
+                <ToneBadge
+                  tone={RESULT_TONE[m.result] ?? "context"}
+                  data-room-result={m.resultStatus}
+                >
+                  {result}
+                </ToneBadge>
+              ) : (
+                <span data-room-result={m.resultStatus}>{result}</span>
+              )}
+            </p>
+          </div>
+          <ScoreLine
+            result={m.resultStatus === "UNRESOLVED_BY_DEMO" ? null : m.result}
+            scorePlayer={m.resultStatus === "UNRESOLVED_BY_DEMO" ? null : m.scorePlayer}
+            scoreOpponent={m.resultStatus === "UNRESOLVED_BY_DEMO" ? null : m.scoreOpponent}
+          />
         </div>
-        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span data-date-source={m.dateSource}>
-            {m.dateSource === "processed" ? t("room.date.processed") : t("room.date.played")}
-          </span>
-          {m.roundsPlayed !== null ? (
-            <span className="inline-flex items-center gap-1.5">
-              <GameIcon name="rounds" className="size-3.5" />
-              {fill(t("room.rounds"), { n: m.roundsPlayed })}
-            </span>
-          ) : null}
-          {m.result && m.resultStatus !== "UNRESOLVED_BY_DEMO" ? (
-            <ToneBadge tone={RESULT_TONE[m.result] ?? "context"} data-room-result={m.resultStatus}>
-              {result}
-            </ToneBadge>
-          ) : (
-            <span data-room-result={m.resultStatus}>{result}</span>
-          )}
-        </p>
       </MapArt>
     </header>
   );
@@ -410,7 +423,7 @@ function RoundStrip({ matchId }: { matchId: string }) {
             outcome: t(`room.strip.${state}` as TranslationKey),
           });
           return (
-            <li key={r.roundNumber} className="flex items-center gap-1.5">
+            <li key={r.roundNumber} className="flex items-start gap-1.5">
               {switched ? (
                 <span
                   className="mx-1 h-8 w-px bg-border-strong"
@@ -420,26 +433,29 @@ function RoundStrip({ matchId }: { matchId: string }) {
                   <span className="sr-only">{t("room.strip.sideSwitch")}</span>
                 </span>
               ) : null}
-              <Link
-                to="/matches/$matchId"
-                params={{ matchId }}
-                search={{ tab: "replay", round: r.roundNumber }}
-                title={label}
-                aria-label={label}
-                data-round={r.roundNumber}
-                data-outcome={state}
-                className={cn(
-                  "flex size-8 items-center justify-center rounded border font-mono text-xs",
-                  state === "unknown"
-                    ? "border-dashed border-border text-muted-foreground"
-                    : r.side === "CT"
-                      ? "border-side-ct text-side-ct"
-                      : "border-side-t text-side-t",
-                  state === "won" && (r.side === "CT" ? "bg-side-ct/25" : "bg-side-t/25"),
-                )}
-              >
-                {state === "unknown" ? "?" : r.roundNumber}
-              </Link>
+              <span className="flex flex-col items-center gap-0.5">
+                <Link
+                  to="/matches/$matchId"
+                  params={{ matchId }}
+                  search={{ tab: "replay", round: r.roundNumber }}
+                  title={label}
+                  aria-label={label}
+                  data-round={r.roundNumber}
+                  data-outcome={state}
+                  className={cn(
+                    "flex size-8 items-center justify-center rounded border font-mono text-xs",
+                    state === "unknown"
+                      ? "border-dashed border-border text-muted-foreground"
+                      : r.side === "CT"
+                        ? "border-side-ct text-side-ct"
+                        : "border-side-t text-side-t",
+                    state === "won" && (r.side === "CT" ? "bg-side-ct/25" : "bg-side-t/25"),
+                  )}
+                >
+                  {state === "unknown" ? "?" : r.roundNumber}
+                </Link>
+                <RoundMarks r={r} />
+              </span>
             </li>
           );
         })}
@@ -468,6 +484,9 @@ function RoundStrip({ matchId }: { matchId: string }) {
           {t("room.strip.unknown")}
         </li>
       </ul>
+      <div className="mt-2">
+        <RoundMarksLegend />
+      </div>
     </ChartCard>
   );
 }

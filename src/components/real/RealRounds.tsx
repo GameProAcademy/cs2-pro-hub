@@ -12,8 +12,8 @@ import type { ReactNode } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { GameIcon } from "@/components/common/GameIcon";
-import { HudIcon, SideLogo, WeaponArt } from "@/components/cs2/Cs2Art";
-import { weaponArt } from "@/lib/cs2/assets";
+import { HudIcon, SideLogo } from "@/components/cs2/Cs2Art";
+import { KillFeedLine, RoundJump } from "@/components/cs2/MatchTimeline";
 import { cn } from "@/lib/utils";
 
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
@@ -332,6 +332,7 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
       </ChartCard>
 
       <ChartCard title={t("rounds.section.list")} subtitle={t("rounds.section.list.subtitle")}>
+        <RoundJump rounds={r.rounds} />
         <ol className="divide-y divide-border" data-round-list>
           {r.rounds.map((round) => (
             <RoundItem key={round.roundNumber} round={round} matchId={r.matchId} />
@@ -339,30 +340,6 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
         </ol>
       </ChartCard>
     </div>
-  );
-}
-
-/** VGL 2.0 continuation: the event's game icon (real weapon silhouette for a kill). */
-function EventGlyph({ e }: { e: RoundReport["timeline"][number] }) {
-  const tone = e.byMe ? "text-primary" : e.onMe ? "text-destructive" : "text-muted-foreground";
-  if (e.type === "bomb_plant")
-    return <HudIcon name="icon_c4_default" className={cn("size-4", tone)} />;
-  if (e.type === "bomb_defuse")
-    return <HudIcon name="icon_defuse_default" className={cn("size-4", tone)} />;
-  if (e.type === "bomb_explode")
-    return <HudIcon name="icon_bomb_explosion_default" className={cn("size-4", tone)} />;
-  return (
-    <span
-      className={cn("inline-flex items-center gap-1", tone)}
-      data-event-weapon={e.weapon ?? "none"}
-    >
-      {weaponArt(e.weapon) ? (
-        <WeaponArt weapon={e.weapon} className="h-3.5 w-9" />
-      ) : (
-        <GameIcon name="kill" className="size-3.5" />
-      )}
-      {e.headshot ? <HudIcon name="headshot" className="size-3.5" /> : null}
-    </span>
   );
 }
 
@@ -459,15 +436,11 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
           ) : null}
           <ol className="space-y-1" data-timeline>
             {round.timeline.map((e, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-2 text-xs">
-                <EventGlyph e={e} />
+              <li key={i} className="flex flex-wrap items-center gap-2 text-xs" data-feed-item>
+                <KillFeedLine e={e} mySide={side} sentence={eventText(t, e, side)} index={i} />
                 <span className="font-mono text-muted-foreground">{e.tick}</span>
-                <span>{eventText(t, e, side)}</span>
                 {e.alive ? (
                   <span className="font-mono text-muted-foreground">{`T ${e.alive.T} × CT ${e.alive.CT}`}</span>
-                ) : null}
-                {e.traded ? (
-                  <span className="rounded bg-muted px-1">{t("rounds.tag.traded")}</span>
                 ) : null}
                 <Link
                   to="/replay"

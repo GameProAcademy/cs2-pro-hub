@@ -40,8 +40,9 @@ describe("rounds and deaths (source contracts)", () => {
     expect(r).toMatch(
       /round\.won === null \? \(\s*<span className="text-muted-foreground">\{result\}<\/span>/,
     );
-    // Kill events: the real weapon's silhouette when unambiguous; the pictogram otherwise.
-    expect(r).toContain("weaponArt(e.weapon) ?");
+    // Kill events: the real weapon's silhouette when unambiguous (moved to the VGL 3.0 kill feed).
+    expect(src("src/components/cs2/MatchTimeline.tsx")).toContain("weaponArt(e.weapon) ?");
+    expect(r).toContain("<KillFeedLine");
   });
 
   it("deaths: the recorded weapon gets its silhouette; a missing weapon keeps the text", () => {
