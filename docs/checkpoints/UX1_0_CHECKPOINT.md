@@ -403,6 +403,21 @@ Evidência: `docs/ux1/UPLOAD_VISUAL_VALIDATION.md`. **Estado:** publicado e vali
 - **Pendente:** inspeção visual das 9 rotas de admin com sessão de administrador (a conta de teste é redirecionada).
 - Detalhes em `docs/ux1/VGL2_CONTINUATION.md`.
 
+### 2.21 VGL 3.0 — Competitive Immersion (2026-11-27)
+
+- **PRs:**
+  - #421 Match Timeline;
+  - #422 Identity e Início no celular;
+  - #423 Briefing e Coach no celular;
+  - #424 tabelas no celular, Mapas, Momentos, Treino, Admin;
+  - PR de fechamento.
+- **Produção:**
+  - deploy `3f2dda1f` de `aa3129cc`;
+  - VGL smoke `45985745386`: 0 overflow, 0 texto < 12 px, 0 erros, Coach respondeu;
+  - upload smoke `45985748571`: idêntico.
+- **Pendente:** Admin com sessão de administrador.
+- **Detalhes:** `docs/ux1/VGL3_FINAL_VALIDATION.md`.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |

@@ -117,3 +117,19 @@ aparece como "—" ou anel tracejado, nunca 0. Nomes de arma ambíguos (`m4a1`, 
 Aprofundamento por tela: assinatura e tendência do Player DNA, painel CT/T e rounds táticos na Sala, Coach legível
 sem títulos, HUD de combate em Performance, "antes → agora" em Evolução, cartões de Metas, herói do Perfil e
 Notificações por dia. Detalhes, regras de integridade e validação em `docs/ux1/VGL2_CONTINUATION.md`.
+
+## VGL 3.0 — Competitive Immersion (2026-11-27)
+
+Cinco famílias (HUD, Radar, Identity, Match Timeline, Briefing) sobre a fundação da VGL 2.0:
+
+- kill feed real e marcas de round na Sala;
+- especialidades do DNA no Início e no Perfil;
+- trilha O → I → R no Raio-X;
+- mapas citados sob a resposta do Coach;
+- tabelas empilhadas no celular.
+
+Documentos:
+
+- matriz em `VGL3_VISUAL_OPPORTUNITY_MATRIX.md`;
+- plano em `VGL3_IMPLEMENTATION_PLAN.md`;
+- validação em `VGL3_FINAL_VALIDATION.md`.

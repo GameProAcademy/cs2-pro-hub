@@ -90,6 +90,11 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                 .replace("{n}", String(dna.snapshot.matchCount))
             : t("real.dna.snapshotPending")}
         </p>
+        {stable && observed.length >= 3 ? (
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-dna-radar-method>
+            {fill(t("real.dna.radarSub"), { min: DNA_MIN_EVENT_SAMPLE })}
+          </p>
+        ) : null}
       </details>
       {dna.state === "INSUFFICIENT_SAMPLE" ? (
         <p className="rounded-lg border border-warning/25 bg-warning/8 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
@@ -104,11 +109,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
         </p>
       ) : null}
       {stable && observed.length >= 3 ? (
-        <ChartCard
-          showDemoTag={false}
-          title={t("dna.radarTitle")}
-          subtitle={fill(t("real.dna.radarSub"), { min: DNA_MIN_EVENT_SAMPLE })}
-        >
+        <ChartCard showDemoTag={false} title={t("dna.radarTitle")}>
           {/* UX-1.6 / R-14: radar A — ten axes always, empty axes dashed, one selection. */}
           <DnaRadarA axes={axes} selected={selected} onSelect={setSelected} />
           <div
