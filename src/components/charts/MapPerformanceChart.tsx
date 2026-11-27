@@ -59,13 +59,13 @@ export function MapPerformanceChart({
             <XAxis
               dataKey="displayLabel"
               stroke="var(--muted-foreground)"
-              tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+              tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
               stroke="var(--muted-foreground)"
-              tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+              tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               domain={[0, 100]}

@@ -29,7 +29,7 @@ const PALETTE = [
 
 const axisProps = {
   stroke: "var(--muted-foreground)",
-  tick: { fill: "var(--muted-foreground)", fontSize: 11 },
+  tick: { fill: "var(--muted-foreground)", fontSize: 12 },
   tickLine: false,
   axisLine: false,
 } as const;
@@ -42,7 +42,7 @@ const tooltipStyle = {
     fontSize: 12,
     color: "var(--popover-foreground)",
   },
-  labelStyle: { color: "var(--muted-foreground)", fontSize: 11 },
+  labelStyle: { color: "var(--muted-foreground)", fontSize: 12 },
 } as const;
 
 /**
@@ -96,7 +96,7 @@ export function TrendChart({
               width={44}
             />
             <Tooltip {...tooltipStyle} />
-            {showLegend ? <Legend wrapperStyle={{ fontSize: 11 }} /> : null}
+            {showLegend ? <Legend wrapperStyle={{ fontSize: 12 }} /> : null}
             {series.map((s, i) => (
               <Area
                 key={s.key}
@@ -122,7 +122,7 @@ export function TrendChart({
               width={44}
             />
             <Tooltip {...tooltipStyle} />
-            {showLegend ? <Legend wrapperStyle={{ fontSize: 11 }} /> : null}
+            {showLegend ? <Legend wrapperStyle={{ fontSize: 12 }} /> : null}
             {series.map((s, i) => (
               <Line
                 key={s.key}

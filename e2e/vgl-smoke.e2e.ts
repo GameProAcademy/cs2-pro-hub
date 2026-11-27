@@ -79,18 +79,24 @@ test("VGL smoke — every player screen, seven widths, AI Coach", async ({ page 
 
   // Route × width audit.
   const routes: Record<string, unknown> = {};
+  const failures: string[] = [];
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: 900 });
     for (const path of ROUTES) {
       await settle(page, path);
       const a = await audit(page);
-      expect(a.overflow, `overflow ${path} @${width}`).toBeLessThanOrEqual(0);
-      expect(a.smallText, `text < 12px ${path} @${width}`).toBe(0);
+      // Soft: one run reports every route × width that fails (the test still fails).
+      expect.soft(a.overflow, `overflow ${path} @${width}`).toBeLessThanOrEqual(0);
+      expect.soft(a.smallText, `text < 12px ${path} @${width}`).toBe(0);
+      if (a.overflow > 0 || a.smallText > 0)
+        failures.push(`${path}@${width}:o${a.overflow}/s${a.smallText}`);
       (routes[path] ??= {}) as Record<string, unknown>;
       (routes[path] as Record<string, unknown>)[width] = a;
     }
   }
   summary["routes"] = routes;
+  summary["layoutFailures"] = failures;
+  console.log(`[vgl-smoke] layoutFailures=${JSON.stringify(failures)}`);
 
   // VGL markers where real data exists.
   await page.setViewportSize({ width: 1440, height: 900 });
