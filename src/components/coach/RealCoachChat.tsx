@@ -40,7 +40,7 @@ import { coachScreenFrom } from "@/lib/coach/coachScreen";
 import { getCoachConversation, getCoachPreferences } from "@/lib/coachSession.functions";
 import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
-import { CoachMapContext } from "@/components/cs2/BriefingKit";
+import { CoachEmptyBriefing, CoachMapContext } from "@/components/cs2/BriefingKit";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { coachSectionKind, coachTokens, type CoachSectionKind } from "@/lib/coach/coachSections";
 import { MapEmblem, SideLogo, WeaponArt } from "@/components/cs2/Cs2Art";
@@ -553,6 +553,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
                 description={`${t("coach2.persona.intro")} ${t("real.aicoach.emptyDescription")}`}
                 icon={<GameIcon name="target" className="size-5" />}
               />
+              <CoachEmptyBriefing />
               {showOnboarding ? (
                 <div
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-info/30 bg-info/5 px-4 py-3 text-xs text-muted-foreground"

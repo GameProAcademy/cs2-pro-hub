@@ -48,7 +48,13 @@ describe("CoachMapContext", () => {
   const seed = (maps: (string | null)[]) => (qc: QueryClient) =>
     qc.setQueryData(PLAYER_OVERVIEW_QUERY_KEY, {
       state: "READY",
-      matches: maps.map((map, i) => ({ matchId: `m${i}`, map })),
+      matches: maps.map((map, i) => ({
+        matchId: `m${i}`,
+        map,
+        playedAt: `2026-11-2${i}T00:00:00Z`,
+        kills: 10,
+        deaths: 8,
+      })),
     });
 
   it("only maps the text names AND the player has, with the real count", () => {

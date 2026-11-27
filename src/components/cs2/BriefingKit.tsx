@@ -7,15 +7,18 @@
  *   player's own matches, with the count of those matches and a link to the map. It does not read
  *   intent, pick a match or add a conclusion: it only lists what the text names and the list holds.
  */
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { MapEmblem } from "@/components/cs2/Cs2Art";
 import { usePlayerOverview } from "@/components/real/RealData";
-import { useT } from "@/i18n";
+import { useI18n, useT } from "@/i18n";
 import { coachTokens } from "@/lib/coach/coachSections";
 import { mapDisplayName } from "@/lib/cs2/maps";
-import { fill } from "@/lib/format";
+import { NOT_AVAILABLE_MARK, fill, formatDate } from "@/lib/format";
+import { getDnaHistory } from "@/lib/xray.functions";
+import { matchesOnMap } from "@/components/cs2/MapIdentity";
 import { cn } from "@/lib/utils";
 
 export interface BriefingStep {
@@ -90,12 +93,13 @@ export function citedMaps(text: string): string[] {
 
 export function CoachMapContext({ content }: { content: string }) {
   const t = useT();
+  const { intlTag } = useI18n();
   const q = usePlayerOverview();
   const maps = citedMaps(content);
   if (!maps.length || !q.data || q.data.state !== "READY") return null;
   const rows = maps
-    .map((map) => ({ map, n: q.data!.matches.filter((m) => m.map === map).length }))
-    .filter((r) => r.n > 0);
+    .map((map) => ({ map, on: matchesOnMap(q.data!.matches, map).list }))
+    .filter((r) => r.on.length > 0);
   if (!rows.length) return null;
   return (
     <aside
@@ -106,23 +110,111 @@ export function CoachMapContext({ content }: { content: string }) {
       <p className="mb-2 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
         {t("vgl3.coach.maps")}
       </p>
-      <ul className="flex flex-wrap gap-2">
+      <ul className="grid gap-2 sm:grid-cols-2">
         {rows.map((r) => (
-          <li key={r.map} data-coach-map-link={r.map}>
+          <li
+            key={r.map}
+            className="rounded-lg border border-border bg-background/60 p-2.5"
+            data-coach-map-link={r.map}
+          >
             <Link
               to="/maps"
               search={{ map: r.map }}
-              className="vgl-lift inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-background/60 px-2.5 py-1 text-sm hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-11 items-center gap-2 text-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <MapEmblem map={r.map} className="size-6" />
               <span className="font-medium text-foreground">{mapDisplayName(r.map)}</span>
               <span className="text-xs text-muted-foreground">
-                {fill(t("vgl3.coach.mapMatches"), { n: r.n })}
+                {fill(t("vgl3.coach.mapMatches"), { n: r.on.length })}
               </span>
             </Link>
+            <ul className="mt-1 space-y-1" data-coach-map-matches>
+              {r.on.slice(0, 3).map((m) => (
+                <li key={m.matchId} data-coach-map-match={m.matchId}>
+                  <Link
+                    to="/matches/$matchId"
+                    params={{ matchId: m.matchId }}
+                    className="flex min-h-9 items-center justify-between gap-2 rounded-md px-2 text-xs hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="font-mono tabular-nums text-muted-foreground">
+                      {formatDate(m.playedAt, intlTag)}
+                    </span>
+                    <span className="font-mono tabular-nums text-foreground">
+                      {m.kills === null || m.deaths === null
+                        ? NOT_AVAILABLE_MARK
+                        : `${m.kills} / ${m.deaths}`}
+                    </span>
+                    <span className="text-primary">{t("vgl4.coach.openMatch")}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>
     </aside>
+  );
+}
+
+/**
+ * The Coach's empty conversation as a briefing: what it can read right now (the number of
+ * processed matches, the last match, whether a Player DNA snapshot exists). Counts only.
+ */
+export function CoachEmptyBriefing() {
+  const t = useT();
+  const { intlTag } = useI18n();
+  const q = usePlayerOverview();
+  const h = useQuery({ queryKey: ["player", "dna", "history"], queryFn: () => getDnaHistory() });
+  if (!q.data || q.data.state !== "READY") return null;
+  const last = [...q.data.matches].sort((a, b) => b.playedAt.localeCompare(a.playedAt))[0];
+  const snap = h.data
+    ? [...h.data]
+        .filter((e) => e.state === "READY")
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+    : undefined;
+  return (
+    <section
+      className="surface-panel vgl-grid relative overflow-hidden rounded-xl border border-border p-4"
+      aria-label={t("vgl4.coach.briefing")}
+      data-coach-briefing
+    >
+      <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-primary">
+        {t("vgl4.coach.briefing")}
+      </p>
+      <dl className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-border bg-background/60 p-3">
+          <dt className="text-xs text-muted-foreground">{t("vgl4.coach.matches")}</dt>
+          <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
+            {q.data.matches.length}
+          </dd>
+        </div>
+        <div className="rounded-lg border border-border bg-background/60 p-3">
+          <dt className="text-xs text-muted-foreground">{t("vgl4.coach.last")}</dt>
+          <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
+            {last ? (
+              <>
+                <MapEmblem map={last.map} className="size-6" />
+                <span className="font-medium">
+                  {last.map ? mapDisplayName(last.map) : NOT_AVAILABLE_MARK}
+                </span>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {formatDate(last.playedAt, intlTag)}
+                </span>
+              </>
+            ) : (
+              NOT_AVAILABLE_MARK
+            )}
+          </dd>
+        </div>
+        <div className="rounded-lg border border-border bg-background/60 p-3">
+          <dt className="text-xs text-muted-foreground">{t("vgl4.coach.dna")}</dt>
+          <dd className="mt-1 text-sm text-foreground">
+            {snap
+              ? fill(t("vgl4.coach.dnaAt"), { date: formatDate(snap.createdAt, intlTag) })
+              : t("vgl4.coach.dnaNone")}
+          </dd>
+        </div>
+      </dl>
+    </section>
   );
 }
