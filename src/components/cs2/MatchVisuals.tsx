@@ -35,8 +35,27 @@ function ResultBadge({ m }: { m: OverviewMatch }) {
   );
 }
 
-function Score({ m, className }: { m: OverviewMatch; className?: string }) {
-  if (m.scorePlayer === null || m.scoreOpponent === null) return null;
+function Score({
+  m,
+  className,
+  showUnknown = false,
+}: {
+  m: OverviewMatch;
+  className?: string;
+  showUnknown?: boolean;
+}) {
+  const { t } = useI18n();
+  if (m.scorePlayer === null || m.scoreOpponent === null)
+    return showUnknown ? (
+      <span
+        className={cn("font-mono tabular-nums text-muted-foreground", className)}
+        title={t("vgl3.score.unknown")}
+        aria-label={t("vgl3.score.unknown")}
+        data-score="unknown"
+      >
+        {`${NOT_AVAILABLE_MARK} : ${NOT_AVAILABLE_MARK}`}
+      </span>
+    ) : null;
   return (
     <span className={cn("font-mono font-semibold tabular-nums", className)} data-score>
       <span className={m.result === "win" ? "text-primary" : "text-foreground"}>
@@ -107,7 +126,7 @@ export function LastMatchHero({ m }: { m: OverviewMatch }) {
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
               {t("vgl.hero.lastMatch")}
             </p>
-            <h2 className="font-display text-2xl font-semibold uppercase tracking-wide text-foreground sm:text-3xl">
+            <h2 className="break-words font-display text-2xl font-semibold uppercase tracking-wide text-foreground sm:text-3xl">
               {m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}
             </h2>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
@@ -119,7 +138,8 @@ export function LastMatchHero({ m }: { m: OverviewMatch }) {
           <Link
             to="/matches/$matchId"
             params={{ matchId: m.matchId }}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none sm:w-auto"
+            data-hero-cta
           >
             {t("vgl.hero.openRoom")}
             <ChevronRight className="size-4" aria-hidden />
@@ -197,7 +217,7 @@ export function MatchCard({ m, index = 0 }: { m: OverviewMatch; index?: number }
             <p className="truncate font-display text-lg font-semibold uppercase tracking-wide text-foreground">
               {m.map ? mapDisplayName(m.map) : NOT_AVAILABLE_MARK}
             </p>
-            <Score m={m} className="text-lg" />
+            <Score m={m} className="text-lg" showUnknown />
           </div>
           <p className="text-xs text-muted-foreground">
             <time dateTime={m.playedAt}>{formatDate(m.playedAt, intlTag)}</time>

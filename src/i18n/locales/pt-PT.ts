@@ -131,6 +131,9 @@ export const ptPT: Dictionary = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar o meu jogo",
   "vgl.mapPool.title": "Os seus mapas",
+  "vgl3.specialty.title": "Especialidades",
+  "vgl3.specialty.source":
+    "Snapshot do Player DNA de {date} · {matches} partida(s). Os mesmos índices da página Player DNA.",
   "vgl3.marks.openingKill": "A sua abertura (eliminação)",
   "vgl3.marks.openingDeath": "A sua abertura (morte)",
   "vgl3.marks.clutch": "Clutch",

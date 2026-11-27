@@ -131,6 +131,9 @@ export const fr: Dictionary = {
   "analyze.eyebrow": "Analyser",
   "analyze.title": "Analyser mon jeu",
   "vgl.mapPool.title": "Vos cartes",
+  "vgl3.specialty.title": "Spécialités",
+  "vgl3.specialty.source":
+    "Snapshot du Player DNA du {date} · {matches} match(s). Mêmes indices que la page Player DNA.",
   "vgl3.marks.openingKill": "Votre ouverture (élimination)",
   "vgl3.marks.openingDeath": "Votre ouverture (mort)",
   "vgl3.marks.clutch": "Clutch",
