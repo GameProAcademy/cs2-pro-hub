@@ -81,6 +81,12 @@ Mudanças de valor e motivo:
   - Markdown leve com títulos, marcadores, tabelas e código no padrão, ainda só texto.
 - **Ícones novos no `GameIcon`:** `alert` (o alerta nunca depende só da cor) e `trend`.
 
+## Visual Game Language (2026-11-26)
+
+Elementos de jogo próprios (`GameIcon` +13, `WeaponLabel`, `GrenadeLabel`, `MapTile`, `MapPoolCard`),
+sempre ao lado de um dado real e com texto. Detalhes, decisões de assets e validação em
+`docs/ux1/VISUAL_GAME_LANGUAGE.md`. Gráficos: texto de eixo e legenda com 12 px no mínimo.
+
 ## Fora do escopo
 
 - Ranks, medalhas e comparações com outros jogadores.
