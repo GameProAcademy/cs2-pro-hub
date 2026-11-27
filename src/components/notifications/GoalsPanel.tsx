@@ -7,6 +7,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { GameIcon } from "@/components/common/GameIcon";
+import { ToneBadge } from "@/components/common/VisualBadges";
 import { Button } from "@/components/ui/button";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { fill, formatDate, formatDateTime, formatNumber } from "@/lib/format";
@@ -17,7 +19,6 @@ import {
   saveGoal,
   type GoalView,
 } from "@/lib/notifications/notifications.functions";
-import { cn } from "@/lib/utils";
 
 const GOALS_KEY = ["goals"] as const;
 const DIGITS: Record<GoalMetric, number> = {
@@ -50,6 +51,26 @@ const EMPTY: Draft = {
   reminder: "OFF",
   reminderWeekday: 1,
 };
+
+/** VGL: original decorative target/radar for the empty goals state (no data drawn). */
+function TargetIllustration() {
+  return (
+    <svg
+      viewBox="0 0 120 120"
+      className="size-24 text-primary"
+      aria-hidden
+      fill="none"
+      stroke="currentColor"
+      data-goals-illustration
+    >
+      <circle cx="60" cy="60" r="52" strokeOpacity="0.15" strokeWidth="1.5" />
+      <circle cx="60" cy="60" r="36" strokeOpacity="0.3" strokeWidth="1.5" />
+      <circle cx="60" cy="60" r="20" strokeOpacity="0.55" strokeWidth="2" />
+      <circle cx="60" cy="60" r="4" fill="currentColor" stroke="none" />
+      <path d="M60 2v22M60 96v22M2 60h22M96 60h22" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function GoalsPanel() {
   const t = useT();
@@ -95,9 +116,13 @@ export function GoalsPanel() {
       ) : null}
       {draft ? <GoalForm draft={draft} onDone={() => setDraft(null)} /> : null}
       {!data.goals.length && !draft ? (
-        <p className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          {t("goals.empty")}
-        </p>
+        <div
+          className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border p-8 text-center"
+          data-goals-empty
+        >
+          <TargetIllustration />
+          <p className="max-w-md text-sm text-muted-foreground">{t("goals.empty")}</p>
+        </div>
       ) : (
         <ul className="space-y-3">
           {data.goals.map((g) => (
@@ -162,34 +187,44 @@ function GoalCard({ goal, onEdit }: { goal: GoalView; onEdit: () => void }) {
   return (
     <li className="rounded-md border border-border p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-medium">
-            {t(`notify.metric.${goal.metric}` as TranslationKey)} ·{" "}
-            {t(`goals.direction.${goal.direction}` as TranslationKey)}{" "}
-            {formatNumber(goal.target, intlTag, digits)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t("goals.window")}: {goal.windowMatches}
-            {goal.deadline
-              ? ` · ${t("goals.deadline")}: ${formatDate(goal.deadline, intlTag)}`
-              : ""}
-            {goal.reminder === "WEEKLY"
-              ? ` · ${t("goals.reminder.WEEKLY")} (${t(`goals.weekday.${goal.reminderWeekday ?? 1}` as TranslationKey)})`
-              : ""}
-          </p>
+        <div className="flex min-w-0 items-start gap-3">
+          <span
+            aria-hidden
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
+          >
+            <GameIcon name="target" className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium">
+              {t(`notify.metric.${goal.metric}` as TranslationKey)} ·{" "}
+              {t(`goals.direction.${goal.direction}` as TranslationKey)}{" "}
+              {formatNumber(goal.target, intlTag, digits)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("goals.window")}: {goal.windowMatches}
+              {goal.deadline
+                ? ` · ${t("goals.deadline")}: ${formatDate(goal.deadline, intlTag)}`
+                : ""}
+              {goal.reminder === "WEEKLY"
+                ? ` · ${t("goals.reminder.WEEKLY")} (${t(`goals.weekday.${goal.reminderWeekday ?? 1}` as TranslationKey)})`
+                : ""}
+            </p>
+          </div>
         </div>
-        <span
-          className={cn(
-            "rounded-sm border px-2 py-0.5 font-mono text-xs uppercase",
-            p.status === "REACHED"
-              ? "border-success/40 text-success"
-              : "border-border text-muted-foreground",
-          )}
-        >
-          {p.status === "REACHED" || p.status === "IN_PROGRESS"
-            ? t(`goals.progress.${p.status}` as TranslationKey)
-            : "—"}
-        </span>
+        {p.status === "REACHED" || p.status === "IN_PROGRESS" ? (
+          <ToneBadge
+            tone={p.status === "REACHED" ? "brand" : "context"}
+            icon={p.status === "REACHED" ? "target" : "trend"}
+            className="font-mono uppercase"
+            data-goal-status={p.status}
+          >
+            {t(`goals.progress.${p.status}` as TranslationKey)}
+          </ToneBadge>
+        ) : (
+          <ToneBadge tone="neutral" className="font-mono" data-goal-status={p.status}>
+            —
+          </ToneBadge>
+        )}
       </div>
       <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
         {p.status === "NO_DATA" ? <p>{t("goals.progress.NO_DATA")}</p> : null}
