@@ -133,3 +133,18 @@ Documentos:
 - matriz em `VGL3_VISUAL_OPPORTUNITY_MATRIX.md`;
 - plano em `VGL3_IMPLEMENTATION_PLAN.md`;
 - validação em `VGL3_FINAL_VALIDATION.md`.
+
+## VGL 4.0 — Deep Competitive Experience (2026-11-27)
+
+Experiências profundas sobre a VGL 3.0, só com dados medidos:
+
+- Sala: Round em foco (seletor, economia em degraus, fatos, kill feed, radar do round com posições reais), visão geral "Sua partida" e intro de cada aba;
+- Identidade: cartão com a dimensão líder, top 3 e ranks; tooltip nas especialidades;
+- Mapas: painel do mapa selecionado com as partidas nele;
+- Treino: Central de Treino e Áreas do catálogo;
+- Coach: contexto do mapa com links de partida e briefing de conversa vazia;
+- Performance (destaques), Evolução (linha do tempo do DNA), Momentos por partida, Início (comandos), Admin (ícones).
+
+Regras novas: `.vgl-art` nunca no mesmo elemento que `opacity-`/`translate-`; grids que viram colunas em `sm`/`md`/`lg` declaram `grid-cols-1` no celular.
+
+Documentos: `VGL4_VISUAL_OPPORTUNITY_MATRIX.md`, `VGL4_DESIGN_SYSTEM.md`, `VGL4_IMPLEMENTATION_PLAN.md`, `VGL4_FINAL_VALIDATION.md`, `docs/reference/VGL4_ASSETS.md`.

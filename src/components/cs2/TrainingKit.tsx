@@ -73,7 +73,7 @@ export function TrainingOverview() {
         <GameIcon name="target" className="size-4 text-primary" />
         {t("vgl4.training.title")}
       </h2>
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div
           className="rounded-xl border border-border bg-background/50 p-4"
           data-overview-priorities

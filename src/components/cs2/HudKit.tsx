@@ -120,7 +120,7 @@ export function HighlightPair({ matches }: { matches: ReadonlyArray<OverviewMatc
         <GameIcon name="trend" className="size-3.5 text-primary" />
         {t("vgl4.perf.title")}
       </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {card(ex.high, "high")}
         {card(ex.low, "low")}
       </div>
@@ -167,7 +167,7 @@ export function HomeCommandRow({ matches }: { matches: ReadonlyArray<OverviewMat
   ];
   return (
     <nav aria-label={t("vgl4.home.label")} data-home-commands>
-      <ul className="grid gap-3 sm:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {items.map((it, i) => (
           <li
             key={it.to}

@@ -46,7 +46,7 @@ export function MatchOverview({ m }: { m: OverviewMatch }) {
         <GameIcon name="crosshair" className="size-4 text-primary" />
         {t("vgl4.overview.title")}
       </h2>
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="grid grid-cols-3 gap-2" data-overview-line>
           <div className="rounded-lg border border-border bg-background/50 p-3">
             <p className="text-xs text-muted-foreground">{t("vgl4.overview.kda")}</p>
