@@ -58,7 +58,8 @@ describe("pictograms cover every real category", () => {
   });
 
   it("every DNA dimension has an icon", () => {
-    const dna = src("src/components/real/RealDna.tsx");
+    // The map moved to the shared DnaVisuals module (VGL 2.0 continuation).
+    const dna = src("src/components/cs2/DnaVisuals.tsx");
     for (const d of DNA_DIMENSIONS) expect(dna).toMatch(new RegExp(`\\b${d}: "`));
   });
 

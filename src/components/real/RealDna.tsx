@@ -12,6 +12,7 @@ import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
 import { ChartCard } from "@/components/common/ChartCard";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { Cs2Mask, RadialGauge } from "@/components/cs2/Cs2Art";
+import { DNA_ICON, DnaSignature, DnaTrend } from "@/components/cs2/DnaVisuals";
 import { DIMENSION_ART } from "@/lib/cs2/assets";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -31,20 +32,6 @@ import { cn } from "@/lib/utils";
 import type { DnaDimension } from "@/types";
 
 export const PLAYER_DNA_QUERY_KEY = ["player", "dna"] as const;
-
-/** VGL: a game pictogram per DNA dimension (decorative; the dimension name stays the title). */
-const DNA_ICON = {
-  aim: "crosshair",
-  dueling: "kill",
-  survivability: "shield",
-  positioning: "map",
-  utility: "grenade",
-  decision_making: "dna",
-  teamplay: "assist",
-  economy: "rounds",
-  clutch: "clutch",
-  consistency: "trend",
-} as const satisfies Record<string, GameIconName>;
 
 const DNA_ART = DIMENSION_ART;
 
@@ -153,6 +140,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
           </p>
         </ChartCard>
       ) : null}
+      {stable ? <DnaSignature dims={dna.dimensions} /> : null}
       <div className="grid gap-5 lg:grid-cols-2">
         {ordered.map((d, i) => (
           <article
@@ -320,6 +308,7 @@ function DnaHistory() {
               </tbody>
             </table>
           </div>
+          <DnaTrend entries={query.data} version={DNA_VERSION_V3} />
         </div>
       )}
     </ChartCard>
