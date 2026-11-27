@@ -5,6 +5,11 @@ import { DEMO_DATA } from "@/config/app";
 
 import { getMapPerformanceDisplayContexts } from "@/lib/cs2/mapPerformance";
 import { MapPerformanceChart } from "@/components/charts/MapPerformanceChart";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
+import { HudIcon, WeaponArt } from "@/components/cs2/Cs2Art";
+import { MatchRibbon } from "@/components/cs2/PerformanceVisuals";
+import { HudStat } from "@/components/cs2/MatchVisuals";
+
 import { SideSplitChart } from "@/components/charts/SideSplitChart";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { ChartCard } from "@/components/common/ChartCard";
@@ -68,6 +73,17 @@ function RealPerformancePage() {
   );
 }
 
+/** VGL 2.0 continuation: a game icon per real series (decorative). */
+const SERIES_ICON: Partial<Record<PerformanceSeriesKey, GameIconName>> = {
+  kd: "kill",
+  adr: "crosshair",
+  hsPercent: "headshot",
+  rating: "trend",
+  kast: "shield",
+  openingDiff: "opening",
+  tradeKills: "trade",
+};
+
 function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -81,7 +97,7 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
     variant: "area" | "line" = "area",
   ) =>
     totals.observed[key] > 0 ? (
-      <ChartCard title={title} showDemoTag={false}>
+      <ChartCard title={title} showDemoTag={false} icon={SERIES_ICON[key]}>
         <TrendChart data={data} series={[{ key, label }]} variant={variant} />
       </ChartCard>
     ) : (
@@ -92,36 +108,51 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
       <p className="text-xs text-muted-foreground">
         {t("real.performance.basis").replace("{matches}", String(totals.matches))}
       </p>
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          showDemoTag={false}
-          label={<MetricTerm id="openingKills" variant="label" />}
-          value={totals.openingKills}
-          hint={totals.openingKills === null ? t("real.performance.timingReason") : undefined}
-        />
-        <MetricCard
-          showDemoTag={false}
-          label={<MetricTerm id="openingDeaths" variant="label" />}
-          value={totals.openingDeaths}
-          hint={totals.openingDeaths === null ? t("real.performance.timingReason") : undefined}
-        />
-        <MetricCard
-          showDemoTag={false}
-          label={<MetricTerm id="tradeKills" variant="label" />}
-          value={totals.tradeKills}
-          hint={totals.tradeKills === null ? t("real.performance.timingReason") : undefined}
-        />
-        <MetricCard
-          showDemoTag={false}
-          label={<MetricTerm id="flashAssists" variant="label" />}
-          value={totals.flashAssists}
-          hint={
-            totals.flashAssists === null
-              ? t("real.performance.timingReason")
-              : flashMethodSummary(matches, t)
-          }
-        />
-      </div>
+      <MatchRibbon matches={matches} />
+      <section
+        className="surface-panel vgl-grid relative overflow-hidden rounded-xl border border-border p-4 sm:p-5"
+        aria-labelledby="combat-hud-title"
+        data-combat-hud
+      >
+        <h2
+          id="combat-hud-title"
+          className="mb-4 flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.14em] text-foreground"
+        >
+          <GameIcon name="kill" className="size-4 text-primary" />
+          {t("vgl.perf.combat")}
+        </h2>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <HudStat
+            icon={<GameIcon name="opening" className="size-5" />}
+            value={totals.openingKills === null ? null : String(totals.openingKills)}
+            label={<MetricTerm id="openingKills" variant="label" />}
+          />
+          <HudStat
+            icon={<HudIcon name="icon_skull_default" className="size-5" />}
+            value={totals.openingDeaths === null ? null : String(totals.openingDeaths)}
+            label={<MetricTerm id="openingDeaths" variant="label" />}
+          />
+          <HudStat
+            icon={<GameIcon name="trade" className="size-5" />}
+            value={totals.tradeKills === null ? null : String(totals.tradeKills)}
+            label={<MetricTerm id="tradeKills" variant="label" />}
+          />
+          <HudStat
+            icon={<WeaponArt weapon="flashbang" className="h-5 w-6" />}
+            value={totals.flashAssists === null ? null : String(totals.flashAssists)}
+            label={<MetricTerm id="flashAssists" variant="label" />}
+          />
+        </div>
+        <div className="mt-4 space-y-1 text-xs text-muted-foreground">
+          {totals.openingKills === null ||
+          totals.openingDeaths === null ||
+          totals.tradeKills === null ||
+          totals.flashAssists === null ? (
+            <p>{t("real.performance.timingReason")}</p>
+          ) : null}
+          {totals.flashAssists !== null ? <p>{flashMethodSummary(matches, t)}</p> : null}
+        </div>
+      </section>
       <div className="grid gap-5 lg:grid-cols-2">
         {chart("kd", t("performance.kdTrend"), "K/D", "", "line")}
         {chart("adr", t("performance.adrTrend"), "ADR", "")}
@@ -161,8 +192,9 @@ function ProScoreContext() {
     <section
       id="cs2-pro-score"
       aria-labelledby="cs2-pro-score-title"
-      className="rounded-lg border border-border bg-card p-4 sm:p-5"
+      className="surface-panel vgl-grid relative overflow-hidden rounded-xl border border-border p-4 sm:p-6"
     >
+      <span aria-hidden className="absolute left-0 top-0 h-full w-1 bg-primary" />
       <h2
         id="cs2-pro-score-title"
         className="font-display text-sm font-semibold uppercase tracking-[0.12em] text-foreground"
