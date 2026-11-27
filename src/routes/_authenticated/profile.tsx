@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ChartCard } from "@/components/common/ChartCard";
 import { ProfileSkeleton } from "@/components/common/AppLoaders";
 import { PageHeader } from "@/components/common/PageHeader";
+import { MapPoolCard, mapPool } from "@/components/real/MapPool";
+import { usePlayerOverview } from "@/components/real/RealData";
 import { AppShell } from "@/components/layout/AppShell";
 import { AvatarCard } from "@/components/profile/AvatarCard";
 import { CodeMultiSelect } from "@/components/profile/CodeMultiSelect";
@@ -196,6 +198,7 @@ function ProfilePage() {
         ) : (
           <div className="grid gap-5 lg:grid-cols-3">
             <ChartCard
+              icon="dna"
               title={t("profile.section.identity")}
               subtitle={t("profile.section.identityDesc")}
               className="lg:col-span-2"
@@ -393,6 +396,8 @@ function ProfilePage() {
               <FaceitPanel callback={faceitCallback} />
             </div>
 
+            <ProfileMapPool />
+
             <div className="lg:col-span-3">
               <IdentitiesCard />
             </div>
@@ -403,5 +408,20 @@ function ProfilePage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * VGL: the maps of the player's analysed matches on the profile. Shown only when the overview
+ * loads and has an identified map; otherwise the profile is exactly as before.
+ */
+function ProfileMapPool() {
+  const q = usePlayerOverview();
+  // No identified map → no grid cell at all (an empty cell would still add a gap).
+  if (!q.data || mapPool(q.data.matches).entries.length === 0) return null;
+  return (
+    <div className="lg:col-span-3">
+      <MapPoolCard rows={q.data.matches} />
+    </div>
   );
 }
