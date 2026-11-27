@@ -57,26 +57,40 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const stable = dna.state === "READY";
   return (
     <div className="space-y-8">
-      <p className="rounded-lg border border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-        {t("real.dna.basis")
-          .replace("{matches}", String(dna.matches))
-          .replace("{rounds}", dna.rounds === null ? "—" : String(dna.rounds))
-          .replace("{partial}", String(dna.partialMatches))}
-      </p>
-      <p className="font-mono text-xs text-muted-foreground" data-testid="dna-snapshot">
-        {dna.snapshot?.createdAt
-          ? t("real.dna.snapshot")
-              .replace("{version}", dna.snapshot.dnaVersion ?? "—")
-              .replace(
-                "{date}",
-                new Date(dna.snapshot.createdAt).toLocaleString(intlTag, {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }),
-              )
-              .replace("{n}", String(dna.snapshot.matchCount))
-          : t("real.dna.snapshotPending")}
-      </p>
+      <details className="group rounded-lg border border-border px-4 py-3" data-dna-basis>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-foreground">
+          <span className="flex items-center gap-2">
+            <GameIcon name="rounds" className="size-4 text-context" />
+            {fill(t("vgl3.dna.basis"), { matches: dna.matches })}
+          </span>
+          <span
+            aria-hidden
+            className="text-muted-foreground transition-transform group-open:rotate-90 motion-reduce:transition-none"
+          >
+            ›
+          </span>
+        </summary>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          {t("real.dna.basis")
+            .replace("{matches}", String(dna.matches))
+            .replace("{rounds}", dna.rounds === null ? "—" : String(dna.rounds))
+            .replace("{partial}", String(dna.partialMatches))}
+        </p>
+        <p className="mt-2 font-mono text-xs text-muted-foreground" data-testid="dna-snapshot">
+          {dna.snapshot?.createdAt
+            ? t("real.dna.snapshot")
+                .replace("{version}", dna.snapshot.dnaVersion ?? "—")
+                .replace(
+                  "{date}",
+                  new Date(dna.snapshot.createdAt).toLocaleString(intlTag, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }),
+                )
+                .replace("{n}", String(dna.snapshot.matchCount))
+            : t("real.dna.snapshotPending")}
+        </p>
+      </details>
       {dna.state === "INSUFFICIENT_SAMPLE" ? (
         <p className="rounded-lg border border-warning/25 bg-warning/8 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
           {t("real.dna.insufficient")

@@ -131,6 +131,10 @@ export const ptPT: Dictionary = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar o meu jogo",
   "vgl.mapPool.title": "Os seus mapas",
+  "vgl3.briefing.label": "Etapas do diagnóstico",
+  "vgl3.coach.maps": "Mapas citados nesta resposta",
+  "vgl3.coach.mapMatches": "{n} partida(s) suas",
+  "vgl3.dna.basis": "Base desta leitura: {matches} partida(s)",
   "vgl3.specialty.title": "Especialidades",
   "vgl3.specialty.source":
     "Snapshot do Player DNA de {date} · {matches} partida(s). Os mesmos índices da página Player DNA.",

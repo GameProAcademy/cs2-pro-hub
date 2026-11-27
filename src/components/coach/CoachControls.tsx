@@ -54,7 +54,7 @@ export function ConversationMenu({
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" disabled={disabled} data-coach-conversations>
           <History className="size-3.5" aria-hidden />
-          {t("coach2.conversations")}
+          <span className="max-sm:sr-only">{t("coach2.conversations")}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-1">
@@ -351,7 +351,7 @@ export function PersonalizeButton({ onClick }: { onClick: () => void }) {
   return (
     <Button variant="ghost" size="sm" onClick={onClick} data-coach-personalize>
       <SlidersHorizontal className="size-3.5" aria-hidden />
-      {t("coach2.personalize")}
+      <span className="max-sm:sr-only">{t("coach2.personalize")}</span>
     </Button>
   );
 }
