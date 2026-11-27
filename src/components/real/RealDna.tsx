@@ -13,6 +13,7 @@ import { ChartCard } from "@/components/common/ChartCard";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { Cs2Mask, RadialGauge } from "@/components/cs2/Cs2Art";
 import { DNA_ICON, DnaSignature, DnaTrend } from "@/components/cs2/DnaVisuals";
+import { DimensionRank, IdentityCard, dimensionRanks } from "@/components/cs2/IdentityKit";
 import { DIMENSION_ART } from "@/lib/cs2/assets";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -55,8 +56,12 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
       ?.signals.find((x) => x.name === "clutch_win_rate")?.sample ?? null;
   // Below the minimum sample, dimension indexes are not a profile: no radar, no "N / 100".
   const stable = dna.state === "READY";
+  const ranks = dimensionRanks(dna.dimensions);
   return (
     <div className="space-y-8">
+      {stable ? (
+        <IdentityCard dims={dna.dimensions} matches={dna.matches} rounds={dna.rounds} />
+      ) : null}
       <details className="group rounded-lg border border-border px-4 py-3" data-dna-basis>
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-foreground">
           <span className="flex items-center gap-2">
@@ -197,6 +202,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                   />
                   {t(dnaLabelKey(d.dimension))}
                 </h3>
+                {stable ? <DimensionRank rank={ranks.get(d.dimension)} /> : null}
                 <p className="mt-0.5 text-xs text-muted-foreground" data-dna-card-status>
                   {d.status === "NOT_MEASURED"
                     ? t("real.dna.status.NOT_MEASURED")
