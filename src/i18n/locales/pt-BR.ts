@@ -134,6 +134,10 @@ export const ptBR = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar meu jogo",
   "vgl.mapPool.title": "Seus mapas",
+  "vgl3.briefing.label": "Etapas do diagnóstico",
+  "vgl3.coach.maps": "Mapas citados nesta resposta",
+  "vgl3.coach.mapMatches": "{n} partida(s) suas",
+  "vgl3.dna.basis": "Base desta leitura: {matches} partida(s)",
   "vgl3.specialty.title": "Especialidades",
   "vgl3.specialty.source":
     "Snapshot do Player DNA de {date} · {matches} partida(s). Mesmos índices da página Player DNA.",

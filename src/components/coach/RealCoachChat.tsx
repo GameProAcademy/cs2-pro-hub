@@ -40,6 +40,7 @@ import { coachScreenFrom } from "@/lib/coach/coachScreen";
 import { getCoachConversation, getCoachPreferences } from "@/lib/coachSession.functions";
 import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
+import { CoachMapContext } from "@/components/cs2/BriefingKit";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { coachSectionKind, coachTokens, type CoachSectionKind } from "@/lib/coach/coachSections";
 import { MapEmblem, SideLogo, WeaponArt } from "@/components/cs2/Cs2Art";
@@ -316,6 +317,7 @@ function Bubble({
               <span className="normal-case tracking-normal text-muted-foreground">{time}</span>
             </p>
             <CoachText content={message.content} />
+            <CoachMapContext content={message.content} />
           </>
         ) : (
           <>
@@ -479,18 +481,18 @@ export function RealCoachChat({ className }: { className?: string | undefined })
     <div className={cn("flex min-h-0 flex-col", className)}>
       <div className="vgl-grid relative isolate flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/60 px-4 py-2 sm:py-2.5">
         <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-20 bg-primary" />
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-xs font-semibold text-foreground sm:text-sm">
+        <div className="min-w-0 flex-1 max-sm:contents">
+          <p className="flex items-center gap-2 text-xs font-semibold text-foreground max-sm:order-1 sm:text-sm">
             <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
               <GameIcon name="crosshair" className="size-3.5" />
             </span>
             {t("coach2.persona.identity")}
           </p>
-          <p className="text-xs leading-snug text-muted-foreground">
+          <p className="text-xs leading-snug text-muted-foreground max-sm:order-3 max-sm:w-full">
             {t("real.aicoach.disclaimer")}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1 max-sm:order-2" data-coach-actions>
           <ConversationMenu
             activeId={conversationId}
             disabled={pending !== null}
@@ -519,7 +521,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
             }}
           >
             <Plus className="size-3.5" aria-hidden />
-            {t("real.aicoach.newConversation")}
+            <span className="max-sm:sr-only">{t("real.aicoach.newConversation")}</span>
           </Button>
         </div>
       </div>

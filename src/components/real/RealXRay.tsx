@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import { ChartCard } from "@/components/common/ChartCard";
 import { Cs2Mask } from "@/components/cs2/Cs2Art";
 import { HUD } from "@/lib/cs2/assets";
+import { BriefingRail } from "@/components/cs2/BriefingKit";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { SideBadge, ToneBadge } from "@/components/common/VisualBadges";
@@ -91,7 +92,12 @@ function Layer({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-4" aria-label={title} data-xray-layer={step}>
+    <section
+      id={`xray-layer-${step}`}
+      className="scroll-mt-24 space-y-4"
+      aria-label={title}
+      data-xray-layer={step}
+    >
       <div className="flex items-start gap-3 border-b border-border pb-3">
         <span
           className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
@@ -145,6 +151,28 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
           decided: x.sample.decided,
         })}
       </p>
+      <BriefingRail
+        steps={[
+          {
+            id: "xray-layer-1",
+            title: t("xray.layer.observed"),
+            icon: "crosshair",
+            count: x.dimensions.length,
+          },
+          {
+            id: "xray-layer-2",
+            title: t("xray.layer.inference"),
+            icon: "dna",
+            count: x.inferences.length,
+          },
+          {
+            id: "xray-layer-3",
+            title: t("xray.layer.recommendation"),
+            icon: "target",
+            count: x.recommendations.length,
+          },
+        ]}
+      />
       {x.state === "IN_FORMATION" ? (
         <p className="flex items-start gap-3 rounded-lg border border-warning/25 bg-warning/8 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
           <GameIcon name="alert" className="mt-0.5 size-4 shrink-0 text-warning" />

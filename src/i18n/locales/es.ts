@@ -130,6 +130,10 @@ export const es: Dictionary = {
   "analyze.eyebrow": "Analizar",
   "analyze.title": "Analizar mi juego",
   "vgl.mapPool.title": "Tus mapas",
+  "vgl3.briefing.label": "Etapas del diagnóstico",
+  "vgl3.coach.maps": "Mapas citados en esta respuesta",
+  "vgl3.coach.mapMatches": "{n} partida(s) tuyas",
+  "vgl3.dna.basis": "Base de esta lectura: {matches} partida(s)",
   "vgl3.specialty.title": "Especialidades",
   "vgl3.specialty.source":
     "Snapshot del Player DNA del {date} · {matches} partida(s). Mismos índices de la página Player DNA.",

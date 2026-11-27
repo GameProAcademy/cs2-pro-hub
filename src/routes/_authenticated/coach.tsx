@@ -43,7 +43,7 @@ function RealCoachPage() {
         />
         {/* UX-1.0 M-10: below lg the composer must stay above the fixed bottom navigation
             (3.5 rem + safe area), also on short phones; the header above takes ~14 rem. */}
-        <section className="surface-panel flex h-[68vh] min-h-[460px] flex-col rounded-lg border border-border max-lg:h-[calc(100dvh-19rem-env(safe-area-inset-bottom))] max-lg:min-h-[320px]">
+        <section className="surface-panel flex h-[68vh] min-h-[460px] flex-col rounded-lg border border-border max-lg:h-[calc(100dvh-19rem-env(safe-area-inset-bottom))] max-lg:min-h-[500px]">
           <RealCoachChat className="flex-1" />
         </section>
       </div>
