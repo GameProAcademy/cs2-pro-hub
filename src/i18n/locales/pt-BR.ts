@@ -133,6 +133,10 @@ export const ptBR = {
 
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar meu jogo",
+  "vgl.mapPool.title": "Seus mapas",
+  "vgl.mapPool.subtitle": "Mapas das suas partidas analisadas e quantas partidas há em cada um.",
+  "vgl.mapPool.matches": "{n} partidas",
+  "vgl.mapPool.unknown": "{n} partida(s) sem mapa identificado não entram nesta lista.",
   "analyze.intake.title": "Enviar demo",
   "analyze.intake.subtitle": "Arquivo .dem de uma partida sua",
   "analyze.loop.title": "Como funciona",

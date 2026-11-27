@@ -8,6 +8,8 @@ import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info, UserX } from "lucide-react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { GameIcon } from "@/components/common/GameIcon";
+import { WeaponLabel, weaponClassIcon } from "@/components/common/GameVisuals";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
@@ -202,6 +204,7 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
       ) : null}
       <ChartCard
         title={t("combat.section.duels")}
+        icon="crosshair"
         subtitle={fill(t("combat.section.duels.subtitle"), { gap: DUEL_GAP_SECONDS })}
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -225,6 +228,7 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard
           title={t("combat.section.weaponClass")}
+          icon="rifle"
           subtitle={t("combat.section.weaponClass.subtitle")}
         >
           <div className="overflow-x-auto" data-table-scroll>
@@ -246,7 +250,20 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
                 ) : (
                   rep.byWeaponClass.map((c) => (
                     <tr key={c.cls} className="border-t border-border">
-                      <td className="py-1">{t(`combat.class.${c.cls}` as TranslationKey)}</td>
+                      <td className="py-1">
+                        <span
+                          className="inline-flex items-center gap-1.5"
+                          data-weapon-class={c.cls}
+                        >
+                          {weaponClassIcon(c.cls) ? (
+                            <GameIcon
+                              name={weaponClassIcon(c.cls)!}
+                              className="size-4 shrink-0 text-muted-foreground"
+                            />
+                          ) : null}
+                          {t(`combat.class.${c.cls}` as TranslationKey)}
+                        </span>
+                      </td>
                       <td className="py-1 font-mono">{`${c.won} / ${c.lost}`}</td>
                       <td className="py-1 font-mono">
                         <Rate m={c.metric} />
@@ -289,6 +306,7 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
 
       <ChartCard
         title={t("combat.section.shooting")}
+        icon="target"
         subtitle={fill(t("combat.section.shooting.subtitle"), { gap: BURST_GAP_SECONDS })}
       >
         <div className="grid gap-3 sm:grid-cols-3" data-shooting-status={rep.shooting.status}>
@@ -309,7 +327,9 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
                 <tbody>
                   {rep.shooting.byWeapon.slice(0, 8).map((w) => (
                     <tr key={w.weapon} className="border-t border-border">
-                      <td className="py-1">{w.weapon}</td>
+                      <td className="py-1">
+                        <WeaponLabel weapon={w.weapon} />
+                      </td>
                       <td className="py-1 font-mono">{`${w.hits} / ${w.shots}`}</td>
                       <td className="py-1 font-mono">
                         <Rate m={w.metric} />
@@ -381,7 +401,11 @@ function CombatReportView({ r }: { r: Extract<CombatResponse, { status: "OK" }> 
         </ul>
       </ChartCard>
 
-      <ChartCard title={t("combat.section.list")} subtitle={t("combat.section.list.subtitle")}>
+      <ChartCard
+        title={t("combat.section.list")}
+        subtitle={t("combat.section.list.subtitle")}
+        icon="kill"
+      >
         {rep.duels.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("combat.noDuels")}</p>
         ) : (
@@ -439,7 +463,7 @@ function DuelRow({ d, matchId, intlTag }: { d: Duel; matchId: string; intlTag: s
       </td>
       <td className="py-1 max-sm:py-0">
         {label("combat.col.weapon")}
-        {d.weapon ?? NOT_AVAILABLE_MARK}
+        {d.weapon ? <WeaponLabel weapon={d.weapon} /> : NOT_AVAILABLE_MARK}
       </td>
       <td className="py-1 font-mono max-sm:py-0">
         {label("combat.col.distance")}

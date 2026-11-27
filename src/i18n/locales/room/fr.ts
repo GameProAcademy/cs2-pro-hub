@@ -24,6 +24,7 @@ export const roomFr: Record<keyof typeof roomPtBR, string> = {
   "room.strip.lost": "Votre camp a perdu",
   "room.strip.unknown": "Pas de vainqueur ou de camp enregistré",
   "room.strip.round": "Round {n} · {side} · {outcome}",
+  "room.strip.sideSwitch": "Changement de côté",
   "room.openReplay": "Ouvrir le Replay de ce match",
   "room.openTab": "Voir {tab}",
   "nav.area.home": "Accueil",

@@ -129,6 +129,10 @@ export const es: Dictionary = {
 
   "analyze.eyebrow": "Analizar",
   "analyze.title": "Analizar mi juego",
+  "vgl.mapPool.title": "Tus mapas",
+  "vgl.mapPool.subtitle": "Mapas de tus partidas analizadas y cuántas partidas hay en cada uno.",
+  "vgl.mapPool.matches": "{n} partidas",
+  "vgl.mapPool.unknown": "{n} partida(s) sin mapa identificado no entran en esta lista.",
   "analyze.intake.title": "Enviar demo",
   "analyze.intake.subtitle": "Archivo .dem de una partida tuya",
   "analyze.loop.title": "Cómo funciona",

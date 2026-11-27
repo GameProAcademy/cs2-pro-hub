@@ -7,6 +7,7 @@ import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
+import { MapPoolCard } from "@/components/real/MapPool";
 import { PendingActionsBanner } from "@/components/pipeline/PendingActionsBanner";
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { MatchesTable } from "@/components/panels/MatchesTable";
@@ -86,6 +87,7 @@ function RealDashboardPage() {
                   <RealMatchesTable rows={overview.matches.slice(0, 5)} />
                 </ChartCard>
               ) : null}
+              <MapPoolCard rows={overview.matches} />
               <div className="grid gap-5 lg:grid-cols-2">
                 <RealProScoreCard />
                 <RealDnaSummary />

@@ -3,7 +3,8 @@
  * (the signed-in player's own rows under RLS) or is an explicit, honest state.
  * No component in this file renders a demonstration value.
  */
-import { MapBadge, ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
+import { MapTile } from "@/components/common/GameVisuals";
+import { ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Ban, CircleDashed, Clock3, Fingerprint, ShieldAlert, Upload } from "lucide-react";
@@ -227,6 +228,16 @@ const RESULT_KEY = {
   draw: "matches.result.draw",
 } as const;
 
+/**
+ * VGL: a known result as a badge with its word (same convention as the demo table: loss in the
+ * critical tone). The dashed neutral tone stays reserved for "no value".
+ */
+const RESULT_TONE: Record<keyof typeof RESULT_KEY, BadgeTone> = {
+  win: "brand",
+  loss: "critical",
+  draw: "context",
+};
+
 export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -288,13 +299,17 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
                   data-room-link
                   className="inline-flex min-h-11 items-center gap-2 font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
                 >
-                  {row.map ? <MapBadge map={row.map} showName={false} className="px-1" /> : null}
-                  {row.map ? mapDisplayName(row.map) : NOT_AVAILABLE_MARK}
+                  {row.map ? <MapTile map={row.map} size="sm" /> : null}
+                  <span aria-hidden={row.map ? true : undefined}>
+                    {row.map ? mapDisplayName(row.map) : NOT_AVAILABLE_MARK}
+                  </span>
                 </Link>
               </TableCell>
               <TableCell>
                 {row.result ? (
-                  t(RESULT_KEY[row.result])
+                  <ToneBadge tone={RESULT_TONE[row.result]} data-result={row.result}>
+                    {t(RESULT_KEY[row.result])}
+                  </ToneBadge>
                 ) : (
                   <span
                     title={
@@ -312,9 +327,11 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
                     </span>
                   </span>
                 )}
-                {row.scorePlayer !== null && row.scoreOpponent !== null
-                  ? ` ${row.scorePlayer}–${row.scoreOpponent}`
-                  : ""}
+                {row.scorePlayer !== null && row.scoreOpponent !== null ? (
+                  <span className="ml-2 font-mono text-sm tabular-nums" data-score>
+                    {row.scorePlayer}–{row.scoreOpponent}
+                  </span>
+                ) : null}
               </TableCell>
               <TableCell className="font-mono">
                 <NumberCell value={row.kills} digits={0} />

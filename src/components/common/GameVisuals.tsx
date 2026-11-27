@@ -89,6 +89,11 @@ export function weaponDisplayName(weapon: string): string {
   return DISPLAY[weapon] ?? weapon;
 }
 
+/** Pictogram of a weapon class as the combat report names it (unknown class → null). */
+export function weaponClassIcon(cls: string): GameIconName | null {
+  return (CLASS_ICON as Record<string, GameIconName>)[cls] ?? null;
+}
+
 /** Pictogram for a weapon name, or null when the name is not a player weapon we can classify. */
 export function weaponIcon(weapon: string | null | undefined): GameIconName | null {
   if (!weapon) return null;
