@@ -50,7 +50,10 @@ export function MetricCard({
   size = "md",
   showDemoTag = true,
   icon,
+  className,
 }: {
+  /** Extra layout classes (grid span); the card's own look does not change. */
+  className?: string | undefined;
   /** Optional game icon beside the label (decorative). */
   icon?: GameIconName | undefined;
   /** Text or a <MetricTerm> (name + definition). */
@@ -72,6 +75,7 @@ export function MetricCard({
       className={cn(
         "surface-panel group relative overflow-hidden rounded-lg border border-border p-4 transition-colors hover:border-primary/35",
         missing && "border-dashed",
+        className,
       )}
       data-metric-missing={missing ? "true" : undefined}
     >

@@ -10,6 +10,7 @@ import { usePlayerOverview } from "@/components/real/RealData";
 import { AppShell } from "@/components/layout/AppShell";
 import { AvatarCard } from "@/components/profile/AvatarCard";
 import { ProfileHero } from "@/components/profile/ProfileHero";
+import { SpecialtyStrip } from "@/components/cs2/IdentityKit";
 import { useAccount } from "@/hooks/useAccount";
 import type { PlayerProfilePayload } from "@/lib/profile.functions";
 import { CodeMultiSelect } from "@/components/profile/CodeMultiSelect";
@@ -202,6 +203,7 @@ function ProfilePage() {
           <div className="grid gap-5 lg:grid-cols-3">
             <div className="lg:col-span-3">
               <ProfileIdentityHero profile={profile ?? null} />
+              <SpecialtyStrip className="mt-5" />
             </div>
             <ChartCard
               icon="dna"

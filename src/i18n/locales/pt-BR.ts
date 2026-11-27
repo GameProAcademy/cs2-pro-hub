@@ -134,6 +134,9 @@ export const ptBR = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar meu jogo",
   "vgl.mapPool.title": "Seus mapas",
+  "vgl3.specialty.title": "Especialidades",
+  "vgl3.specialty.source":
+    "Snapshot do Player DNA de {date} · {matches} partida(s). Mesmos índices da página Player DNA.",
   "vgl3.marks.openingKill": "Sua abertura (eliminação)",
   "vgl3.marks.openingDeath": "Sua abertura (morte)",
   "vgl3.marks.clutch": "Clutch",

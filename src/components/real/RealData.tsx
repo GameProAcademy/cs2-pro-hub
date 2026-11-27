@@ -139,7 +139,7 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
   const num = (value: number | null, digits: number) =>
     value === null ? null : formatNumber(value, intlTag, digits);
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-5" data-aggregates>
       <MetricCard
         showDemoTag={false}
         icon="map"
@@ -173,6 +173,7 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
       <MetricCard
         showDemoTag={false}
         icon="trend"
+        className="col-span-2 sm:col-span-1"
         label={<MetricTerm id="winRate" variant="label" />}
         value={a.decided ? num((a.wins / a.decided) * 100, 0) : null}
         unit="%"
@@ -186,7 +187,7 @@ export function RealAggregates({ overview }: { overview: PlayerOverview }) {
       />
       {a.limited > 0 ? (
         <p
-          className="flex flex-wrap items-center gap-2 text-xs leading-relaxed text-muted-foreground sm:col-span-2 xl:col-span-5"
+          className="col-span-2 flex flex-col items-start gap-2 text-xs leading-relaxed text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center xl:col-span-5"
           data-limited-note
         >
           <ToneBadge tone="attention" icon="alert" className="font-mono">
