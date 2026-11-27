@@ -253,10 +253,15 @@ export function IdentityCard({
       data-identity-card={lead.dimension}
     >
       {art ? (
-        <Cs2Mask
-          src={art}
-          className="vgl-art pointer-events-none absolute -right-6 top-1/2 -z-10 h-40 w-[26rem] -translate-y-1/2 text-primary opacity-[0.1] sm:h-56 sm:w-[34rem]"
-        />
+        // The entrance animation animates opacity and transform, so the faint
+        // opacity and the centring live on a wrapper it does not touch.
+        <div
+          aria-hidden
+          data-identity-art
+          className="pointer-events-none absolute -right-6 top-1/2 -z-10 h-40 w-[26rem] -translate-y-1/2 opacity-[0.1] sm:h-56 sm:w-[34rem]"
+        >
+          <Cs2Mask src={art} className="vgl-art size-full text-primary" />
+        </div>
       ) : null}
       <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-primary" />
       <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">
@@ -275,7 +280,7 @@ export function IdentityCard({
         </span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{t("vgl4.identity.lead")}</p>
-      <div className="mt-5 grid gap-5 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <ol className="space-y-2.5" data-identity-top>
           {s.top.map((d, i) => (
             <li

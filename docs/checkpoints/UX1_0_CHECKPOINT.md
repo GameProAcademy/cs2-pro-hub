@@ -418,6 +418,14 @@ Evidência: `docs/ux1/UPLOAD_VISUAL_VALIDATION.md`. **Estado:** publicado e vali
 - **Pendente:** Admin com sessão de administrador.
 - **Detalhes:** `docs/ux1/VGL3_FINAL_VALIDATION.md`.
 
+### 2.22 VGL 4.0 — Deep Competitive Experience (2026-11-27)
+
+- **PRs:** #426 Sala, #427 Identidade e Mapas, #428 Treino e Coach, #429 Performance, Evolução, Momentos, Início, Admin; PR de fechamento.
+- **Produção:** deploy `5d5be4b3` de `c9ca9c99`; VGL smoke `46043709597` (0 overflow, 0 texto < 12 px, 0 erros, Coach respondeu); upload smoke `46043713283` idêntico.
+- **Corrigido no fechamento:** arte do cartão de identidade em opacidade total; Central de Treino estourando 390 px; rótulo da economia truncado.
+- **Pendente:** Admin com sessão de administrador.
+- **Detalhes:** `docs/ux1/VGL4_FINAL_VALIDATION.md`.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |

@@ -110,7 +110,7 @@ export function CoachMapContext({ content }: { content: string }) {
       <p className="mb-2 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
         {t("vgl3.coach.maps")}
       </p>
-      <ul className="grid gap-2 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {rows.map((r) => (
           <li
             key={r.map}
@@ -181,7 +181,7 @@ export function CoachEmptyBriefing() {
       <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-primary">
         {t("vgl4.coach.briefing")}
       </p>
-      <dl className="grid gap-3 sm:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-background/60 p-3">
           <dt className="text-xs text-muted-foreground">{t("vgl4.coach.matches")}</dt>
           <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">

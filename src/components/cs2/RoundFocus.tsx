@@ -69,10 +69,10 @@ export function EconomyDuel({ round }: { round: RoundReport }) {
       {rows.map(([who, s, label]) => {
         const level = buyLevel(label);
         return (
-          <div key={who} className="grid grid-cols-[minmax(0,7rem)_1fr] items-center gap-3">
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div key={who} className="grid grid-cols-[minmax(0,8rem)_1fr] items-center gap-3">
+            <span className="flex min-w-0 items-center gap-1.5 text-xs leading-tight text-muted-foreground">
               <SideBadge side={s} />
-              <span className="truncate">{who}</span>
+              <span className="min-w-0 break-words">{who}</span>
             </span>
             <span className="min-w-0">
               <span className="flex gap-1" aria-hidden data-buy-level={level ?? "unknown"}>
@@ -425,7 +425,7 @@ export function RoundFocus({
       {round ? (
         <div
           key={round.roundNumber}
-          className="vgl-rise grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]"
+          className="vgl-rise grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]"
         >
           <div className="min-w-0 space-y-4">
             <header className="flex flex-wrap items-center gap-3" data-round-focus-header>
