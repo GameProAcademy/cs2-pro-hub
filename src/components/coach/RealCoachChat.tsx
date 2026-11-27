@@ -5,7 +5,7 @@
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
-import { Bot, Plus, RotateCcw, Send, Sparkles, User } from "lucide-react";
+import { Plus, RotateCcw, Send, User } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -40,7 +40,8 @@ import { coachScreenFrom } from "@/lib/coach/coachScreen";
 import { getCoachConversation, getCoachPreferences } from "@/lib/coachSession.functions";
 import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
-import { GameIcon } from "@/components/common/GameIcon";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
+import { coachSectionKind, numericParts, type CoachSectionKind } from "@/lib/coach/coachSections";
 
 function Inline({ text }: { text: string }) {
   return (
@@ -58,78 +59,165 @@ function Inline({ text }: { text: string }) {
             {part.text}
           </code>
         ) : (
-          <Fragment key={i}>{part.text}</Fragment>
+          <Fragment key={i}>
+            {numericParts(part.text).map((p, j) =>
+              p.kind === "number" ? (
+                <span
+                  key={j}
+                  className="font-mono font-semibold tabular-nums text-foreground"
+                  data-coach-number
+                >
+                  {p.text}
+                </span>
+              ) : (
+                <Fragment key={j}>{p.text}</Fragment>
+              ),
+            )}
+          </Fragment>
         ),
       )}
     </>
   );
 }
 
+/** VGL: tone and pictogram of a Coach section the model itself titled (presentation only). */
+const SECTION_STYLE: Record<CoachSectionKind, { icon: GameIconName; tile: string; rule: string }> =
+  {
+    observed: {
+      icon: "crosshair",
+      tile: "border-context/30 bg-context/10 text-context",
+      rule: "border-l-context/60",
+    },
+    interpretation: {
+      icon: "dna",
+      tile: "border-border-strong bg-elevated text-foreground",
+      rule: "border-l-border-strong",
+    },
+    action: {
+      icon: "target",
+      tile: "border-primary/30 bg-primary/10 text-primary",
+      rule: "border-l-primary/70",
+    },
+    strength: {
+      icon: "trend",
+      tile: "border-primary/30 bg-primary/10 text-primary",
+      rule: "border-l-primary/50",
+    },
+    weakness: {
+      icon: "alert",
+      tile: "border-warning/30 bg-warning/10 text-warning",
+      rule: "border-l-warning/60",
+    },
+  };
+
 /**
  * Safe rendering of the model's light Markdown (headings, bullets, bold, code, pipe
  * tables) after math markup is rewritten as plain text. Text nodes only: no HTML.
  */
 export function CoachText({ content }: { content: string }) {
+  type Block = ReturnType<typeof coachBlocks>[number];
+  // Group the blocks under the heading that precedes them (the Coach's own structure).
+  const groups: Array<{ heading: Extract<Block, { kind: "heading" }> | null; items: Block[] }> = [
+    { heading: null, items: [] },
+  ];
+  for (const block of coachBlocks(content)) {
+    if (block.kind === "heading") groups.push({ heading: block, items: [] });
+    else groups[groups.length - 1]!.items.push(block);
+  }
+  let key = 0;
+  const renderBlock = (block: Block) => {
+    const i = key++;
+    if (block.kind === "space") return <div key={i} className="h-1" />;
+    if (block.kind === "heading") return null;
+    if (block.kind === "bullet")
+      return (
+        <p key={i} className="flex gap-2.5" data-coach-bullet>
+          <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/80" />
+          <span className="min-w-0">
+            <Inline text={block.text} />
+          </span>
+        </p>
+      );
+    if (block.kind === "table")
+      return (
+        <div key={i} className="my-1 overflow-x-auto rounded-md border border-border">
+          <table className="w-full border-collapse text-xs tabular-nums" data-coach-table>
+            <thead>
+              <tr className="bg-elevated/60">
+                {block.header.map((cell, c) => (
+                  <th
+                    key={c}
+                    className="border-b border-border px-2.5 py-1.5 text-left font-mono font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    <Inline text={cell} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, r) => (
+                <tr key={r} className="even:bg-elevated/20">
+                  {row.map((cell, c) => (
+                    <td key={c} className="border-b border-border/50 px-2.5 py-1.5 last:border-b-0">
+                      <Inline text={cell} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    return (
+      <p key={i}>
+        <Inline text={block.text} />
+      </p>
+    );
+  };
   return (
     <div className="space-y-2" data-coach-text>
-      {coachBlocks(content).map((block, i) => {
-        if (block.kind === "space") return <div key={i} className="h-1" />;
-        if (block.kind === "heading")
+      {groups.map((g, gi) => {
+        if (!g.heading) return <Fragment key={gi}>{g.items.map(renderBlock)}</Fragment>;
+        const kind = coachSectionKind(g.heading.text);
+        if (!kind)
           return (
+            <Fragment key={gi}>
+              <p
+                className="mt-1 border-l-2 border-primary/60 pl-2.5 pt-0.5 font-display font-semibold tracking-wide text-foreground"
+                data-coach-heading
+              >
+                <Inline text={g.heading.text} />
+              </p>
+              {g.items.map(renderBlock)}
+            </Fragment>
+          );
+        const style = SECTION_STYLE[kind];
+        return (
+          <section
+            key={gi}
+            className={cn(
+              "mt-2 space-y-2 rounded-md border border-border border-l-2 bg-elevated/30 px-3 py-2.5",
+              style.rule,
+            )}
+            data-coach-section={kind}
+          >
             <p
-              key={i}
-              className="mt-1 border-l-2 border-primary/60 pl-2.5 pt-0.5 font-display font-semibold tracking-wide text-foreground"
+              className="flex items-center gap-2 font-display font-semibold tracking-wide text-foreground"
               data-coach-heading
             >
-              <Inline text={block.text} />
-            </p>
-          );
-        if (block.kind === "bullet")
-          return (
-            <p key={i} className="flex gap-2.5" data-coach-bullet>
-              <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/80" />
-              <span className="min-w-0">
-                <Inline text={block.text} />
+              <span
+                aria-hidden
+                className={cn(
+                  "flex size-6 shrink-0 items-center justify-center rounded-md border",
+                  style.tile,
+                )}
+              >
+                <GameIcon name={style.icon} className="size-3.5" />
               </span>
+              <Inline text={g.heading.text} />
             </p>
-          );
-        if (block.kind === "table")
-          return (
-            <div key={i} className="my-1 overflow-x-auto rounded-md border border-border">
-              <table className="w-full border-collapse text-xs tabular-nums" data-coach-table>
-                <thead>
-                  <tr className="bg-elevated/60">
-                    {block.header.map((cell, c) => (
-                      <th
-                        key={c}
-                        className="border-b border-border px-2.5 py-1.5 text-left font-mono font-semibold uppercase tracking-wider text-muted-foreground"
-                      >
-                        <Inline text={cell} />
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {block.rows.map((row, r) => (
-                    <tr key={r} className="even:bg-elevated/20">
-                      {row.map((cell, c) => (
-                        <td
-                          key={c}
-                          className="border-b border-border/50 px-2.5 py-1.5 last:border-b-0"
-                        >
-                          <Inline text={cell} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        return (
-          <p key={i}>
-            <Inline text={block.text} />
-          </p>
+            {g.items.map(renderBlock)}
+          </section>
         );
       })}
     </div>
@@ -159,7 +247,7 @@ function Bubble({
     >
       {isCoach ? (
         <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-          <Bot className="size-4" aria-hidden />
+          <GameIcon name="crosshair" className="size-4" />
         </span>
       ) : null}
       <div
@@ -343,7 +431,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2 text-xs font-semibold text-foreground sm:text-sm">
             <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-              <Bot className="size-3.5" aria-hidden />
+              <GameIcon name="crosshair" className="size-3.5" />
             </span>
             {t("coach2.persona.identity")}
           </p>
@@ -410,7 +498,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
                     : t("coach2.persona.greeting")
                 }
                 description={`${t("coach2.persona.intro")} ${t("real.aicoach.emptyDescription")}`}
-                icon={<Sparkles className="size-5" aria-hidden />}
+                icon={<GameIcon name="target" className="size-5" />}
               />
               {showOnboarding ? (
                 <div
@@ -452,7 +540,10 @@ export function RealCoachChat({ className }: { className?: string | undefined })
                 className="flex items-center gap-2 font-mono text-xs text-muted-foreground"
                 role="status"
               >
-                <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-primary" />
+                <span
+                  aria-hidden
+                  className="size-1.5 animate-pulse rounded-full bg-primary motion-reduce:animate-none"
+                />
                 {t("coach.thinking")}
               </p>
             </>

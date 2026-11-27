@@ -8,6 +8,7 @@ import { Link } from "@tanstack/react-router";
 import { History, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
+import { GameIcon } from "@/components/common/GameIcon";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
@@ -369,9 +370,10 @@ export function SuggestedQuestions({ onPick }: { onPick: (text: string) => void 
           <button
             key={k}
             type="button"
-            className="rounded-md border border-border px-3 py-1.5 text-left text-xs text-foreground hover:border-primary/40 hover:bg-primary/5"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-elevated/40 px-3.5 py-1.5 text-left text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
             onClick={() => onPick(t(k))}
           >
+            <GameIcon name="crosshair" className="size-3.5 shrink-0 text-primary" />
             {t(k)}
           </button>
         ))}
