@@ -12,7 +12,7 @@ import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
 import { ChartCard } from "@/components/common/ChartCard";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { Cs2Mask, RadialGauge } from "@/components/cs2/Cs2Art";
-import { HUD } from "@/lib/cs2/assets";
+import { DIMENSION_ART } from "@/lib/cs2/assets";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -46,19 +46,7 @@ const DNA_ICON = {
   consistency: "trend",
 } as const satisfies Record<string, GameIconName>;
 
-/** VGL 2.0: authentic CS2 artwork per dimension, used as a decorative watermark. */
-const DNA_ART = {
-  aim: "/cs2/weapons/ak47.svg",
-  dueling: "/cs2/weapons/deagle.svg",
-  survivability: HUD.icon_armor_helmet_default,
-  positioning: "/cs2/weapons/awp.svg",
-  utility: "/cs2/weapons/hegrenade.svg",
-  decision_making: HUD.icon_c4_default,
-  teamplay: "/cs2/weapons/flashbang.svg",
-  economy: HUD.icon_bullets_default,
-  clutch: HUD.icon_defuse_default,
-  consistency: HUD.icon_timer_default,
-} as const;
+const DNA_ART = DIMENSION_ART;
 
 export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const { t, intlTag, locale } = useI18n();
@@ -178,7 +166,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
           >
             {/* Authentic CS2 silhouette as a watermark (decorative). */}
             <Cs2Mask
-              src={DNA_ART[d.dimension as keyof typeof DNA_ART]}
+              src={DNA_ART[d.dimension] ?? DIMENSION_ART["aim"]!}
               className="pointer-events-none absolute -right-4 top-3 -z-10 h-20 w-44 text-primary opacity-[0.07]"
             />
             <header className="mb-4 flex items-center gap-4">

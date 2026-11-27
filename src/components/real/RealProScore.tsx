@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { GameIcon } from "@/components/common/GameIcon";
+import { RadialGauge } from "@/components/cs2/Cs2Art";
 import { ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
 import { useI18n, type TranslationKey } from "@/i18n";
@@ -63,9 +65,17 @@ function ScoreValue({ score }: { score: ProScore }) {
   }).format(score.score);
   return (
     <div className="space-y-2" data-pro-score-state="READY">
-      <p className="font-display text-4xl font-semibold tabular-nums text-foreground">
-        {fill(t("score.of100"), { score: shown })}
-      </p>
+      <div className="flex items-center gap-4">
+        {/* VGL 2.0: the same READY score as a ring (decorative; the number is written next to it). */}
+        <RadialGauge
+          value={score.score / 100}
+          size={64}
+          label={<GameIcon name="target" className="size-5 text-primary" />}
+        />
+        <p className="font-display text-4xl font-semibold tabular-nums text-foreground">
+          {fill(t("score.of100"), { score: shown })}
+        </p>
+      </div>
       <p className="text-xs text-muted-foreground">
         <span className="font-medium text-foreground">{t("score.confidence.label")}:</span>{" "}
         {fill(t(`score.confidence.${score.confidence ?? "PROVISIONAL"}`), {

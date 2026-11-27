@@ -9,6 +9,8 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { Cs2Mask } from "@/components/cs2/Cs2Art";
+import { DIMENSION_ART } from "@/lib/cs2/assets";
 import { DataStateBadge } from "@/components/common/DataState";
 import { ToneBadge } from "@/components/common/VisualBadges";
 import { ErrorState, LoadingState } from "@/components/common/States";
@@ -124,8 +126,16 @@ export function SignalLine({ s, rank }: { s: PrioritySignal; rank?: number }) {
           : null,
       ].filter(Boolean)
     : [];
+  const art = DIMENSION_ART[s.dimension];
   return (
-    <div className="space-y-2 text-sm">
+    <div className="relative isolate space-y-2 text-sm">
+      {/* VGL 2.0: the dimension's CS2 silhouette as a decorative watermark. */}
+      {art ? (
+        <Cs2Mask
+          src={art}
+          className="pointer-events-none absolute -top-1 right-0 -z-10 h-12 w-32 text-primary opacity-[0.07]"
+        />
+      ) : null}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         {rank ? (
           <span

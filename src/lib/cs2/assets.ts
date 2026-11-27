@@ -115,3 +115,17 @@ export const HUD = {
   wallbang: "/cs2/hud/wallbang.svg",
 } as const;
 export type HudIconName = keyof typeof HUD;
+
+/** Authentic CS2 silhouette per Player DNA dimension (decorative watermark; shared by DNA and Treino). */
+export const DIMENSION_ART: Readonly<Record<string, string>> = {
+  aim: "/cs2/weapons/ak47.svg",
+  dueling: "/cs2/weapons/deagle.svg",
+  survivability: HUD.icon_armor_helmet_default,
+  positioning: "/cs2/weapons/awp.svg",
+  utility: "/cs2/weapons/hegrenade.svg",
+  decision_making: HUD.icon_c4_default,
+  teamplay: "/cs2/weapons/flashbang.svg",
+  economy: HUD.icon_bullets_default,
+  clutch: HUD.icon_defuse_default,
+  consistency: HUD.icon_timer_default,
+};
