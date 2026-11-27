@@ -134,6 +134,7 @@ export const ptBR = {
   "analyze.eyebrow": "Analisar",
   "analyze.title": "Analisar meu jogo",
   "vgl.mapPool.title": "Seus mapas",
+  "vgl3.maps.selected": "Selecionado",
   "vgl3.briefing.label": "Etapas do diagnóstico",
   "vgl3.coach.maps": "Mapas citados nesta resposta",
   "vgl3.coach.mapMatches": "{n} partida(s) suas",

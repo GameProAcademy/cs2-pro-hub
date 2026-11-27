@@ -131,6 +131,7 @@ export const fr: Dictionary = {
   "analyze.eyebrow": "Analyser",
   "analyze.title": "Analyser mon jeu",
   "vgl.mapPool.title": "Vos cartes",
+  "vgl3.maps.selected": "Sélectionnée",
   "vgl3.briefing.label": "Étapes du diagnostic",
   "vgl3.coach.maps": "Cartes citées dans cette réponse",
   "vgl3.coach.mapMatches": "{n} de vos matchs",

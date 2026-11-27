@@ -15,6 +15,15 @@ import { ProBenchmarkCard } from "@/components/benchmarks/ProBenchmarkCard";
 import { MonthlyReviewCard } from "@/components/review/MonthlyReviewCard";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { ChartCard } from "@/components/common/ChartCard";
+import { cn } from "@/lib/utils";
+import {
+  STACK_BODY,
+  STACK_CELL,
+  STACK_HEAD,
+  STACK_ROW,
+  STACK_TABLE,
+  STACK_WIDE,
+} from "@/lib/ui/stackedTable";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -249,8 +258,11 @@ function EvolutionReportView({ rep }: { rep: EvolutionReport }) {
           subtitle={t("evolution.section.metrics.subtitle")}
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm" data-evolution-table>
-              <thead className="text-left text-xs text-muted-foreground">
+            <table
+              className={cn("w-full text-sm md:min-w-[720px]", STACK_TABLE)}
+              data-evolution-table
+            >
+              <thead className={cn("text-left text-xs text-muted-foreground", STACK_HEAD)}>
                 <tr>
                   <th className="py-1.5 pr-3 font-medium">{t("evolution.col.metric")}</th>
                   <th className="py-1.5 pr-3 font-medium">{t("evolution.col.window")}</th>
@@ -258,7 +270,7 @@ function EvolutionReportView({ rep }: { rep: EvolutionReport }) {
                   <th className="py-1.5 font-medium">{t("evolution.col.comparison")}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={STACK_BODY}>
                 {rep.metrics.map((m) => (
                   <MetricRow key={m.key} m={m} intlTag={intlTag} />
                 ))}
@@ -458,18 +470,18 @@ function MetricRow({ m, intlTag }: { m: MetricReport; intlTag: string }) {
   const cmp = m.comparison;
   return (
     <tr
-      className="border-t border-border align-top"
+      className={cn("border-t border-border align-top", STACK_ROW)}
       data-metric={m.key}
       data-metric-status={w.status}
     >
-      <td className="py-2 pr-3">
-        <div>{t(`evolution.metric.${m.key}` as TranslationKey)}</div>
+      <td className={cn("py-2 pr-3", STACK_WIDE, "max-md:p-0")}>
+        <div className="max-md:font-medium">{t(`evolution.metric.${m.key}` as TranslationKey)}</div>
         <div className="text-xs text-muted-foreground">
           {t(`evolution.aggregation.${m.definition.aggregation}` as TranslationKey)} ·{" "}
           {m.definition.formula}
         </div>
       </td>
-      <td className="py-2 pr-3">
+      <td className={cn("py-2 pr-3", STACK_CELL)} data-label={t("evolution.col.window")}>
         {w.status === "OK" ? (
           <>
             <div className="font-mono">{formatMetric(w.value, unit, intlTag)}</div>
@@ -483,7 +495,11 @@ function MetricRow({ m, intlTag }: { m: MetricReport; intlTag: string }) {
           </span>
         )}
       </td>
-      <td className="py-2 pr-3" data-consistency-status={c.status}>
+      <td
+        className={cn("py-2 pr-3", STACK_CELL)}
+        data-label={t("evolution.col.consistency")}
+        data-consistency-status={c.status}
+      >
         {c.status === "OK" ? (
           <div className="space-y-0.5 font-mono text-xs">
             <div>
@@ -509,7 +525,11 @@ function MetricRow({ m, intlTag }: { m: MetricReport; intlTag: string }) {
           </span>
         )}
       </td>
-      <td className="py-2" data-comparison-status={cmp.status}>
+      <td
+        className={cn("py-2", STACK_CELL, STACK_WIDE)}
+        data-label={t("evolution.col.comparison")}
+        data-comparison-status={cmp.status}
+      >
         {cmp.status === "OK" && cmp.delta !== null ? (
           <div className="space-y-0.5 text-xs">
             <div className="font-mono">

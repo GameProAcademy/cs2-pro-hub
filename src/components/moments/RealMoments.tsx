@@ -423,7 +423,16 @@ function MomentItem({ m, collections }: { m: Moment; collections: MomentCollecti
   });
   return (
     <li
-      className="rounded-lg border border-border p-3"
+      className={cn(
+        "vgl-lift surface-panel rounded-lg border border-border border-l-4 p-3",
+        m.kind === "UTILITY"
+          ? "border-l-category-utility"
+          : m.kind === "DEATH"
+            ? "border-l-destructive"
+            : m.kind === "KILL"
+              ? "border-l-primary"
+              : "border-l-border-strong",
+      )}
       data-moment={m.id}
       data-moment-kind={m.kind}
       data-availability={m.availability}

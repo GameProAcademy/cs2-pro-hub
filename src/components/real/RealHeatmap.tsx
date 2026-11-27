@@ -192,7 +192,7 @@ function MapGallery({
             className={cn(
               "vgl-lift block w-full overflow-hidden rounded-xl border text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               m.map === current
-                ? "border-primary ring-1 ring-primary/50"
+                ? "border-primary shadow-[0_0_0_1px_var(--primary),0_12px_32px_-14px_var(--primary)]"
                 : "border-border hover:border-primary/50",
             )}
             data-map-gallery-item={m.map}
@@ -203,6 +203,14 @@ function MapGallery({
               className="flex h-24 items-end justify-between gap-2 px-3 pb-2"
             >
               <MapEmblem map={m.map} className="size-10" />
+              {m.map === current ? (
+                <span
+                  className="absolute left-2 top-2 rounded-md bg-primary px-1.5 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide text-primary-foreground"
+                  data-map-selected
+                >
+                  {t("vgl3.maps.selected")}
+                </span>
+              ) : null}
               <span className="rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
                 {m.matches}
               </span>

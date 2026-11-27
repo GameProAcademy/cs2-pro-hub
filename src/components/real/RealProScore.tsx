@@ -3,6 +3,15 @@
  * (the caller's own features under RLS). Below the minimum sample or coverage there is no
  * number at all: the state and what is missing are shown instead. Never a percentile.
  */
+import {
+  STACK_BODY,
+  STACK_CELL,
+  STACK_HEAD,
+  STACK_ROW,
+  STACK_TABLE,
+  STACK_WIDE,
+} from "@/lib/ui/stackedTable";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
@@ -196,11 +205,11 @@ export function RealProScoreDetails() {
       {score.state === "READY" ? <ContributionBar components={score.components} /> : null}
       {score.state !== "EMPTY" ? (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" data-pro-score-components>
+          <table className={cn("w-full text-sm", STACK_TABLE)} data-pro-score-components>
             <caption className="pb-2 text-left text-xs font-medium text-foreground">
               {t("score.components.title")}
             </caption>
-            <thead>
+            <thead className={STACK_HEAD}>
               <tr className="text-left font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
                 <th scope="col" className="py-2 pr-4 font-normal">
                   {t("score.col.component")}
@@ -219,13 +228,23 @@ export function RealProScoreDetails() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className={cn("divide-y divide-border", STACK_BODY, "max-md:divide-y-0")}>
               {score.components.map((c) => (
-                <tr key={c.id}>
-                  <th scope="row" className="py-2 pr-4 text-left font-normal text-muted-foreground">
+                <tr key={c.id} className={STACK_ROW}>
+                  <th
+                    scope="row"
+                    className={cn(
+                      "py-2 pr-4 text-left font-normal text-muted-foreground",
+                      STACK_WIDE,
+                      "max-md:p-0 max-md:font-medium max-md:text-foreground",
+                    )}
+                  >
                     {t(`score.c.${c.id}` as TranslationKey)}
                   </th>
-                  <td className="py-2 pr-4 font-mono">
+                  <td
+                    className={cn("py-2 pr-4 font-mono", STACK_CELL)}
+                    data-label={t("score.col.value")}
+                  >
                     {c.value === null ? "—" : `${pct(c.value, intlTag, 1)}%`}
                     {!c.available && c.unavailableReason ? (
                       <span className="block font-sans text-xs text-muted-foreground">
@@ -235,13 +254,24 @@ export function RealProScoreDetails() {
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-2 pr-4 font-mono text-xs">
+                  <td
+                    className={cn("py-2 pr-4 font-mono text-xs", STACK_CELL)}
+                    data-label={t("score.col.sample")}
+                  >
                     {c.matches === 0
                       ? "—"
                       : fill(t(`score.sample.${c.sampleUnit}`), { n: c.sample })}
                   </td>
-                  <td className="py-2 pr-4 text-right font-mono">{pct(c.weight, intlTag)}%</td>
-                  <td className="py-2 text-right font-mono">
+                  <td
+                    className={cn("py-2 pr-4 text-right font-mono", STACK_CELL)}
+                    data-label={t("score.col.weight")}
+                  >
+                    {pct(c.weight, intlTag)}%
+                  </td>
+                  <td
+                    className={cn("py-2 text-right font-mono", STACK_CELL)}
+                    data-label={t("score.col.points")}
+                  >
                     {score.state === "READY" && c.available
                       ? new Intl.NumberFormat(intlTag, {
                           minimumFractionDigits: 1,
