@@ -10,6 +10,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { MapPoolCard } from "@/components/real/MapPool";
 import { LastMatchHero } from "@/components/cs2/MatchVisuals";
 import { SpecialtyStrip } from "@/components/cs2/IdentityKit";
+import { HomeCommandRow } from "@/components/cs2/HudKit";
 import { PendingActionsBanner } from "@/components/pipeline/PendingActionsBanner";
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { MatchesTable } from "@/components/panels/MatchesTable";
@@ -76,6 +77,7 @@ function RealDashboardPage() {
               <OverviewStatePanel overview={overview} />
               {overview.matches[0] ? <LastMatchHero m={overview.matches[0]} /> : null}
               <SpecialtyStrip />
+              <HomeCommandRow matches={overview.matches} />
               <RealAggregates overview={overview} />
               {overview.matches.length ? (
                 <ChartCard
