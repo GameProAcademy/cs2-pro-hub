@@ -8,7 +8,7 @@
  * report the Rounds tab already loads.
  */
 import { MapTile } from "@/components/common/GameVisuals";
-import { MapArt } from "@/components/cs2/Cs2Art";
+import { MapArt, SideLogo } from "@/components/cs2/Cs2Art";
 import { SideBadge, ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { useQuery } from "@tanstack/react-query";
@@ -315,6 +315,73 @@ function RoomSummary({ m }: { m: OverviewMatch }) {
  * the player's side and whether that side won. Rounds without a winner or a side show "?" —
  * never a loss — and nothing is turned into a match result or a percentage (R-07).
  */
+/**
+ * VGL 2.0 continuation: rounds won per side, counted from the same strip (a round counts only
+ * when both its side and its outcome are recorded; the rest are reported apart). No rate.
+ */
+export function sideSplit(rounds: ReadonlyArray<{ side: "CT" | "T" | null; won: boolean | null }>) {
+  const out = { CT: { won: 0, lost: 0 }, T: { won: 0, lost: 0 }, unknown: 0 };
+  for (const r of rounds) {
+    if (!r.side || r.won === null) out.unknown += 1;
+    else out[r.side][r.won ? "won" : "lost"] += 1;
+  }
+  return out;
+}
+
+function SideSplit({
+  rounds,
+}: {
+  rounds: ReadonlyArray<{ side: "CT" | "T" | null; won: boolean | null }>;
+}) {
+  const t = useT();
+  const s = sideSplit(rounds);
+  return (
+    <div className="mb-5 grid gap-3 sm:grid-cols-2" data-side-split>
+      {(["CT", "T"] as const).map((side) => {
+        const { won, lost } = s[side];
+        const total = won + lost;
+        return (
+          <div
+            key={side}
+            className={cn(
+              "flex items-center gap-3 rounded-lg border px-3 py-3",
+              side === "CT" ? "border-side-ct/35 bg-side-ct/8" : "border-side-t/35 bg-side-t/8",
+            )}
+            data-side-split-side={side}
+          >
+            <SideLogo side={side} className="size-10" />
+            <div className="min-w-0 flex-1">
+              <p className="flex items-baseline justify-between gap-2">
+                <SideBadge side={side} />
+                <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                  {total ? `${won} / ${total}` : NOT_AVAILABLE_MARK}
+                </span>
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("vgl.room.sideRoundsWon")}</p>
+              {total ? (
+                <span aria-hidden className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-muted">
+                  <span
+                    className={cn("vgl-grow h-full", side === "CT" ? "bg-side-ct" : "bg-side-t")}
+                    style={{ width: `${(won / total) * 100}%` }}
+                  />
+                </span>
+              ) : null}
+            </div>
+          </div>
+        );
+      })}
+      {s.unknown ? (
+        <p
+          className="text-xs text-muted-foreground sm:col-span-2"
+          data-side-split-unknown={s.unknown}
+        >
+          {fill(t("vgl.room.sideUnknown"), { n: s.unknown })}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function RoundStrip({ matchId }: { matchId: string }) {
   const t = useT();
   const q = useQuery({
@@ -330,6 +397,7 @@ function RoundStrip({ matchId }: { matchId: string }) {
       subtitle={t("room.strip.subtitle")}
       showDemoTag={false}
     >
+      <SideSplit rounds={rounds} />
       <ol className="flex flex-wrap gap-1.5" data-round-strip>
         {rounds.map((r, i) => {
           // A real change of the player's side between two consecutive recorded rounds.

@@ -11,6 +11,11 @@ import { CircleDashed, Info, UserX } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { GameIcon } from "@/components/common/GameIcon";
+import { HudIcon, SideLogo, WeaponArt } from "@/components/cs2/Cs2Art";
+import { weaponArt } from "@/lib/cs2/assets";
+import { cn } from "@/lib/utils";
+
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
@@ -337,6 +342,30 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
   );
 }
 
+/** VGL 2.0 continuation: the event's game icon (real weapon silhouette for a kill). */
+function EventGlyph({ e }: { e: RoundReport["timeline"][number] }) {
+  const tone = e.byMe ? "text-primary" : e.onMe ? "text-destructive" : "text-muted-foreground";
+  if (e.type === "bomb_plant")
+    return <HudIcon name="icon_c4_default" className={cn("size-4", tone)} />;
+  if (e.type === "bomb_defuse")
+    return <HudIcon name="icon_defuse_default" className={cn("size-4", tone)} />;
+  if (e.type === "bomb_explode")
+    return <HudIcon name="icon_bomb_explosion_default" className={cn("size-4", tone)} />;
+  return (
+    <span
+      className={cn("inline-flex items-center gap-1", tone)}
+      data-event-weapon={e.weapon ?? "none"}
+    >
+      {weaponArt(e.weapon) ? (
+        <WeaponArt weapon={e.weapon} className="h-3.5 w-9" />
+      ) : (
+        <GameIcon name="kill" className="size-3.5" />
+      )}
+      {e.headshot ? <HudIcon name="headshot" className="size-3.5" /> : null}
+    </span>
+  );
+}
+
 function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) {
   const t = useT();
   const side = round.side;
@@ -346,7 +375,15 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
     round.won === null ? NOT_AVAILABLE_MARK : t(round.won ? "rounds.won" : "rounds.lost");
   return (
     <li
-      className="py-2"
+      className={cn(
+        "vgl-rise rounded-lg border border-border border-l-4 bg-card/60 px-3 py-2.5",
+        side === "CT"
+          ? "border-l-side-ct"
+          : side === "T"
+            ? "border-l-side-t"
+            : "border-l-border-strong",
+        round.won === true && "bg-primary/[0.04]",
+      )}
       data-round={round.roundNumber}
       data-round-valid={round.valid ? "true" : "false"}
       data-round-won={round.won === null ? "UNKNOWN" : String(round.won)}
@@ -354,18 +391,43 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
     >
       <details>
         <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          <span className="font-mono">{fill(t("rounds.roundN"), { n: round.roundNumber })}</span>
+          <span
+            className="flex h-9 min-w-9 items-center justify-center rounded-md border border-border-strong bg-elevated px-1.5 font-mono text-sm font-semibold tabular-nums text-foreground"
+            aria-hidden
+          >
+            {round.roundNumber}
+          </span>
+          <span className="sr-only">{fill(t("rounds.roundN"), { n: round.roundNumber })}</span>
           {side ? (
-            <SideBadge side={side} />
+            <span className="inline-flex items-center gap-1.5">
+              <SideLogo side={side} className="size-6" />
+              <SideBadge side={side} />
+            </span>
           ) : (
             <span className="text-muted-foreground">{NOT_AVAILABLE_MARK}</span>
           )}
-          <span className={round.won ? "font-medium" : ""}>{result}</span>
+          {round.won === null ? (
+            <span className="text-muted-foreground">{result}</span>
+          ) : (
+            <ToneBadge tone={round.won ? "brand" : "critical"}>{result}</ToneBadge>
+          )}
           <span className="text-muted-foreground">
             {`${buyText(t, own)} × ${buyText(t, enemy)}`}
           </span>
           {round.me ? (
-            <span className="font-mono text-muted-foreground">{`${round.me.kills}K ${round.me.deaths}D`}</span>
+            <span
+              className="inline-flex items-center gap-2 font-mono text-muted-foreground"
+              data-round-me
+            >
+              <span className="inline-flex items-center gap-1">
+                <GameIcon name="kill" className="size-3.5 text-primary" />
+                {`${round.me.kills}K`}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <HudIcon name="icon_skull_default" className="size-3.5" />
+                {`${round.me.deaths}D`}
+              </span>
+            </span>
           ) : null}
           {round.opening.status === "OK" && (round.opening.byMe || round.opening.onMe) ? (
             <ToneBadge tone={round.opening.byMe ? "brand" : "attention"} icon="crosshair">
@@ -398,6 +460,7 @@ function RoundItem({ round, matchId }: { round: RoundReport; matchId: string }) 
           <ol className="space-y-1" data-timeline>
             {round.timeline.map((e, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2 text-xs">
+                <EventGlyph e={e} />
                 <span className="font-mono text-muted-foreground">{e.tick}</span>
                 <span>{eventText(t, e, side)}</span>
                 {e.alive ? (

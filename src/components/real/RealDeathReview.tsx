@@ -5,12 +5,15 @@
  * certainty percentage is ever shown; absence is a state, never a zero; positions are drawn only
  * on a VALIDATED map.
  */
+import type { ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronRight, CircleDashed, Crosshair, MapPinned, UserX } from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { WeaponLabel } from "@/components/common/GameVisuals";
+import { HudIcon, WeaponArt } from "@/components/cs2/Cs2Art";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
@@ -277,10 +280,19 @@ export function DeathList({
                     )}
                     aria-hidden
                   />
+                  <HudIcon
+                    name="icon_skull_default"
+                    className="size-4 shrink-0 text-destructive/80"
+                  />
                   <span className="shrink-0 font-mono text-xs text-foreground">{heading}</span>
                   <span className="min-w-0 truncate text-sm text-muted-foreground">
                     {t(`diagnosis.kind.${c.kind}` as TranslationKey)}
                   </span>
+                  {/* VGL 2.0 continuation: the real weapon that killed (silhouette), when recorded. */}
+                  <WeaponArt
+                    weapon={c.facts.weapon.value}
+                    className="ml-auto hidden h-4 w-12 shrink-0 text-muted-foreground sm:inline-block"
+                  />
                 </button>
                 {c.ref.roundNumber !== null && c.ref.tick !== null ? (
                   <Link
@@ -329,7 +341,7 @@ function useValue() {
   };
 }
 
-function Row({ label, field, text }: { label: string; field: Field<unknown>; text: string }) {
+function Row({ label, field, text }: { label: string; field: Field<unknown>; text: ReactNode }) {
   const t = useT();
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-border/60 py-1.5 last:border-0">
@@ -423,7 +435,13 @@ export function DeathSheet({
             <Row
               label={t("diagnosis.fact.weapon")}
               field={c.facts.weapon}
-              text={value(c.facts.weapon)}
+              text={
+                c.facts.weapon.value ? (
+                  <WeaponLabel weapon={c.facts.weapon.value} />
+                ) : (
+                  value(c.facts.weapon)
+                )
+              }
             />
             <Row
               label={t("diagnosis.fact.headshot")}

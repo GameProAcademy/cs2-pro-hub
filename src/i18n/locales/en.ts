@@ -130,6 +130,8 @@ export const en: Dictionary = {
   "analyze.eyebrow": "Analyze",
   "analyze.title": "Analyze my game",
   "vgl.mapPool.title": "Your maps",
+  "vgl.room.sideRoundsWon": "Rounds won on this side",
+  "vgl.room.sideUnknown": "{n} round(s) without a recorded side or result are not counted.",
   "vgl.dna.signature.title": "Technical signature",
   "vgl.dna.signature.subtitle":
     "Your indexes per dimension compared with each other, highest to lowest. They are CS2 PRO's own indexes: there is no comparison with other players.",
