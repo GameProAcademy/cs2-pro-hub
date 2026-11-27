@@ -12,6 +12,8 @@ import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { UTILITY_WEAPONS, weaponClass, type WeaponClass } from "@/lib/combat/weapons";
 import { mapDisplayName } from "@/lib/cs2/maps";
+import { mapAssets, weaponArt } from "@/lib/cs2/assets";
+import { MapEmblem, WeaponArt } from "@/components/cs2/Cs2Art";
 import type { Grenade } from "@/lib/utility/utility";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +35,15 @@ const UTILITY_GRENADE: Record<string, Grenade> = {
   molotov: "fire",
   incgrenade: "fire",
   inferno: "fire",
+  decoy: "decoy",
+};
+
+/** VGL 2.0: the game's own grenade icon per type (tinted in the utility tone). */
+const GRENADE_ART: Record<Grenade, string> = {
+  flash: "flashbang",
+  he: "hegrenade",
+  smoke: "smokegrenade",
+  fire: "molotov",
   decoy: "decoy",
 };
 
@@ -121,7 +132,11 @@ export function WeaponLabel({
       data-weapon={weapon}
       data-weapon-icon={icon ?? "none"}
     >
-      {icon ? <GameIcon name={icon} className="size-4 shrink-0 text-muted-foreground" /> : null}
+      {weaponArt(weapon) ? (
+        <WeaponArt weapon={weapon} className="h-4 w-10 text-foreground/80" />
+      ) : icon ? (
+        <GameIcon name={icon} className="size-4 shrink-0 text-muted-foreground" />
+      ) : null}
       <span>{weaponDisplayName(weapon)}</span>
     </span>
   );
@@ -138,11 +153,13 @@ export function GrenadeLabel({
   const t = useT();
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)} data-grenade={grenade}>
-      <GameIcon name={GRENADE_ICON[grenade]} className="size-4 shrink-0 text-category-utility" />
+      <WeaponArt weapon={GRENADE_ART[grenade]} className="h-4 w-5 text-category-utility" />
       <span>{t(`nade.grenade.${grenade}` as TranslationKey)}</span>
     </span>
   );
 }
+
+const EMBLEM_SIZE = { sm: "size-8", md: "size-11", lg: "size-16" } as const;
 
 const TILE_SIZE = {
   sm: "size-8 text-xs",
@@ -174,18 +191,23 @@ export function MapTile({
       className={cn("inline-flex min-w-0 items-center gap-2.5", className)}
       data-map-tile={map ?? ""}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-context/30 bg-elevated font-mono font-semibold leading-none text-context",
-          "bg-[linear-gradient(to_right,color-mix(in_oklab,var(--context)_12%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklab,var(--context)_12%,transparent)_1px,transparent_1px)] bg-[size:25%_25%]",
-          TILE_SIZE[size],
-        )}
-      >
-        <span className="absolute left-1 top-1 size-1.5 border-l border-t border-context/60" />
-        <span className="absolute bottom-1 right-1 size-1.5 border-b border-r border-context/60" />
-        <span className="relative">{code}</span>
-      </span>
+      {mapAssets(map) ? (
+        // VGL 2.0: the official map emblem when the pack has it; the CS2 PRO tile otherwise.
+        <MapEmblem map={map} className={EMBLEM_SIZE[size]} />
+      ) : (
+        <span
+          aria-hidden
+          className={cn(
+            "relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-context/30 bg-elevated font-mono font-semibold leading-none text-context",
+            "bg-[linear-gradient(to_right,color-mix(in_oklab,var(--context)_12%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklab,var(--context)_12%,transparent)_1px,transparent_1px)] bg-[size:25%_25%]",
+            TILE_SIZE[size],
+          )}
+        >
+          <span className="absolute left-1 top-1 size-1.5 border-l border-t border-context/60" />
+          <span className="absolute bottom-1 right-1 size-1.5 border-b border-r border-context/60" />
+          <span className="relative">{code}</span>
+        </span>
+      )}
       {showName ? (
         <span className="truncate font-display font-semibold text-foreground">{name}</span>
       ) : (
