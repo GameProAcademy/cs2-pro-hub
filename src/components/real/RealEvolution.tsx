@@ -15,6 +15,7 @@ import { ProBenchmarkCard } from "@/components/benchmarks/ProBenchmarkCard";
 import { MonthlyReviewCard } from "@/components/review/MonthlyReviewCard";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { ChartCard } from "@/components/common/ChartCard";
+import { SnapshotTimeline } from "@/components/cs2/IdentityKit";
 import { cn } from "@/lib/utils";
 import {
   STACK_BODY,
@@ -90,6 +91,7 @@ export function RealEvolutionPage({
           <EvolutionBody r={query.data} search={clean} onSearch={onSearch} />
         )}
         <DnaCard />
+        <SnapshotTimeline />
         <MonthlyReviewCard />
         <ProBenchmarkCard />
       </div>

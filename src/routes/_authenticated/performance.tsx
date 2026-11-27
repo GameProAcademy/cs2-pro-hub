@@ -8,6 +8,7 @@ import { MapPerformanceChart } from "@/components/charts/MapPerformanceChart";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { HudIcon, WeaponArt } from "@/components/cs2/Cs2Art";
 import { MatchRibbon } from "@/components/cs2/PerformanceVisuals";
+import { HighlightPair } from "@/components/cs2/HudKit";
 import { HudStat } from "@/components/cs2/MatchVisuals";
 
 import { SideSplitChart } from "@/components/charts/SideSplitChart";
@@ -109,6 +110,7 @@ function RealPerformance({ matches }: { matches: OverviewMatch[] }) {
         {t("real.performance.basis").replace("{matches}", String(totals.matches))}
       </p>
       <MatchRibbon matches={matches} />
+      <HighlightPair matches={matches} />
       <section
         className="surface-panel vgl-grid relative overflow-hidden rounded-xl border border-border p-4 sm:p-5"
         aria-labelledby="combat-hud-title"

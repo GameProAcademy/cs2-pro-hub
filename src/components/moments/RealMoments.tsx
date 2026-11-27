@@ -4,6 +4,7 @@
  * tick. Private: nothing here is shared. Deleting a moment or a collection never touches the
  * match or its events.
  */
+import { MapEmblem } from "@/components/cs2/Cs2Art";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed, Trash2 } from "lucide-react";
@@ -56,6 +57,17 @@ export interface MomentsSearch {
 }
 
 export const momentsQueryKey = (s: MomentsSearch) => ["player", "moments", s] as const;
+
+/** VGL 4.0: consecutive moments of the same match grouped (order unchanged). Pure. */
+export function groupByMatch(moments: ReadonlyArray<Moment>) {
+  const out: { matchId: string | null; map: string | null; items: Moment[] }[] = [];
+  for (const m of moments) {
+    const last = out[out.length - 1];
+    if (last && last.matchId === m.matchId) last.items.push(m);
+    else out.push({ matchId: m.matchId, map: m.map, items: [m] });
+  }
+  return out;
+}
 
 export function RealMomentsPage({
   search,
@@ -143,11 +155,26 @@ export function MomentsBody({
             description={t(filtered ? "moments.noMatch.description" : "moments.empty.description")}
           />
         ) : (
-          <ul className="space-y-3" data-moment-list>
-            {moments.map((m) => (
-              <MomentItem key={m.id} m={m} collections={first.collections} />
+          <div className="space-y-5" data-moment-list>
+            {groupByMatch(moments).map((g, gi) => (
+              <section
+                key={`${g.matchId ?? "none"}-${gi}`}
+                aria-label={g.map ? mapDisplayName(g.map) : t("moments.mapUnknown")}
+                data-moment-group={g.matchId ?? "none"}
+              >
+                <h3 className="mb-2 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  {g.map ? <MapEmblem map={g.map} className="size-5" /> : null}
+                  {g.map ? mapDisplayName(g.map) : t("moments.mapUnknown")}
+                  <span className="tabular-nums">({g.items.length})</span>
+                </h3>
+                <ul className="space-y-3">
+                  {g.items.map((m) => (
+                    <MomentItem key={m.id} m={m} collections={first.collections} />
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         )}
         {hasMore ? (
           <Button

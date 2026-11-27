@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { ShieldCheck, UserCheck, UserPlus, UserX, Users, type LucideIcon } from "lucide-react";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { SupportEmailCard } from "@/components/admin/SupportEmailCard";
@@ -28,14 +29,25 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminOverviewPage,
 });
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  icon?: LucideIcon;
+}) {
   return (
     <div
       className="surface-panel relative overflow-hidden rounded-lg border border-border p-4"
       data-admin-stat
     >
       <span aria-hidden className="absolute inset-x-0 top-0 h-0.5 bg-primary/60" />
-      <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+      <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        {Icon ? <Icon className="size-4 text-primary" aria-hidden /> : null}
+        {label}
+      </p>
       <p className="mt-2 text-3xl font-semibold tabular-nums text-foreground">{value}</p>
     </div>
   );
@@ -68,11 +80,31 @@ function AdminOverviewPage() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <StatCard label={t("admin.metric.totalUsers")} value={overview.data.totalUsers} />
-            <StatCard label={t("admin.metric.activePlayers")} value={overview.data.activePlayers} />
-            <StatCard label={t("admin.metric.inactiveUsers")} value={overview.data.inactiveUsers} />
-            <StatCard label={t("admin.metric.admins")} value={overview.data.admins} />
-            <StatCard label={t("admin.metric.newUsers")} value={overview.data.newUsers} />
+            <StatCard
+              icon={Users}
+              label={t("admin.metric.totalUsers")}
+              value={overview.data.totalUsers}
+            />
+            <StatCard
+              icon={UserCheck}
+              label={t("admin.metric.activePlayers")}
+              value={overview.data.activePlayers}
+            />
+            <StatCard
+              icon={UserX}
+              label={t("admin.metric.inactiveUsers")}
+              value={overview.data.inactiveUsers}
+            />
+            <StatCard
+              icon={ShieldCheck}
+              label={t("admin.metric.admins")}
+              value={overview.data.admins}
+            />
+            <StatCard
+              icon={UserPlus}
+              label={t("admin.metric.newUsers")}
+              value={overview.data.newUsers}
+            />
           </div>
 
           <SupportEmailCard />

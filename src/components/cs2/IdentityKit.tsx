@@ -321,3 +321,90 @@ export function IdentityCard({
     </section>
   );
 }
+
+/**
+ * VGL 4.0 — the Player DNA snapshots of the current method as a timeline (newest first). Each
+ * node shows the date, the matches in its basis and a fingerprint of the ten dimensions (one bar
+ * per dimension, height = its persisted index; a dimension without index is a dashed slot).
+ */
+export function SnapshotTimeline() {
+  const { t, intlTag } = useI18n();
+  const q = useQuery({ queryKey: ["player", "dna", "history"], queryFn: () => getDnaHistory() });
+  const snaps = q.data ? [...comparableSnapshots(q.data, DNA_VERSION_V3)].reverse() : [];
+  if (!snaps.length) return null;
+  const dims = Object.keys(DNA_ICON) as DnaDimension[];
+  return (
+    <section
+      className="surface-panel rounded-xl border border-border p-4 sm:p-5"
+      aria-labelledby="snapshot-timeline-title"
+      data-snapshot-timeline
+    >
+      <h2
+        id="snapshot-timeline-title"
+        className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.14em] text-foreground"
+      >
+        <GameIcon name="dna" className="size-4 text-primary" />
+        {t("vgl4.timeline.title")}
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {fill(t("vgl4.timeline.subtitle"), { version: DNA_VERSION_V3 })}
+      </p>
+      <ol className="relative mt-4 space-y-3 border-l border-border-strong pl-5">
+        {snaps.map((e, i) => (
+          <li
+            key={e.createdAt}
+            className="vgl-rise relative"
+            style={{ "--vgl-i": i } as CSSProperties}
+            data-snapshot={e.createdAt}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "absolute -left-[1.6rem] top-1.5 size-3 rounded-full border-2",
+                i === 0 ? "border-primary bg-primary" : "border-border-strong bg-background",
+              )}
+            />
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-sm tabular-nums text-foreground">
+                  {formatDate(e.createdAt, intlTag)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {fill(t("vgl4.timeline.matches"), { n: e.matchCount ?? "—" })}
+                </p>
+              </div>
+              <span
+                className="flex h-10 items-end gap-1"
+                role="img"
+                aria-label={dims
+                  .map((d) => {
+                    const v = e.dimensions[d];
+                    return `${t(dnaLabelKey(d))} ${typeof v === "number" ? Math.round(v) : "—"}`;
+                  })
+                  .join(", ")}
+                data-snapshot-fingerprint
+              >
+                {dims.map((d) => {
+                  const v = e.dimensions[d];
+                  return typeof v === "number" ? (
+                    <span
+                      key={d}
+                      className="w-2.5 rounded-sm bg-primary/80"
+                      style={{ height: `${Math.max(4, Math.round(v))}%` }}
+                      title={`${t(dnaLabelKey(d))} ${Math.round(v)}`}
+                    />
+                  ) : (
+                    <span
+                      key={d}
+                      className="h-full w-2.5 rounded-sm border border-dashed border-border"
+                    />
+                  );
+                })}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
