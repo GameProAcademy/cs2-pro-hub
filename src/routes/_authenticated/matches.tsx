@@ -5,6 +5,7 @@ import { DemoDataNotice } from "@/components/common/DemoDataNotice";
 import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
+import { MatchCardGrid } from "@/components/cs2/MatchVisuals";
 import { MatchesTable } from "@/components/panels/MatchesTable";
 import {
   OverviewStatePanel,
@@ -55,6 +56,7 @@ function RealMatchesPage() {
             <div className="space-y-8">
               <OverviewStatePanel overview={overview} />
               <RealAggregates overview={overview} />
+              <MatchCardGrid rows={overview.matches} />
               {overview.matches.length ? (
                 <ChartCard showDemoTag={false} title={t("matches.tableTitle")}>
                   <RealMatchesTable rows={overview.matches} />

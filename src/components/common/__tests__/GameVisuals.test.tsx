@@ -55,6 +55,7 @@ describe("GrenadeLabel", () => {
         const label = (dictionaries[l] as Record<string, string>)[`nade.grenade.${g}`];
         expect(label, `${l} ${g}`).toBeTruthy();
         expect(out).toContain("text-category-utility");
+        expect(out).toContain("data-cs2-mask");
       }
   });
 });

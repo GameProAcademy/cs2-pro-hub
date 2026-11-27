@@ -224,6 +224,18 @@ export function CoachText({ content }: { content: string }) {
   );
 }
 
+/** VGL 2.0: radar sweep while the Coach is actually generating (real activity only). */
+function RadarSweep() {
+  return (
+    <span aria-hidden className="relative inline-flex size-6 shrink-0 items-center justify-center">
+      <span className="absolute inset-0 rounded-full border border-primary/40" />
+      <span className="absolute inset-1.5 rounded-full border border-primary/25" />
+      <span className="vgl-sweep absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,color-mix(in_oklab,var(--primary)_55%,transparent)_60deg,transparent_61deg)]" />
+      <span className="size-1 rounded-full bg-primary" />
+    </span>
+  );
+}
+
 function Bubble({
   message,
   aiLabel,
@@ -427,7 +439,8 @@ export function RealCoachChat({ className }: { className?: string | undefined })
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/40 px-4 py-2 sm:py-2.5">
+      <div className="vgl-grid relative isolate flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/60 px-4 py-2 sm:py-2.5">
+        <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-20 bg-primary" />
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2 text-xs font-semibold text-foreground sm:text-sm">
             <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
@@ -537,13 +550,11 @@ export function RealCoachChat({ className }: { className?: string | undefined })
                 </p>
               </div>
               <p
-                className="flex items-center gap-2 font-mono text-xs text-muted-foreground"
+                className="flex items-center gap-2.5 font-mono text-xs text-muted-foreground"
                 role="status"
+                data-coach-thinking
               >
-                <span
-                  aria-hidden
-                  className="size-1.5 animate-pulse rounded-full bg-primary motion-reduce:animate-none"
-                />
+                <RadarSweep />
                 {t("coach.thinking")}
               </p>
             </>

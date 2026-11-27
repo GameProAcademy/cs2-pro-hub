@@ -8,6 +8,7 @@
  * report the Rounds tab already loads.
  */
 import { MapTile } from "@/components/common/GameVisuals";
+import { MapArt } from "@/components/cs2/Cs2Art";
 import { SideBadge, ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { useQuery } from "@tanstack/react-query";
@@ -179,37 +180,39 @@ function RoomHeader({ m }: { m: OverviewMatch }) {
         : t("room.result.unresolved");
   return (
     <header
-      className="surface-panel relative overflow-hidden rounded-lg border border-border px-5 py-4"
+      className="vgl-rise relative overflow-hidden rounded-xl border border-border shadow-[var(--shadow-elevated)]"
       data-room-header
     >
-      <span
-        aria-hidden
-        className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary via-primary/40 to-transparent"
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        <MapTile map={m.map} size="lg" />
-        <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
-          {roomTitle(m, intlTag)}
-        </h1>
-      </div>
-      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        <span data-date-source={m.dateSource}>
-          {m.dateSource === "processed" ? t("room.date.processed") : t("room.date.played")}
-        </span>
-        {m.roundsPlayed !== null ? (
-          <span className="inline-flex items-center gap-1.5">
-            <GameIcon name="rounds" className="size-3.5" />
-            {fill(t("room.rounds"), { n: m.roundsPlayed })}
+      <MapArt map={m.map} className="px-5 py-6 sm:px-7 sm:py-7">
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary via-primary/40 to-transparent"
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <MapTile map={m.map} size="lg" />
+          <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
+            {roomTitle(m, intlTag)}
+          </h1>
+        </div>
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span data-date-source={m.dateSource}>
+            {m.dateSource === "processed" ? t("room.date.processed") : t("room.date.played")}
           </span>
-        ) : null}
-        {m.result && m.resultStatus !== "UNRESOLVED_BY_DEMO" ? (
-          <ToneBadge tone={RESULT_TONE[m.result] ?? "context"} data-room-result={m.resultStatus}>
-            {result}
-          </ToneBadge>
-        ) : (
-          <span data-room-result={m.resultStatus}>{result}</span>
-        )}
-      </p>
+          {m.roundsPlayed !== null ? (
+            <span className="inline-flex items-center gap-1.5">
+              <GameIcon name="rounds" className="size-3.5" />
+              {fill(t("room.rounds"), { n: m.roundsPlayed })}
+            </span>
+          ) : null}
+          {m.result && m.resultStatus !== "UNRESOLVED_BY_DEMO" ? (
+            <ToneBadge tone={RESULT_TONE[m.result] ?? "context"} data-room-result={m.resultStatus}>
+              {result}
+            </ToneBadge>
+          ) : (
+            <span data-room-result={m.resultStatus}>{result}</span>
+          )}
+        </p>
+      </MapArt>
     </header>
   );
 }

@@ -8,7 +8,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CircleDashed, MapPinned } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
@@ -27,6 +27,8 @@ import {
 } from "@/lib/spatial/heatmap";
 import { mapDisplayName } from "@/lib/cs2/maps";
 import { MapTile } from "@/components/common/GameVisuals";
+import { MapArt, MapEmblem } from "@/components/cs2/Cs2Art";
+import { cn } from "@/lib/utils";
 import { MAP_OVERVIEWS, RADAR_SIZE, type MapLevel } from "@/lib/spatial/maps";
 import { radarAsset } from "@/lib/spatial/radarAssets";
 import {
@@ -115,6 +117,9 @@ export function HeatmapBody({
   const h = r.heatmap;
   return (
     <div className="space-y-6" data-heatmap-status={h.events.status} data-map-support={h.support}>
+      <MatchSelectSlot>
+        <MapGallery maps={r.maps} current={h.map} onPick={(map) => onSearch({ map })} />
+      </MatchSelectSlot>
       <Filters r={r} h={h} search={search} onSearch={onSearch} />
       {h.support !== "SUPPORTED" ? (
         <EmptyState
@@ -159,6 +164,61 @@ function Select<T extends string>({
         ))}
       </select>
     </label>
+  );
+}
+
+/**
+ * VGL 2.0: the player's maps as in-game scenes. Same choice as the map select (same handler);
+ * each card shows the real number of matches and the support state the server returned.
+ */
+function MapGallery({
+  maps,
+  current,
+  onPick,
+}: {
+  maps: SpatialMapOption[];
+  current: string;
+  onPick: (map: string) => void;
+}) {
+  const t = useT();
+  return (
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-map-gallery>
+      {maps.map((m, i) => (
+        <li key={m.map} className="vgl-rise" style={{ "--vgl-i": i } as CSSProperties}>
+          <button
+            type="button"
+            onClick={() => onPick(m.map)}
+            aria-pressed={m.map === current}
+            className={cn(
+              "vgl-lift block w-full overflow-hidden rounded-xl border text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              m.map === current
+                ? "border-primary ring-1 ring-primary/50"
+                : "border-border hover:border-primary/50",
+            )}
+            data-map-gallery-item={m.map}
+          >
+            <MapArt
+              map={m.map}
+              overlay="soft"
+              className="flex h-24 items-end justify-between gap-2 px-3 pb-2"
+            >
+              <MapEmblem map={m.map} className="size-10" />
+              <span className="rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
+                {m.matches}
+              </span>
+            </MapArt>
+            <span className="block truncate bg-card px-3 py-2 font-display text-sm font-semibold uppercase tracking-wide text-foreground">
+              {mapDisplayName(m.map)}
+              {m.support !== "SUPPORTED" ? (
+                <span className="block font-sans text-xs font-normal normal-case tracking-normal text-muted-foreground">
+                  {t(`spatial.support.${m.support}` as TranslationKey)}
+                </span>
+              ) : null}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 

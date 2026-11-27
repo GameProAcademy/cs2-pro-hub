@@ -8,6 +8,7 @@ import { MetricCard } from "@/components/common/MetricCard";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { MapPoolCard } from "@/components/real/MapPool";
+import { LastMatchHero } from "@/components/cs2/MatchVisuals";
 import { PendingActionsBanner } from "@/components/pipeline/PendingActionsBanner";
 import { BottleneckList } from "@/components/panels/BottleneckList";
 import { MatchesTable } from "@/components/panels/MatchesTable";
@@ -72,6 +73,7 @@ function RealDashboardPage() {
           {(overview) => (
             <div className="space-y-8">
               <OverviewStatePanel overview={overview} />
+              {overview.matches[0] ? <LastMatchHero m={overview.matches[0]} /> : null}
               <RealAggregates overview={overview} />
               {overview.matches.length ? (
                 <ChartCard

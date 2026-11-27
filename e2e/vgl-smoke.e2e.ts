@@ -75,6 +75,15 @@ async function settle(page: Page, path: string) {
 test("VGL smoke — every player screen, seven widths, AI Coach", async ({ page }) => {
   const pageErrors: string[] = [];
   page.on("pageerror", (e) => pageErrors.push(e.message.slice(0, 120)));
+  // VGL 2.0: every CS2 asset request must succeed (no 404 on /cs2/).
+  const assetFailures: string[] = [];
+  let assetRequests = 0;
+  page.on("response", (res) => {
+    const u = new URL(res.url());
+    if (!u.pathname.startsWith("/cs2/")) return;
+    assetRequests += 1;
+    if (res.status() >= 400) assetFailures.push(`${res.status()} ${u.pathname}`);
+  });
   await login(page);
 
   // Route × width audit.
@@ -124,6 +133,35 @@ test("VGL smoke — every player screen, seven widths, AI Coach", async ({ page 
     summary["roomHeaderTile"] = await page.locator("[data-room-header] [data-map-tile]").count();
   }
 
+  // VGL 2.0 scenes: real artwork decoded and masks applied.
+  const scenes: Record<string, unknown> = {};
+  for (const [path, selector] of [
+    ["/dashboard", "[data-last-match-hero]"],
+    ["/matches", "[data-match-card]"],
+    ["/player-dna", "[data-dna-card]"],
+    ["/maps", "[data-map-gallery-item]"],
+  ] as const) {
+    await settle(page, path);
+    await page.waitForTimeout(1500);
+    scenes[path] = await page.evaluate((sel) => {
+      const emblems = Array.from(
+        document.querySelectorAll<HTMLImageElement>("img[data-map-emblem]"),
+      );
+      const masks = Array.from(document.querySelectorAll<HTMLElement>("[data-cs2-mask]"));
+      return {
+        elements: document.querySelectorAll(sel).length,
+        emblems: emblems.length,
+        emblemsDecoded: emblems.filter((i) => i.complete && i.naturalWidth > 0).length,
+        masks: masks.length,
+        masksApplied: masks.filter((m) => {
+          const cs = getComputedStyle(m);
+          return (cs.maskImage || cs.webkitMaskImage || "none") !== "none";
+        }).length,
+      };
+    }, selector);
+  }
+  summary["scenes"] = scenes;
+
   // AI Coach: the page renders; optionally one real question and its reply.
   await settle(page, "/coach");
   await expect(page.locator("[data-coach-thread]")).toBeVisible();
@@ -151,6 +189,9 @@ test("VGL smoke — every player screen, seven widths, AI Coach", async ({ page 
     summary["coach"] = { rendered: true, send: "SKIPPED" };
   }
 
+  summary["assetRequests"] = assetRequests;
+  summary["assetFailures"] = assetFailures;
+  expect(assetFailures, "CS2 assets that failed to load").toEqual([]);
   summary["pageErrors"] = pageErrors;
   expect(pageErrors, "uncaught page errors").toEqual([]);
   summary["finishedAt"] = new Date().toISOString();

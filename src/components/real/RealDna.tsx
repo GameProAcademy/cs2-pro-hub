@@ -6,11 +6,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleDashed } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
 import { ChartCard } from "@/components/common/ChartCard";
-import type { GameIconName } from "@/components/common/GameIcon";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
+import { Cs2Mask, RadialGauge } from "@/components/cs2/Cs2Art";
+import { HUD } from "@/lib/cs2/assets";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { AppShell } from "@/components/layout/AppShell";
@@ -43,6 +45,20 @@ const DNA_ICON = {
   clutch: "clutch",
   consistency: "trend",
 } as const satisfies Record<string, GameIconName>;
+
+/** VGL 2.0: authentic CS2 artwork per dimension, used as a decorative watermark. */
+const DNA_ART = {
+  aim: "/cs2/weapons/ak47.svg",
+  dueling: "/cs2/weapons/deagle.svg",
+  survivability: HUD.icon_armor_helmet_default,
+  positioning: "/cs2/weapons/awp.svg",
+  utility: "/cs2/weapons/hegrenade.svg",
+  decision_making: HUD.icon_c4_default,
+  teamplay: "/cs2/weapons/flashbang.svg",
+  economy: HUD.icon_bullets_default,
+  clutch: HUD.icon_defuse_default,
+  consistency: HUD.icon_timer_default,
+} as const;
 
 export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const { t, intlTag, locale } = useI18n();
@@ -150,33 +166,70 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
         </ChartCard>
       ) : null}
       <div className="grid gap-5 lg:grid-cols-2">
-        {ordered.map((d) => (
-          <ChartCard
+        {ordered.map((d, i) => (
+          <article
             key={d.dimension}
-            showDemoTag={false}
-            className={cn(selected === d.dimension && "ring-1 ring-primary/50")}
-            icon={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
-            title={t(dnaLabelKey(d.dimension))}
-            subtitle={
-              d.status === "NOT_MEASURED"
-                ? t("real.dna.status.NOT_MEASURED")
-                : d.status === "NO_SAMPLE" && !d.observed
-                  ? d.dimension === "clutch" && clutchAttempts !== null
-                    ? `${t("real.dna.status.NO_SAMPLE")} · ${fill(t("real.dna.clutchAttempts"), { n: clutchAttempts, min: DNA_MIN_EVENT_SAMPLE })}`
-                    : t("real.dna.status.NO_SAMPLE")
-                  : d.value === null && !d.observed
-                    ? t("real.dna.notObserved")
-                    : stable && d.value !== null
-                      ? `${Math.round(d.value * 100)} / 100`
-                      : fill(t("real.dna.inFormationIndex"), {
-                          matches: dna.matches,
-                          minimum: dna.minimumMatches,
-                        })
-            }
+            className={cn(
+              "vgl-rise vgl-lift surface-panel relative isolate overflow-hidden rounded-xl border border-border p-4 sm:p-5",
+              selected === d.dimension && "ring-1 ring-primary/50",
+            )}
+            style={{ "--vgl-i": i } as CSSProperties}
+            data-dna-card={d.dimension}
           >
-            <ul className="divide-y divide-border">
+            {/* Authentic CS2 silhouette as a watermark (decorative). */}
+            <Cs2Mask
+              src={DNA_ART[d.dimension as keyof typeof DNA_ART]}
+              className="pointer-events-none absolute -right-4 top-3 -z-10 h-20 w-44 text-primary opacity-[0.07]"
+            />
+            <header className="mb-4 flex items-center gap-4">
+              <RadialGauge
+                value={stable && d.value !== null ? d.value : null}
+                size={68}
+                label={
+                  stable && d.value !== null ? (
+                    <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                      {Math.round(d.value * 100)}
+                    </span>
+                  ) : (
+                    <GameIcon
+                      name={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
+                      className="size-5 text-muted-foreground"
+                    />
+                  )
+                }
+              />
+              <div className="min-w-0">
+                <h3 className="flex items-center gap-2 font-display text-base font-semibold uppercase tracking-wide text-foreground">
+                  <GameIcon
+                    name={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
+                    className="size-4 text-primary"
+                  />
+                  {t(dnaLabelKey(d.dimension))}
+                </h3>
+                <p className="mt-0.5 text-xs text-muted-foreground" data-dna-card-status>
+                  {d.status === "NOT_MEASURED"
+                    ? t("real.dna.status.NOT_MEASURED")
+                    : d.status === "NO_SAMPLE" && !d.observed
+                      ? d.dimension === "clutch" && clutchAttempts !== null
+                        ? `${t("real.dna.status.NO_SAMPLE")} · ${fill(t("real.dna.clutchAttempts"), { n: clutchAttempts, min: DNA_MIN_EVENT_SAMPLE })}`
+                        : t("real.dna.status.NO_SAMPLE")
+                      : d.value === null && !d.observed
+                        ? t("real.dna.notObserved")
+                        : stable && d.value !== null
+                          ? `${Math.round(d.value * 100)} / 100`
+                          : fill(t("real.dna.inFormationIndex"), {
+                              matches: dna.matches,
+                              minimum: dna.minimumMatches,
+                            })}
+                </p>
+              </div>
+            </header>
+            <ul className="grid gap-2 sm:grid-cols-2" data-dna-signals>
               {d.signals.map((s) => (
-                <li key={s.name} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <li
+                  key={s.name}
+                  className="flex flex-col gap-1 rounded-lg border border-border bg-background/40 px-3 py-2 text-sm"
+                >
                   <span className="text-xs text-muted-foreground">
                     {signalLabel(s.name, locale)}
                     {s.mean !== null &&
@@ -190,7 +243,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                       </span>
                     ) : null}
                   </span>
-                  <span className="font-mono">
+                  <span className="font-mono text-base font-semibold tabular-nums text-foreground">
                     {s.mean === null
                       ? t("real.dna.notObserved")
                       : formatSignalValue(
@@ -214,7 +267,7 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                 </li>
               ))}
             </ul>
-          </ChartCard>
+          </article>
         ))}
       </div>
       <DnaHistory />

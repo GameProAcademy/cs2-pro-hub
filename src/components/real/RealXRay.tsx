@@ -10,6 +10,8 @@ import { CircleDashed } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { Cs2Mask } from "@/components/cs2/Cs2Art";
+import { HUD } from "@/lib/cs2/assets";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { ProgressBar } from "@/components/common/ProgressBar";
 import { SideBadge, ToneBadge } from "@/components/common/VisualBadges";
@@ -120,6 +122,16 @@ const DIMENSION_ICON: Record<string, GameIconName> = {
   decision: "dna",
 };
 
+/** VGL 2.0: authentic CS2 silhouette per X-ray dimension (decorative watermark). */
+const XRAY_ART: Record<string, string> = {
+  aim_duels: "/cs2/weapons/ak47.svg",
+  survival_positioning: HUD.icon_armor_helmet_default,
+  utility: "/cs2/weapons/hegrenade.svg",
+  impact: "/cs2/weapons/awp.svg",
+  consistency: HUD.icon_timer_default,
+  decision: HUD.icon_c4_default,
+};
+
 export function XRayBody({ x }: { x: XRayDiagnosis }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -154,9 +166,16 @@ export function XRayBody({ x }: { x: XRayDiagnosis }) {
             <ChartCard
               key={d.id}
               showDemoTag={false}
+              className="relative isolate overflow-hidden"
               icon={DIMENSION_ICON[d.id]}
               title={t(`xray.dim.${d.id}` as TranslationKey)}
             >
+              {XRAY_ART[d.id] ? (
+                <Cs2Mask
+                  src={XRAY_ART[d.id]!}
+                  className="pointer-events-none absolute -right-3 top-2 -z-10 h-16 w-40 text-primary opacity-[0.07]"
+                />
+              ) : null}
               {d.status === "NOT_OBSERVED" ? (
                 <p className="rounded-md border border-dashed border-border-strong px-3 py-2 text-sm text-muted-foreground">
                   {t("xray.dim.notObserved")}
