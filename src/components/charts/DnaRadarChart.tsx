@@ -83,7 +83,7 @@ function AxisLabel(props: {
       y={lines.length > 1 ? y - 6 : y}
       textAnchor={(props.textAnchor as "start" | "middle" | "end" | undefined) ?? "middle"}
       fill="var(--muted-foreground)"
-      fontSize={11}
+      fontSize={12}
     >
       {lines.map((line, i) => (
         <tspan key={i} x={Number(props.x ?? 0)} dy={i === 0 ? 0 : 12}>

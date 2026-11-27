@@ -384,6 +384,16 @@ Evidência: `docs/ux1/VISUAL_PHASE_VALIDATION.md`. **Estado:** validado em produ
 
 Evidência: `docs/ux1/UPLOAD_VISUAL_VALIDATION.md`. **Estado:** publicado e validado em produção.
 
+### 2.19 Visual Game Language (2026-11-26)
+
+- **PRs:** #406 (elementos), #407 (partidas, Sala, duelos, utilidade, Início), #408 (momentos, evolução, mapas,
+  performance, DNA), #409 (Coach e metas), #410 (perfil e notificações), #411 (smoke de produção), mais o PR
+  de tipografia dos gráficos e documentação.
+- **Escopo:** só apresentação, com o motor intacto (ver `docs/ux1/VISUAL_GAME_LANGUAGE.md`).
+- **Produção:** deploy `b6aa52f2` de `dbf4ae9f`. Smoke `45920147853`: 0 overflow e 0 erro de página; texto < 12 px
+  só nos ticks dos gráficos de `/performance` e `/evolution`, corrigido.
+- **Pendências do dono:** decidir sobre radares oficiais como miniatura.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
