@@ -41,7 +41,8 @@ import { getCoachConversation, getCoachPreferences } from "@/lib/coachSession.fu
 import { coachBlocks, inlineParts } from "@/lib/coach/coachText";
 import { cn } from "@/lib/utils";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
-import { coachSectionKind, numericParts, type CoachSectionKind } from "@/lib/coach/coachSections";
+import { coachSectionKind, coachTokens, type CoachSectionKind } from "@/lib/coach/coachSections";
+import { MapEmblem, SideLogo, WeaponArt } from "@/components/cs2/Cs2Art";
 
 function Inline({ text }: { text: string }) {
   return (
@@ -60,13 +61,42 @@ function Inline({ text }: { text: string }) {
           </code>
         ) : (
           <Fragment key={i}>
-            {numericParts(part.text).map((p, j) =>
+            {coachTokens(part.text).map((p, j) =>
               p.kind === "number" ? (
                 <span
                   key={j}
                   className="font-mono font-semibold tabular-nums text-foreground"
                   data-coach-number
                 >
+                  {p.text}
+                </span>
+              ) : p.kind === "map" ? (
+                <span key={j} className="inline-flex items-baseline gap-1" data-coach-map={p.map}>
+                  <MapEmblem map={p.map} className="size-4 self-center" />
+                  <span className="font-semibold text-foreground">{p.text}</span>
+                </span>
+              ) : p.kind === "weapon" ? (
+                <span
+                  key={j}
+                  className="inline-flex items-baseline gap-1"
+                  data-coach-weapon={p.weapon}
+                >
+                  <span className="font-semibold text-foreground">{p.text}</span>
+                  <WeaponArt
+                    weapon={p.weapon}
+                    className="h-3 w-7 self-center text-muted-foreground"
+                  />
+                </span>
+              ) : p.kind === "side" ? (
+                <span
+                  key={j}
+                  className={cn(
+                    "inline-flex items-baseline gap-1 font-semibold",
+                    p.side === "CT" ? "text-side-ct" : "text-side-t",
+                  )}
+                  data-coach-side={p.side}
+                >
+                  <SideLogo side={p.side} className="size-3.5 self-center" />
                   {p.text}
                 </span>
               ) : (
@@ -125,6 +155,7 @@ export function CoachText({ content }: { content: string }) {
     else groups[groups.length - 1]!.items.push(block);
   }
   let key = 0;
+  let leadDone = false;
   const renderBlock = (block: Block) => {
     const i = key++;
     if (block.kind === "space") return <div key={i} className="h-1" />;
@@ -168,8 +199,15 @@ export function CoachText({ content }: { content: string }) {
           </table>
         </div>
       );
+    // VGL 2.0 continuation: the reply's first paragraph reads as its lead (typography only).
+    const lead = !leadDone;
+    leadDone = true;
     return (
-      <p key={i}>
+      <p
+        key={i}
+        className={lead ? "text-[15px] leading-relaxed text-foreground" : undefined}
+        data-coach-lead={lead ? "" : undefined}
+      >
         <Inline text={block.text} />
       </p>
     );
