@@ -10,6 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { CircleDashed, Info, UserX } from "lucide-react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { GrenadeLabel } from "@/components/common/GameVisuals";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { MatchSelectSlot, MaybePageHeader, MaybeShell } from "@/components/real/MatchScope";
@@ -197,7 +198,11 @@ function UtilityReportView({ r }: { r: Extract<UtilityResponse, { status: "OK" }
       {!tel.blindsRecorded ? <Note id="NO_BLINDS">{t("nade.note.noBlinds")}</Note> : null}
       {!tel.throwsAttributed ? <Note id="LEGACY">{t("nade.note.legacy")}</Note> : null}
 
-      <ChartCard title={t("nade.section.grenades")} subtitle={t("nade.section.grenades.subtitle")}>
+      <ChartCard
+        title={t("nade.section.grenades")}
+        subtitle={t("nade.section.grenades.subtitle")}
+        icon="grenade"
+      >
         <div className="overflow-x-auto" data-table-scroll>
           <table className="w-full text-sm" data-grenades>
             <thead className="text-left text-xs text-muted-foreground">
@@ -221,7 +226,9 @@ function UtilityReportView({ r }: { r: Extract<UtilityResponse, { status: "OK" }
                   data-throws={g.throws === null ? "NOT_OBSERVED" : String(g.throws)}
                   data-detonations={g.detonations === null ? "NOT_OBSERVED" : String(g.detonations)}
                 >
-                  <td className="py-1">{t(`nade.grenade.${g.grenade}` as TranslationKey)}</td>
+                  <td className="py-1">
+                    <GrenadeLabel grenade={g.grenade} />
+                  </td>
                   <td className="py-1 font-mono">{count(g.throws)}</td>
                   <td className="py-1 font-mono">{count(g.detonations)}</td>
                   {PHASES.map((p) => (
@@ -237,7 +244,11 @@ function UtilityReportView({ r }: { r: Extract<UtilityResponse, { status: "OK" }
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("nade.phaseNote")}</p>
       </ChartCard>
 
-      <ChartCard title={t("nade.section.flash")} subtitle={t("nade.section.flash.subtitle")}>
+      <ChartCard
+        title={t("nade.section.flash")}
+        subtitle={t("nade.section.flash.subtitle")}
+        icon="flash"
+      >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Tile m={m["utility.flashes_detonated"]!} />
           <Tile m={m["utility.flash_effective_rate"]!} />
@@ -249,7 +260,11 @@ function UtilityReportView({ r }: { r: Extract<UtilityResponse, { status: "OK" }
         </div>
       </ChartCard>
 
-      <ChartCard title={t("nade.section.damage")} subtitle={t("nade.section.damage.subtitle")}>
+      <ChartCard
+        title={t("nade.section.damage")}
+        subtitle={t("nade.section.damage.subtitle")}
+        icon="fire"
+      >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Tile m={m["utility.he_damage_per_grenade"]!} />
           <Tile m={m["utility.fire_damage_per_grenade"]!} />

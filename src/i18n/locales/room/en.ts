@@ -24,6 +24,7 @@ export const roomEn: Record<keyof typeof roomPtBR, string> = {
   "room.strip.lost": "Your side lost",
   "room.strip.unknown": "No winner or no side recorded",
   "room.strip.round": "Round {n} · {side} · {outcome}",
+  "room.strip.sideSwitch": "Side switch",
   "room.openReplay": "Open this match's Replay",
   "room.openTab": "See {tab}",
   "nav.area.home": "Home",

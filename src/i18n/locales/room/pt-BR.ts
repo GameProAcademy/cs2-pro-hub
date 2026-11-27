@@ -23,6 +23,7 @@ export const roomPtBR = {
   "room.strip.lost": "Seu lado perdeu",
   "room.strip.unknown": "Sem vencedor ou sem lado registrado",
   "room.strip.round": "Round {n} · {side} · {outcome}",
+  "room.strip.sideSwitch": "Troca de lado",
   "room.openReplay": "Abrir o Replay desta partida",
   "room.openTab": "Ver {tab}",
   "nav.area.home": "Início",

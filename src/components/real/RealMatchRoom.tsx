@@ -7,8 +7,9 @@
  * recalculated here. The Summary reads the match row the overview already loaded and the round
  * report the Rounds tab already loads.
  */
-import { MapBadge, SideBadge } from "@/components/common/VisualBadges";
-import { GameIcon } from "@/components/common/GameIcon";
+import { MapTile } from "@/components/common/GameVisuals";
+import { SideBadge, ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
+import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Film, UserX } from "lucide-react";
@@ -44,6 +45,19 @@ export const MATCH_ROOM_TABS = [
   "replay",
 ] as const;
 export type MatchRoomTab = (typeof MATCH_ROOM_TABS)[number];
+
+/** VGL: each area of the room has its own game pictogram (decorative; the tab name stays). */
+const TAB_ICON: Record<MatchRoomTab, GameIconName> = {
+  summary: "target",
+  rounds: "rounds",
+  duels: "crosshair",
+  deaths: "skull",
+  utility: "grenade",
+  map: "map",
+  replay: "clock",
+};
+
+const RESULT_TONE: Record<string, BadgeTone> = { win: "brand", loss: "critical", draw: "context" };
 
 export interface MatchRoomSearch {
   tab?: MatchRoomTab | undefined;
@@ -173,7 +187,7 @@ function RoomHeader({ m }: { m: OverviewMatch }) {
         className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary via-primary/40 to-transparent"
       />
       <div className="flex flex-wrap items-center gap-3">
-        <MapBadge map={m.map} showName={false} className="px-1.5" />
+        <MapTile map={m.map} size="lg" />
         <h1 className="font-display text-2xl font-semibold uppercase tracking-[0.08em] text-foreground sm:text-3xl">
           {roomTitle(m, intlTag)}
         </h1>
@@ -188,7 +202,13 @@ function RoomHeader({ m }: { m: OverviewMatch }) {
             {fill(t("room.rounds"), { n: m.roundsPlayed })}
           </span>
         ) : null}
-        <span data-room-result={m.resultStatus}>{result}</span>
+        {m.result && m.resultStatus !== "UNRESOLVED_BY_DEMO" ? (
+          <ToneBadge tone={RESULT_TONE[m.result] ?? "context"} data-room-result={m.resultStatus}>
+            {result}
+          </ToneBadge>
+        ) : (
+          <span data-room-result={m.resultStatus}>{result}</span>
+        )}
       </p>
     </header>
   );
@@ -217,6 +237,17 @@ function RoomTabs({ matchId, active }: { matchId: string; active: MatchRoomTab }
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
+              <GameIcon
+                name={TAB_ICON[tab]}
+                className={cn(
+                  "mr-1.5 size-4",
+                  tab === "utility"
+                    ? "text-category-utility"
+                    : tab === active
+                      ? "text-primary"
+                      : "text-muted-foreground",
+                )}
+              />
               {t(`room.tab.${tab}` as TranslationKey)}
             </Link>
           </li>
@@ -237,22 +268,30 @@ function RoomSummary({ m }: { m: OverviewMatch }) {
         <MetricCard
           showDemoTag={false}
           label={<MetricTerm id="adr" />}
+          icon="crosshair"
           value={num(m.adr, 1)}
           hint={m.adr !== null && m.adrPartial ? t("adr.partial.hint") : undefined}
         />
         <MetricCard
           showDemoTag={false}
           label={<MetricTerm id="kast" />}
+          icon="shield"
           value={num(m.kast, 1)}
           unit="%"
         />
         <MetricCard
           showDemoTag={false}
           label={<MetricTerm id="hsPercent" />}
+          icon="headshot"
           value={num(m.hsPercent, 1)}
           unit="%"
         />
-        <MetricCard showDemoTag={false} label={<MetricTerm id="kd" />} value={num(kd, 2)} />
+        <MetricCard
+          showDemoTag={false}
+          label={<MetricTerm id="kd" />}
+          icon="kill"
+          value={num(kd, 2)}
+        />
       </section>
       <RoundStrip matchId={m.matchId} />
       <Link
@@ -289,7 +328,10 @@ function RoundStrip({ matchId }: { matchId: string }) {
       showDemoTag={false}
     >
       <ol className="flex flex-wrap gap-1.5" data-round-strip>
-        {rounds.map((r) => {
+        {rounds.map((r, i) => {
+          // A real change of the player's side between two consecutive recorded rounds.
+          const prev = i > 0 ? rounds[i - 1]!.side : null;
+          const switched = !!(prev && r.side && prev !== r.side);
           const state = r.side && r.won !== null ? (r.won ? "won" : "lost") : "unknown";
           const label = fill(t("room.strip.round"), {
             n: r.roundNumber,
@@ -297,7 +339,16 @@ function RoundStrip({ matchId }: { matchId: string }) {
             outcome: t(`room.strip.${state}` as TranslationKey),
           });
           return (
-            <li key={r.roundNumber}>
+            <li key={r.roundNumber} className="flex items-center gap-1.5">
+              {switched ? (
+                <span
+                  className="mx-1 h-8 w-px bg-border-strong"
+                  data-side-switch
+                  title={t("room.strip.sideSwitch")}
+                >
+                  <span className="sr-only">{t("room.strip.sideSwitch")}</span>
+                </span>
+              ) : null}
               <Link
                 to="/matches/$matchId"
                 params={{ matchId }}
