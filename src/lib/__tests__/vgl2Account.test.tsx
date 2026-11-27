@@ -3,6 +3,9 @@
  * status and show its value (null stays "—"); the profile hero names a "most played" map only when
  * one strictly leads and shows no e-mail; notifications are grouped by day with unread emphasis.
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
@@ -190,5 +193,19 @@ describe("VGL 2.0 Notificações", () => {
     expect(html.match(/data-notification-item="read"/g)).toHaveLength(2);
     expect(html).toContain("bg-warning");
     expect(html).toContain('data-notification-unread="1"');
+  });
+
+  it("day header uses the same time zone as the item's time (no 22:21 under the next day)", () => {
+    const src = readFileSync(
+      resolve("src/components/notifications/NotificationComponents.tsx"),
+      "utf8",
+    );
+    const body = src.slice(
+      src.indexOf("function groupByDay"),
+      src.indexOf("export function NotificationCenter"),
+    );
+    expect(body).toContain('new Intl.DateTimeFormat(intlTag, { dateStyle: "short" })');
+    expect(body).not.toContain("timeZone");
+    expect(body).not.toContain("formatDate(");
   });
 });

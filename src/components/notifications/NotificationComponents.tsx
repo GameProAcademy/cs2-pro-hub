@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
-import { fill, formatDate, formatDateTime } from "@/lib/format";
+import { NOT_AVAILABLE_MARK, fill, formatDateTime } from "@/lib/format";
 import {
   NOTIFICATION_CATEGORIES,
   type NotificationCategory,
@@ -300,9 +300,13 @@ function NotificationIcon({
 
 /** VGL 2.0 continuation: consecutive notifications grouped by their local calendar day (display only). */
 function groupByDay(items: NotificationView[], intlTag: string) {
+  // Same time zone as each item's own time (formatDateTime: the reader's), so a 22:21 item never
+  // sits under the next day's header.
+  const fmt = new Intl.DateTimeFormat(intlTag, { dateStyle: "short" });
   const groups: { day: string; items: NotificationView[] }[] = [];
   for (const n of items) {
-    const day = formatDate(n.createdAt, intlTag);
+    const d = new Date(n.createdAt);
+    const day = Number.isNaN(d.getTime()) ? NOT_AVAILABLE_MARK : fmt.format(d);
     const last = groups[groups.length - 1];
     if (last && last.day === day) last.items.push(n);
     else groups.push({ day, items: [n] });

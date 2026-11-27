@@ -309,6 +309,12 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 
 ## RESUMO PARA PRÓXIMA SESSÃO
 
+> Atualização 2026-11-27:
+>
+> - `main` `41417bde` + o PR de fechamento da continuação da VGL 2.0 (#415–#419), publicado (deploy `2c9ead87`)
+>   e validado em produção. Detalhes em `docs/checkpoints/UX1_0_CHECKPOINT.md` §2.20 e
+>   `docs/ux1/VGL2_CONTINUATION.md`. Pendente: inspeção visual do admin com sessão de administrador.
+
 > Atualização 2026-11-26:
 >
 > - `main` `229fe5a8` + o PR de fechamento do /upload.

@@ -394,6 +394,15 @@ Evidência: `docs/ux1/UPLOAD_VISUAL_VALIDATION.md`. **Estado:** publicado e vali
   só nos ticks dos gráficos de `/performance` e `/evolution`, corrigido.
 - **Pendências do dono:** decidir sobre radares oficiais como miniatura.
 
+### 2.20 VGL 2.0 — continuação (2026-11-27)
+
+- **PRs:** #415 (DNA), #416 (Sala), #417 (Coach), #418 (Performance e Evolução), #419 (Metas, Perfil e
+  Notificações) e o PR de fechamento (correção do `flashbang.svg` sem namespace e do dia das notificações em UTC).
+- **Produção:** deploy `2c9ead87` de `41417bde`. VGL smoke `45959040337`: 0 overflow, 0 texto < 12 px, 0 erro,
+  Coach respondeu. Upload smoke `45959042907`: passou, CTA nas mesmas posições.
+- **Pendente:** inspeção visual das 9 rotas de admin com sessão de administrador (a conta de teste é redirecionada).
+- Detalhes em `docs/ux1/VGL2_CONTINUATION.md`.
+
 ## 3. Bloqueios
 
 | ID  | O que                        | Por quê                                                                          | Ação      |
@@ -407,5 +416,6 @@ Dependem do dono:
 1. Experimento B (R-15) com 3 a 5 jogadores reais.
 2. Escolher o jogador da demo Inferno (job `febd9846`), pendente por decisão do dono (§2.17).
 3. /upload: testes manuais 5–8 com uma demo nova (§2.18).
+4. Admin: inspeção visual das 9 rotas com sessão de administrador (§2.20).
 
 Executáveis: nenhum item visual pendente; a fase visual (§2.16) e a evolução do /upload (§2.18) estão concluídas.
