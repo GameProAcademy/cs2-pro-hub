@@ -46,6 +46,7 @@ import {
 } from "@/lib/evolution/evolution";
 import { NOT_AVAILABLE_MARK, fill, formatDate, formatNumber } from "@/lib/format";
 import { getDnaSummary } from "@/lib/xray.functions";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export interface EvolutionSearch {
   window?: WindowSize | undefined;
@@ -79,6 +80,7 @@ export function RealEvolutionPage({
           title={t("evolution.title")}
           description={t("evolution.description")}
         />
+        <CoachWordCard section="evolution" />
         {query.isPending ? (
           <LoadingState />
         ) : query.isError || !query.data ? (

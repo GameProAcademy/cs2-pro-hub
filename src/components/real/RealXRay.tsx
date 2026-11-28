@@ -31,6 +31,7 @@ import { canonicalMetric } from "@/lib/metrics/canonicalMetrics";
 import type { SideSummary } from "@/lib/roundContext";
 import { getXRay } from "@/lib/xray.functions";
 import { cn } from "@/lib/utils";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export const XRAY_QUERY_KEY = ["player", "xray"] as const;
 
@@ -405,6 +406,7 @@ export function RealXRayPage() {
           title={t("analysis.title")}
           description={t("analysis.description")}
         />
+        <CoachWordCard section="analysis" />
         {query.isPending ? (
           <LoadingState />
         ) : query.isError || !query.data ? (
