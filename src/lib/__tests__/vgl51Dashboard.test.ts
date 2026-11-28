@@ -49,3 +49,13 @@ describe("Score card (Frente 4)", () => {
     expect(card).not.toMatch(/weight\s*\*|computeProScore|buildProScore/);
   });
 });
+
+describe("Score card on phones (production sweep 360–430 px)", () => {
+  it("contribution rows wrap inside the card instead of widening it", () => {
+    const src = read("src/components/real/RealProScore.tsx");
+    expect(src).toContain('<ol className="grid grid-cols-[minmax(0,1fr)] gap-2" data-score-top>');
+    expect(src).toContain('<span className="min-w-0 flex-1 break-words text-sm font-medium">');
+    const top = src.slice(src.indexOf("data-score-top"), src.indexOf("data-score-identity-cta"));
+    expect(top).not.toContain("truncate");
+  });
+});

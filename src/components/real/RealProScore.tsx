@@ -117,14 +117,14 @@ export function RealProScoreCard() {
               <h3 className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 {t("vgl51.score.top")}
               </h3>
-              <ol className="grid gap-2" data-score-top>
+              <ol className="grid grid-cols-[minmax(0,1fr)] gap-2" data-score-top>
                 {top.map((c, i) => (
                   <li
                     key={c.id}
-                    className="flex items-center gap-3 rounded-lg border border-border bg-background/50 px-3 py-2"
+                    className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-background/50 px-3 py-2"
                   >
                     <span className="font-mono text-xs text-muted-foreground">#{i + 1}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    <span className="min-w-0 flex-1 break-words text-sm font-medium">
                       {t(`score.c.${c.id}` as TranslationKey)}
                     </span>
                     <span className="font-mono text-sm tabular-nums text-primary">
