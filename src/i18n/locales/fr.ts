@@ -224,7 +224,7 @@ export const fr: Dictionary = {
   "vgl4.overview.flash": "Assist. flash",
   "vgl4.overview.go": "Explorer le match",
   "vgl4.tabIntro.rounds": "Chaque round avec camp, économie, événements et positions enregistrées.",
-  "vgl4.tabIntro.rounds.title": "Détails de chaque manche",
+  "vgl4.tabIntro.rounds.title": "Rounds",
   "vgl4.tabIntro.duels": "Vos duels : qui vous avez éliminé, qui vous a éliminé et avec quoi.",
   "vgl4.tabIntro.deaths": "Chacune de vos morts, avec arme, contexte et replay au tick.",
   "vgl4.tabIntro.utility": "Grenades lancées et leurs effets enregistrés.",
