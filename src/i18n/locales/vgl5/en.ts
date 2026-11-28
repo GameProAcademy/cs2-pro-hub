@@ -288,4 +288,34 @@ export const vgl5En = {
   "vgl51.pub.mapsRanked": "Map ranking",
   "vgl51.pub.scoreBasis": "{n} matches · coverage {c}%",
   "vgl51.pub.since": "Last analysed match: {date}",
+  "vgl51.pwa.button": "Install app",
+  "vgl51.pwa.invite.titleDesktop": "Install CS2 PRO on your computer",
+  "vgl51.pwa.invite.titleMobile": "Install CS2 PRO on your phone",
+  "vgl51.pwa.invite.body":
+    "Open the platform straight from your desktop or home screen, in its own window, without hunting for the browser tab.",
+  "vgl51.pwa.invite.install": "Install",
+  "vgl51.pwa.invite.how": "See how to install",
+  "vgl51.pwa.invite.later": "Not now",
+  "vgl51.pwa.invite.close": "Close invitation",
+  "vgl51.pwa.dialog.title": "Install CS2 PRO",
+  "vgl51.pwa.dialog.intro":
+    "Follow your browser's steps. CS2 PRO opens in its own window and keeps using the same account.",
+  "vgl51.pwa.ios.1": "Tap the Share button (the square with the up arrow) in the browser bar.",
+  "vgl51.pwa.ios.2": "Scroll the list and tap “Add to Home Screen”.",
+  "vgl51.pwa.ios.3": "Confirm with “Add”. The CS2 PRO icon appears on your home screen.",
+  "vgl51.pwa.ios.note":
+    "On iPhone and iPad, installation goes through the Share menu; there is no automatic button.",
+  "vgl51.pwa.macSafari.1": "In Safari, open the File menu (or the Share button).",
+  "vgl51.pwa.macSafari.2": "Choose “Add to Dock”.",
+  "vgl51.pwa.macSafari.3": "Confirm with “Add”. CS2 PRO stays in the Dock as an app.",
+  "vgl51.pwa.chromium.1":
+    "In the address bar, click the install icon (a monitor with an arrow) — or open the browser menu (⋮).",
+  "vgl51.pwa.chromium.2": "Choose “Install CS2 PRO” (in Edge: Apps → Install this site as an app).",
+  "vgl51.pwa.chromium.3": "Confirm. CS2 PRO opens in its own window and gets a system shortcut.",
+  "vgl51.pwa.android.1": "Open the browser menu (⋮ at the top).",
+  "vgl51.pwa.android.2": "Tap “Install app” or “Add to Home screen”.",
+  "vgl51.pwa.android.3": "Confirm. The CS2 PRO icon appears among your apps.",
+  "vgl51.pwa.unsupported":
+    "This browser does not install web apps on desktop. Open CS2 PRO in Google Chrome or Microsoft Edge to install it, or keep using it here as usual.",
+  "vgl51.pwa.done": "Done",
 } as const;

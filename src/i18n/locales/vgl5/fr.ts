@@ -298,4 +298,39 @@ export const vgl5Fr = {
   "vgl51.pub.mapsRanked": "Classement des cartes",
   "vgl51.pub.scoreBasis": "{n} matchs · couverture {c} %",
   "vgl51.pub.since": "Dernier match analysé : {date}",
+  "vgl51.pwa.button": "Installer l’application",
+  "vgl51.pwa.invite.titleDesktop": "Installe CS2 PRO sur ton ordinateur",
+  "vgl51.pwa.invite.titleMobile": "Installe CS2 PRO sur ton téléphone",
+  "vgl51.pwa.invite.body":
+    "Ouvre la plateforme directement depuis ton bureau ou ton écran d’accueil, dans sa propre fenêtre, sans chercher l’onglet du navigateur.",
+  "vgl51.pwa.invite.install": "Installer",
+  "vgl51.pwa.invite.how": "Voir comment installer",
+  "vgl51.pwa.invite.later": "Pas maintenant",
+  "vgl51.pwa.invite.close": "Fermer l’invitation",
+  "vgl51.pwa.dialog.title": "Installer CS2 PRO",
+  "vgl51.pwa.dialog.intro":
+    "Suis les étapes de ton navigateur. CS2 PRO s’ouvre dans sa propre fenêtre et garde le même compte.",
+  "vgl51.pwa.ios.1":
+    "Touche le bouton Partager (le carré avec la flèche vers le haut) dans la barre du navigateur.",
+  "vgl51.pwa.ios.2": "Fais défiler la liste et touche « Sur l’écran d’accueil ».",
+  "vgl51.pwa.ios.3":
+    "Confirme avec « Ajouter ». L’icône de CS2 PRO apparaît sur ton écran d’accueil.",
+  "vgl51.pwa.ios.note":
+    "Sur iPhone et iPad, l’installation passe par le menu Partager ; il n’existe pas de bouton automatique.",
+  "vgl51.pwa.macSafari.1": "Dans Safari, ouvre le menu Fichier (ou le bouton Partager).",
+  "vgl51.pwa.macSafari.2": "Choisis « Ajouter au Dock ».",
+  "vgl51.pwa.macSafari.3":
+    "Confirme avec « Ajouter ». CS2 PRO reste dans le Dock comme une application.",
+  "vgl51.pwa.chromium.1":
+    "Dans la barre d’adresse, clique sur l’icône d’installation (un écran avec une flèche) — ou ouvre le menu du navigateur (⋮).",
+  "vgl51.pwa.chromium.2":
+    "Choisis « Installer CS2 PRO » (dans Edge : Applications → Installer ce site en tant qu’application).",
+  "vgl51.pwa.chromium.3":
+    "Confirme. CS2 PRO s’ouvre dans sa propre fenêtre et obtient un raccourci système.",
+  "vgl51.pwa.android.1": "Ouvre le menu du navigateur (⋮ en haut).",
+  "vgl51.pwa.android.2": "Touche « Installer l’application » ou « Ajouter à l’écran d’accueil ».",
+  "vgl51.pwa.android.3": "Confirme. L’icône de CS2 PRO apparaît parmi tes applications.",
+  "vgl51.pwa.unsupported":
+    "Ce navigateur n’installe pas d’applications web sur ordinateur. Ouvre CS2 PRO dans Google Chrome ou Microsoft Edge pour l’installer, ou continue à l’utiliser ici normalement.",
+  "vgl51.pwa.done": "Terminé",
 } as const;
