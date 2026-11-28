@@ -268,4 +268,5 @@ export const vgl5En = {
     "Your X-Ray is balanced in what it measures, but {n} area(s) still have no observation in your demos.",
   "cw.xrayGaps.tip":
     "Check at the end of the page what CS2 PRO does not measure yet, and upload complete demos to close the gaps.",
+  "vgl51.score.top": "Largest contributions",
 } as const;

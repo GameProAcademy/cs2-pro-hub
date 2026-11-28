@@ -81,13 +81,13 @@ describe("Performance and Início wiring", () => {
     expect(perf).not.toContain('t("real.proScoreContext.instead")');
   });
 
-  it("Início leads with the Score and the Player DNA identity", () => {
+  it("Início keeps Score and Player DNA side by side (VGL 5.1: after best map and indicators)", () => {
     const d = read("src/routes/_authenticated/dashboard.tsx");
     const headline = d.indexOf("data-home-headline");
     expect(headline).toBeGreaterThan(0);
     expect(d.indexOf("<RealProScoreCard />")).toBeGreaterThan(headline);
     expect(d.indexOf("<DnaIdentityCard")).toBeGreaterThan(headline);
-    expect(d.indexOf("<BestMapHero")).toBeGreaterThan(d.indexOf("<DnaIdentityCard"));
+    expect(d.indexOf("<BestMapHero")).toBeLessThan(headline);
   });
 
   it("every new text exists in the five languages", () => {

@@ -276,4 +276,5 @@ export const vgl5Es = {
     "Tu Rayos X está equilibrado en lo que mide, pero {n} área(s) aún no tienen observación en tus demos.",
   "cw.xrayGaps.tip":
     "Revisa al final de la página lo que CS2 PRO aún no mide y sube demos completas para cerrar los huecos.",
+  "vgl51.score.top": "Mayores contribuciones",
 } as const;

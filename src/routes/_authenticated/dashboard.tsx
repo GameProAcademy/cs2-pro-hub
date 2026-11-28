@@ -76,15 +76,22 @@ function RealDashboardPage() {
           {(overview) => (
             <div className="space-y-8">
               <OverviewStatePanel overview={overview} />
-              {/* VGL 5.0 (Frente 10): the two headline indicators first, then the best map. */}
+              {/*
+               * VGL 5.1 (Frente 6) — fixed order: 1) best map, 2) the five indicators
+               * (matches, K/D, ADR, KAST, win rate), 3) Score and Player DNA side by side,
+               * 4) the rest as before (Coach's Word, Training / AI Coach / Maps, last matches…).
+               * The state panel above is a notice and renders nothing once the overview is READY.
+               */}
+              <BestMapHero matches={overview.matches} />
+              <div data-home-indicators>
+                <RealAggregates overview={overview} />
+              </div>
               <div className="grid gap-5 lg:grid-cols-2" data-home-headline>
                 <RealProScoreCard />
                 <DnaIdentityCard fallback={<RealDnaSummary />} />
               </div>
               <CoachWordCard section="dashboard" />
-              <BestMapHero matches={overview.matches} />
               <HomeCommandRow matches={overview.matches} />
-              <RealAggregates overview={overview} />
               {overview.matches.length ? (
                 <ChartCard
                   showDemoTag={false}

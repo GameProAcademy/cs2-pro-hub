@@ -275,4 +275,5 @@ export const vgl5PtPT = {
     "O seu Raio-X está equilibrado no que mede, mas {n} área(s) ainda não têm observação nas suas demos.",
   "cw.xrayGaps.tip":
     "Veja no fim da página o que o CS2 PRO ainda não mede e envie demos completas para fechar as lacunas.",
+  "vgl51.score.top": "Maiores contribuições",
 } as const;
