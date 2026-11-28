@@ -91,7 +91,10 @@ export function weaponArt(weapon: string | null | undefined): string | null {
 
 export function mapAssets(map: string | null | undefined) {
   if (!map) return null;
-  return MAP_ASSETS[map.toLowerCase()] ?? null;
+  const key = map.toLowerCase();
+  // VGL 5.1: callers may hold the normalized code ("mirage", e.g. the public profile view)
+  // instead of the stored name ("de_mirage"); both resolve to the same official art.
+  return MAP_ASSETS[key] ?? MAP_ASSETS[`de_${key}`] ?? null;
 }
 
 export const HUD = {

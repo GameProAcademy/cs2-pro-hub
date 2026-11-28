@@ -10,7 +10,7 @@
  *
  * Pure SVG (no chart library): the geometry is explicit and testable.
  */
-import { useId } from "react";
+import { useId, type KeyboardEvent } from "react";
 import { useI18n } from "@/i18n";
 import { dnaLabelKey } from "@/lib/dna";
 import { splitAxisLabel } from "@/lib/dnaAxisLabel";
@@ -55,7 +55,8 @@ export function DnaRadarA({
 }: {
   axes: RadarAxis[];
   selected: DnaDimension | null;
-  onSelect: (d: DnaDimension) => void;
+  /** Omit for a read-only radar (e.g. the public profile): axes are then not interactive. */
+  onSelect?: ((d: DnaDimension) => void) | undefined;
 }) {
   const { t } = useI18n();
   const n = axes.length;
@@ -128,18 +129,25 @@ export function DnaRadarA({
             key={a.dimension}
             data-axis={a.dimension}
             data-axis-empty={empty ? a.status : undefined}
-            role="button"
-            tabIndex={0}
-            aria-pressed={isSel}
             aria-label={`${label}: ${empty ? statusText : `${a.value} / 100`}`}
-            onClick={() => onSelect(a.dimension)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelect(a.dimension);
-              }
-            }}
-            className="cursor-pointer outline-none [&:focus-visible>text]:underline"
+            {...(onSelect
+              ? {
+                  role: "button",
+                  tabIndex: 0,
+                  "aria-pressed": isSel,
+                  onClick: () => onSelect(a.dimension),
+                  onKeyDown: (e: KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelect(a.dimension);
+                    }
+                  },
+                }
+              : { role: "img" })}
+            className={cn(
+              onSelect && "cursor-pointer",
+              "outline-none [&:focus-visible>text]:underline",
+            )}
           >
             <title>{`${label}: ${empty ? statusText : `${a.value} / 100`}`}</title>
             <line

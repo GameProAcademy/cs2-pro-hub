@@ -281,4 +281,11 @@ export const vgl5En = {
   "vgl51.coach.tip":
     "The CS2 PRO Coach answers from your analysed matches, your Player DNA and your training plan: ask about mistakes, round decisions, maps and what to train next. It is an AI and can be wrong; check the numbers on the platform's pages.",
   "vgl51.coach.you": "You",
+  "vgl51.pub.eyebrow": "Public profile · CS2 PRO",
+  "vgl51.pub.specialty": "Specialty: {dimension}",
+  "vgl51.pub.team": "Team: {team}",
+  "vgl51.pub.dnaTop": "Highest indexes",
+  "vgl51.pub.mapsRanked": "Map ranking",
+  "vgl51.pub.scoreBasis": "{n} matches · coverage {c}%",
+  "vgl51.pub.since": "Last analysed match: {date}",
 } as const;

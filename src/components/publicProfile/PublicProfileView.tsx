@@ -6,7 +6,18 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { MapArt } from "@/components/cs2/Cs2Art";
+import fallbackSymbol from "@/assets/gamepro-symbol.png";
+import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
+import { GameIcon } from "@/components/common/GameIcon";
+import { Cs2Mask, MapArt, MapEmblem } from "@/components/cs2/Cs2Art";
+import { DIMENSION_ART } from "@/lib/cs2/assets";
+import {
+  countryName,
+  isPlatformCode,
+  isTeamRoleCode,
+  platformLabelKey,
+  roleLabelKey,
+} from "@/lib/profile/taxonomy";
 import { Brand } from "@/components/layout/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,19 +48,31 @@ export function usePublicProfile(publicId: string | null | undefined) {
 
 function Panel({
   title,
+  icon,
   children,
   className,
+  ...rest
 }: {
   title: string;
+  icon?: Parameters<typeof GameIcon>[0]["name"];
   children: ReactNode;
   className?: string;
-}) {
+} & Record<`data-${string}`, unknown>) {
   return (
     <section
-      className={cn("surface-panel rounded-xl border border-border p-4 sm:p-5", className)}
+      className={cn(
+        "surface-panel vgl-grid relative isolate overflow-hidden rounded-xl border border-border p-4 sm:p-5",
+        className,
+      )}
       aria-label={title}
+      {...rest}
     >
-      <h2 className="mb-3 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+      <h2 className="mb-4 flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+        {icon ? (
+          <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
+            <GameIcon name={icon} className="size-3.5" />
+          </span>
+        ) : null}
         {title}
       </h2>
       {children}
@@ -61,10 +84,10 @@ function StateCard({ title, description }: { title: string; description: string 
   const { t } = useI18n();
   return (
     <div
-      className="mx-auto max-w-lg rounded-xl border border-border bg-card p-6 text-center"
+      className="surface-panel vgl-grid mx-auto max-w-lg rounded-xl border border-border p-6 text-center"
       data-public-state
     >
-      <h1 className="font-display text-2xl font-semibold">{title}</h1>
+      <h1 className="font-display text-2xl font-semibold uppercase">{title}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
       <Button asChild className="mt-5">
         <Link to="/register">{t("vgl5.pub.cta")}</Link>
@@ -92,92 +115,261 @@ export function formatCompareValue(key: CompareRow["key"], v: number | null, int
   }
 }
 
-function Identity({ p }: { p: PublicProfile }) {
-  const { t } = useI18n();
-  const name = p.identity.nickname ?? p.identity.publicId;
-  const facts = [p.identity.country, p.identity.platform, p.identity.role, p.identity.team].filter(
-    (x): x is string => Boolean(x),
+/** Regional-indicator flag for an ISO 3166-1 alpha-2 code (decorative; the name is also shown). */
+export function flagEmoji(code: string | null): string | null {
+  if (!code || !/^[A-Za-z]{2}$/.test(code)) return null;
+  return String.fromCodePoint(
+    ...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
   );
+}
+
+function Tag({
+  children,
+  tone = "muted",
+  ...rest
+}: { children: ReactNode; tone?: "brand" | "muted" } & Record<`data-${string}`, unknown>) {
   return (
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-center" data-public-identity>
-      <div className="size-20 shrink-0 overflow-hidden rounded-2xl border border-border bg-elevated">
-        {p.identity.avatarUrl ? (
-          <img src={p.identity.avatarUrl} alt="" className="size-full object-cover" />
-        ) : (
-          <span className="flex size-full items-center justify-center font-display text-3xl text-muted-foreground">
-            {name.slice(0, 1).toUpperCase()}
-          </span>
-        )}
-      </div>
-      <div className="min-w-0">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
-          {t("vgl5.pub.eyebrow")}
-        </p>
-        <h1 className="truncate font-display text-3xl font-semibold sm:text-4xl">{name}</h1>
-        <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          {facts.map((f) => (
-            <span key={f}>{f}</span>
-          ))}
-          <span className="font-mono text-xs" data-public-id>
-            {t("vgl5.pub.id")}: {p.identity.publicId}
-          </span>
-        </p>
-      </div>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium",
+        tone === "brand"
+          ? "border-primary/35 bg-primary/10 text-primary"
+          : "border-border bg-background/60 text-muted-foreground",
+      )}
+      {...rest}
+    >
+      {children}
+    </span>
+  );
+}
+
+function topDimension(p: PublicProfile) {
+  if (p.dna.state !== "READY") return null;
+  const top = [...p.dna.dimensions]
+    .filter((d): d is { dimension: string; value: number } => d.value !== null)
+    .sort((a, b) => b.value - a.value)[0];
+  return top && top.value >= 65 ? top : null;
+}
+
+/** VGL 5.1 (Frente 3): the player's identity over the art of their best map. */
+function Hero({ p }: { p: PublicProfile }) {
+  const { t, intlTag } = useI18n();
+  const name = p.identity.nickname ?? p.identity.publicId;
+  const top = topDimension(p);
+  const country = p.identity.country;
+  const flag = flagEmoji(country);
+  const platform = p.identity.platform;
+  const role = p.identity.role;
+  return (
+    <header
+      className="relative isolate overflow-hidden rounded-2xl border border-border"
+      data-public-identity
+    >
+      <MapArt map={p.maps.best?.map ?? null} className="px-5 py-6 sm:px-8 sm:py-9">
+        {top && DIMENSION_ART[top.dimension] ? (
+          <Cs2Mask
+            src={DIMENSION_ART[top.dimension]!}
+            className="pointer-events-none absolute -right-6 bottom-0 -z-10 h-44 w-80 text-primary opacity-[0.07]"
+          />
+        ) : null}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative size-24 shrink-0 sm:size-28">
+              <div className="size-full overflow-hidden rounded-2xl border-2 border-primary/60 bg-elevated shadow-[0_0_32px_-8px_var(--primary)]">
+                <img
+                  src={p.identity.avatarUrl ?? fallbackSymbol}
+                  alt=""
+                  className={cn(
+                    "size-full",
+                    p.identity.avatarUrl ? "object-cover" : "object-contain p-4 opacity-80",
+                  )}
+                  data-public-avatar={p.identity.avatarUrl ? "photo" : "default"}
+                />
+              </div>
+              {flag ? (
+                <span
+                  aria-hidden
+                  className="absolute -bottom-2 -right-2 rounded-md border border-border bg-background px-1 text-lg leading-6"
+                >
+                  {flag}
+                </span>
+              ) : null}
+            </div>
+            <div className="min-w-0">
+              <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">
+                {t("vgl51.pub.eyebrow")}
+              </p>
+              <h1 className="mt-1 break-words font-display text-4xl font-semibold uppercase leading-none tracking-wide sm:text-5xl">
+                {name}
+              </h1>
+              <div className="mt-3 flex flex-wrap gap-1.5" data-public-tags>
+                {country ? (
+                  <Tag data-public-country={country}>
+                    {flag ? <span aria-hidden>{flag}</span> : null}
+                    {countryName(country, intlTag)}
+                  </Tag>
+                ) : null}
+                {platform ? (
+                  <Tag tone="brand" data-public-platform={platform}>
+                    <GameIcon name="crosshair" className="size-3" />
+                    {isPlatformCode(platform) ? t(platformLabelKey(platform)) : platform}
+                  </Tag>
+                ) : null}
+                {role ? <Tag>{isTeamRoleCode(role) ? t(roleLabelKey(role)) : role}</Tag> : null}
+                {p.identity.team ? (
+                  <Tag>{fill(t("vgl51.pub.team"), { team: p.identity.team })}</Tag>
+                ) : null}
+                {top ? (
+                  <Tag tone="brand" data-public-specialty={top.dimension}>
+                    <GameIcon name="dna" className="size-3" />
+                    {fill(t("vgl51.pub.specialty"), {
+                      dimension: t(dnaLabelKey(top.dimension as DnaDimension)),
+                    })}
+                  </Tag>
+                ) : null}
+                <Tag data-public-id>
+                  <span className="font-mono">
+                    {t("vgl5.pub.id")}: {p.identity.publicId}
+                  </span>
+                </Tag>
+              </div>
+            </div>
+          </div>
+          <ScoreBlock p={p} />
+        </div>
+      </MapArt>
     </header>
   );
 }
 
-function ScorePanel({ p }: { p: PublicProfile }) {
+function ScoreBlock({ p }: { p: PublicProfile }) {
   const { t, intlTag } = useI18n();
+  const v = p.score.value;
+  const filled = v === null ? 0 : Math.round((v / 100) * 20);
   return (
-    <Panel title={t("vgl5.pub.score")}>
-      {p.score.value !== null ? (
-        <p className="flex items-baseline gap-2" data-public-score>
-          <span className="font-display text-6xl font-semibold leading-none tabular-nums">
-            {formatNumber(p.score.value, intlTag, 0)}
+    <div
+      className="w-full shrink-0 rounded-xl border border-primary/30 bg-background/70 p-4 backdrop-blur-sm lg:w-80"
+      data-public-score-block
+    >
+      <p className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.2em] text-primary">
+        <GameIcon name="target" className="size-3.5" />
+        {t("vgl5.pub.score")}
+      </p>
+      {v !== null ? (
+        <p className="mt-2 flex items-baseline gap-2" data-public-score>
+          <span className="font-display text-6xl font-semibold leading-none tabular-nums drop-shadow-[0_0_24px_color-mix(in_oklab,var(--primary)_35%,transparent)]">
+            {formatNumber(v, intlTag, 0)}
           </span>
           <span className="font-mono text-muted-foreground">/100</span>
         </p>
       ) : (
-        <p className="text-sm text-muted-foreground" data-public-score-empty>
+        <p className="mt-2 text-sm text-muted-foreground" data-public-score-empty>
           {t("vgl5.pub.insufficient")}
         </p>
       )}
+      <div aria-hidden className="mt-3 flex h-2 gap-0.5">
+        {Array.from({ length: 20 }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              "h-full flex-1 -skew-x-12 rounded-[1px]",
+              v === null ? "bg-muted/60" : i < filled ? "bg-primary" : "bg-muted",
+            )}
+          />
+        ))}
+      </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        {fill(t("vgl5.score.matches"), { n: p.score.matches })}
+        {fill(t("vgl51.pub.scoreBasis"), {
+          n: p.score.matches,
+          c: formatNumber(p.score.coverage * 100, intlTag, 0),
+        })}
         {p.score.confidence
           ? ` · ${t(`vgl5.score.conf.${p.score.confidence}` as TranslationKey)}`
           : ""}
       </p>
-    </Panel>
+    </div>
+  );
+}
+
+function StatStrip({ p }: { p: PublicProfile }) {
+  const { t, intlTag } = useI18n();
+  const cells: Array<[TranslationKey, string, Parameters<typeof GameIcon>[0]["name"]]> = [
+    ["real.metric.matches", formatNumber(p.stats.matches, intlTag, 0), "rounds"],
+    ["vgl5.pub.metric.rating", formatCompareValue("rating", p.stats.rating, intlTag), "trend"],
+    ["vgl5.pub.metric.kd", formatCompareValue("kd", p.stats.kd, intlTag), "kill"],
+    ["vgl5.pub.metric.adr", formatCompareValue("adr", p.stats.adr, intlTag), "fire"],
+    ["vgl5.pub.metric.kast", formatCompareValue("kast", p.stats.kast, intlTag), "shield"],
+    [
+      "vgl5.pub.metric.hsPercent",
+      formatCompareValue("hsPercent", p.stats.hsPercent, intlTag),
+      "headshot",
+    ],
+    ["vgl5.pub.metric.winRate", formatCompareValue("winRate", p.stats.winRate, intlTag), "target"],
+  ];
+  return (
+    <dl
+      className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7"
+      aria-label={t("vgl5.pub.stats")}
+      data-public-stats
+    >
+      {cells.map(([k, v, icon]) => (
+        <div
+          key={k}
+          className="surface-panel relative overflow-hidden rounded-lg border border-border px-3 py-2.5"
+        >
+          <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <GameIcon name={icon} className="size-3.5 text-primary/80" />
+            {t(k)}
+          </dt>
+          <dd className="mt-1 font-display text-2xl font-semibold tabular-nums">{v}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
 function DnaPanel({ p }: { p: PublicProfile }) {
   const { t } = useI18n();
-  const dims = p.dna.dimensions.filter((d) => d.value !== null);
+  const ready = p.dna.state === "READY" && p.dna.dimensions.some((d) => d.value !== null);
+  const axes: RadarAxis[] = p.dna.dimensions.map((d) => ({
+    dimension: d.dimension as DnaDimension,
+    value: d.value,
+    status: d.value === null ? "NO_SAMPLE" : "MEASURED",
+  }));
+  const top = [...p.dna.dimensions]
+    .filter((d): d is { dimension: string; value: number } => d.value !== null)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 3);
   return (
-    <Panel title={t("vgl5.pub.dna")}>
-      {p.dna.state === "READY" && dims.length ? (
-        <ul className="space-y-2" data-public-dna>
-          {dims
-            .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
-            .map((d) => (
-              <li
-                key={d.dimension}
-                className="grid grid-cols-[minmax(0,9rem)_1fr_2.5rem] items-center gap-2 text-sm"
-              >
-                <span className="truncate">{t(dnaLabelKey(d.dimension as DnaDimension))}</span>
-                <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
-                  <span
-                    className="block h-full rounded-full bg-primary"
-                    style={{ width: `${d.value}%` }}
-                  />
-                </span>
-                <span className="text-right font-mono tabular-nums">{d.value}</span>
-              </li>
-            ))}
-        </ul>
+    <Panel title={t("vgl5.pub.dna")} icon="dna" data-public-dna-panel>
+      {ready ? (
+        <div
+          className="grid items-center gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]"
+          data-public-dna
+        >
+          <DnaRadarA axes={axes} selected={null} />
+          <div>
+            <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-primary">
+              {t("vgl51.pub.dnaTop")}
+            </p>
+            <ol className="space-y-2">
+              {top.map((d, i) => (
+                <li
+                  key={d.dimension}
+                  className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2"
+                >
+                  <span className="font-mono text-xs text-muted-foreground">#{i + 1}</span>
+                  <span className="min-w-0 flex-1 break-words text-sm font-semibold uppercase tracking-wide">
+                    {t(dnaLabelKey(d.dimension as DnaDimension))}
+                  </span>
+                  <span className="font-mono text-lg font-semibold tabular-nums text-primary">
+                    {d.value}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
       ) : (
         <p className="text-sm text-muted-foreground">{t("vgl5.pub.insufficient")}</p>
       )}
@@ -189,29 +381,53 @@ function BestMapPanel({ p }: { p: PublicProfile }) {
   const { t } = useI18n();
   const best = p.maps.best;
   return (
-    <Panel title={t("vgl5.pub.bestMap")} className="overflow-hidden p-0 sm:p-0">
+    <Panel
+      title={t("vgl5.pub.bestMap")}
+      icon="map"
+      className="p-0 sm:p-0 [&>h2]:px-4 [&>h2]:pt-4 sm:[&>h2]:px-5 sm:[&>h2]:pt-5"
+    >
       {best ? (
-        <MapArt map={best.map} className="min-h-40 p-4 sm:p-5">
-          <div className="relative" data-public-best-map>
-            <p className="font-display text-3xl font-semibold">{mapDisplayName(best.map)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {fill(t("bestMap.matches"), { n: best.matches })} ·{" "}
-              {t(`bestMap.confidence.${best.confidence}` as TranslationKey)}
-            </p>
-            {p.maps.ranked.length > 1 ? (
-              <ul className="mt-3 flex flex-wrap gap-1.5">
-                {p.maps.ranked.slice(1, 4).map((m) => (
+        <div data-public-best-map>
+          <MapArt
+            map={best.map}
+            overlay="soft"
+            className="mx-4 mb-4 rounded-lg border border-border p-4 sm:mx-5"
+          >
+            <div className="flex items-center gap-3">
+              <MapEmblem map={best.map} className="size-14" />
+              <div>
+                <p className="font-display text-3xl font-semibold uppercase leading-none">
+                  {mapDisplayName(best.map)}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {fill(t("bestMap.matches"), { n: best.matches })} ·{" "}
+                  {t(`bestMap.confidence.${best.confidence}` as TranslationKey)}
+                </p>
+              </div>
+            </div>
+          </MapArt>
+          {p.maps.ranked.length > 1 ? (
+            <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                {t("vgl51.pub.mapsRanked")}
+              </p>
+              <ul className="grid gap-1.5 sm:grid-cols-2">
+                {p.maps.ranked.slice(0, 6).map((m) => (
                   <li
                     key={m.map}
-                    className="rounded-md border border-border bg-background/60 px-2 py-0.5 text-xs"
+                    className="flex items-center gap-2 rounded-md border border-border bg-background/50 px-2 py-1.5 text-sm"
                   >
-                    {mapDisplayName(m.map)} · {t(`bestMap.short.${m.tier}` as TranslationKey)}
+                    <MapEmblem map={m.map} className="size-6" />
+                    <span className="min-w-0 flex-1 truncate">{mapDisplayName(m.map)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t(`bestMap.short.${m.tier}` as TranslationKey)}
+                    </span>
                   </li>
                 ))}
               </ul>
-            ) : null}
-          </div>
-        </MapArt>
+            </div>
+          ) : null}
+        </div>
       ) : (
         <p className="px-4 pb-4 text-sm text-muted-foreground sm:px-5">
           {t("vgl5.pub.insufficient")}
@@ -221,43 +437,32 @@ function BestMapPanel({ p }: { p: PublicProfile }) {
   );
 }
 
-function StatsPanel({ p }: { p: PublicProfile }) {
-  const { t, intlTag } = useI18n();
-  const cells: Array<[TranslationKey, string]> = [
-    ["real.metric.matches", formatNumber(p.stats.matches, intlTag, 0)],
-    ["vgl5.pub.metric.rounds", formatNumber(p.stats.rounds, intlTag, 0)],
-    ["vgl5.pub.metric.rating", formatCompareValue("rating", p.stats.rating, intlTag)],
-    ["vgl5.pub.metric.adr", formatCompareValue("adr", p.stats.adr, intlTag)],
-    ["vgl5.pub.metric.kast", formatCompareValue("kast", p.stats.kast, intlTag)],
-    ["vgl5.pub.metric.kd", formatCompareValue("kd", p.stats.kd, intlTag)],
-    ["vgl5.pub.metric.hsPercent", formatCompareValue("hsPercent", p.stats.hsPercent, intlTag)],
-    ["vgl5.pub.metric.winRate", formatCompareValue("winRate", p.stats.winRate, intlTag)],
-  ];
-  return (
-    <Panel title={t("vgl5.pub.stats")}>
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-public-stats>
-        {cells.map(([k, v]) => (
-          <div key={k} className="rounded-lg border border-border bg-background/40 p-3">
-            <dt className="text-xs text-muted-foreground">{t(k)}</dt>
-            <dd className="mt-1 font-display text-xl font-semibold tabular-nums">{v}</dd>
-          </div>
-        ))}
-      </dl>
-    </Panel>
-  );
-}
-
 function RecentPanel({ p }: { p: PublicProfile }) {
   const { t, intlTag } = useI18n();
   return (
-    <Panel title={t("vgl5.pub.recent")}>
+    <Panel title={t("vgl5.pub.recent")} icon="rounds">
       {p.recent.length ? (
-        <ul className="divide-y divide-border" data-public-recent>
+        <ul className="space-y-2" data-public-recent>
           {p.recent.map((m, i) => (
             <li
               key={`${m.playedAt}-${i}`}
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
+              className={cn(
+                "relative flex flex-wrap items-center gap-x-3 gap-y-1 overflow-hidden rounded-lg border border-border bg-background/50 py-2 pl-4 pr-3 text-sm",
+              )}
+              data-public-result={m.result ?? "unknown"}
             >
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute inset-y-0 left-0 w-1",
+                  m.result === "win"
+                    ? "bg-success"
+                    : m.result === "loss"
+                      ? "bg-destructive"
+                      : "bg-muted",
+                )}
+              />
+              <MapEmblem map={m.map} className="size-7" />
               <span className="min-w-24 font-medium">{mapDisplayName(m.map)}</span>
               <span className="text-xs text-muted-foreground">
                 {formatDate(m.playedAt, intlTag)}
@@ -391,7 +596,7 @@ function ComparePanel({ self, vs }: { self: PublicProfile; vs: string | undefine
   const { t } = useI18n();
   const other = usePublicProfile(vs);
   return (
-    <Panel title={t("vgl5.pub.compare.title")} className="lg:col-span-2">
+    <Panel title={t("vgl5.pub.compare.title")} icon="opening">
       <CompareForm selfId={self.identity.publicId} vs={vs} />
       {vs ? (
         <div className="mt-4">
@@ -441,13 +646,14 @@ export function PublicProfilePage({ publicId, vs }: { publicId: string; vs?: str
   else if (q.data.state === "OK") {
     const p = q.data.profile;
     body = (
-      <div className="space-y-6" data-public-profile>
-        <Identity p={p} />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ScorePanel p={p} />
-          <BestMapPanel p={p} />
+      <div className="space-y-5 sm:space-y-6" data-public-profile>
+        <Hero p={p} />
+        <StatStrip p={p} />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
           <DnaPanel p={p} />
-          <StatsPanel p={p} />
+          <BestMapPanel p={p} />
+        </div>
+        <div className="grid gap-5 lg:grid-cols-2">
           <RecentPanel p={p} />
           <ComparePanel self={p} vs={vs} />
         </div>
