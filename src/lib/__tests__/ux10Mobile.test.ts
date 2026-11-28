@@ -57,7 +57,8 @@ describe("M-9 radar labels stay inside the chart", () => {
 describe("M-10 the Coach composer stays above the bottom navigation", () => {
   it("sizes the chat to the dynamic viewport below lg", () => {
     expect(read("src/routes/_authenticated/coach.tsx")).toContain(
-      "max-lg:h-[calc(100dvh-19rem-env(safe-area-inset-bottom))]",
+      // VGL 5.1: shorter page header (no visible description) → more room for the chat.
+      "max-lg:h-[calc(100dvh-14rem-env(safe-area-inset-bottom))]",
     );
   });
 });

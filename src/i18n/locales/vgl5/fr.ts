@@ -286,4 +286,9 @@ export const vgl5Fr = {
     "Des cours complets de Connaissances stratégiques et de Compétences complémentaires pour compléter ton entraînement en jeu.",
   "vgl51.training.complementaryFew":
     "Il n’y a pas encore assez de cours de ces parcours dans ta langue ; seuls ceux qui existent dans celle-ci sont affichés.",
+  "vgl51.coach.title": "Coach CS2 PRO",
+  "vgl51.coach.tipLabel": "Ce que fait le Coach",
+  "vgl51.coach.tip":
+    "Le Coach CS2 PRO répond à partir de tes matchs analysés, de ton Player DNA et de ton plan d’entraînement : pose des questions sur tes erreurs, tes décisions de round, les cartes et ce qu’il faut travailler ensuite. C’est une IA qui peut se tromper ; vérifie les chiffres dans les pages de la plateforme.",
+  "vgl51.coach.you": "Toi",
 } as const;

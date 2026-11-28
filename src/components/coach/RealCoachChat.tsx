@@ -5,11 +5,13 @@
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { CircleHelp, History, Plus, RotateCcw, Send, User } from "lucide-react";
+import { Bot, CircleHelp, History, Plus, RotateCcw, Send } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/common/UserAvatar";
+import { useAccount } from "@/hooks/useAccount";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n";
@@ -281,10 +283,14 @@ function Bubble({
   message,
   aiLabel,
   intlTag,
+  account,
+  youLabel,
 }: {
   message: CoachMessageView;
   aiLabel: string;
   intlTag: string;
+  account?: { avatar_url?: string | null; nickname?: string | null } | null | undefined;
+  youLabel?: string;
 }) {
   const isCoach = message.role === "coach";
   const time = new Date(message.createdAt).toLocaleString(intlTag, {
@@ -299,15 +305,19 @@ function Bubble({
       data-message-role={message.role}
     >
       {isCoach ? (
-        <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-          <GameIcon name="crosshair" className="size-4" />
+        // VGL 5.1: the same icon that identifies the Coach in the side menu (lucide Bot).
+        <span
+          className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary"
+          data-coach-avatar="coach"
+        >
+          <Bot className="size-4" aria-hidden />
         </span>
       ) : null}
       <div
         className={cn(
           "min-w-0 text-sm leading-relaxed",
           isCoach
-            ? "surface-panel relative max-w-[min(100%,46rem)] flex-1 overflow-hidden rounded-lg border border-border px-4 py-3 pl-5 text-foreground"
+            ? "surface-panel relative min-w-0 max-w-full flex-1 overflow-hidden rounded-lg border border-border px-4 py-3 pl-5 text-foreground"
             : "max-w-[85%] rounded-2xl rounded-br-md border border-primary/25 bg-primary/10 px-4 py-2.5 text-foreground",
         )}
       >
@@ -329,8 +339,14 @@ function Bubble({
         )}
       </div>
       {!isCoach ? (
-        <span className="mt-1 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
-          <User className="size-4" aria-hidden />
+        // VGL 5.1: the signed-in player's own profile photo (signed URL via resolveAvatarUrl),
+        // else the platform's default avatar; never another user's picture.
+        <span className="mt-1 shrink-0" data-coach-avatar="user">
+          <UserAvatar
+            source={account?.avatar_url ?? null}
+            name={account?.nickname ?? youLabel ?? null}
+            size={32}
+          />
         </span>
       ) : null}
     </div>
@@ -375,6 +391,7 @@ export function RealCoachChat({
   const queryClient = useQueryClient();
   const state = useQuery({ queryKey: COACH_STATE_KEY, queryFn: () => getCoachState() });
   const prefs = useQuery({ queryKey: COACH_PREFERENCES_KEY, queryFn: () => getCoachPreferences() });
+  const { data: account } = useAccount();
   const [draft, setDraft] = useState(() => (initialDraft ?? "").slice(0, COACH_MAX_MESSAGE_CHARS));
   // UX-1.8: the page behind the drawer (or /coach itself) goes with each question.
   const location = useRouterState({ select: (st) => st.location });
@@ -498,9 +515,22 @@ export function RealCoachChat({
 
   const chat = (
     <div className={cn("flex min-h-0 flex-col", layout === "page" ? "min-w-0 flex-1" : className)}>
-      <div className="vgl-grid relative isolate flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/60 px-4 py-2 sm:py-2.5">
-        <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-20 bg-primary" />
-        <div className="min-w-0 flex-1 max-sm:contents">
+      {/* VGL 5.1 (Frente 10): on the Coach page the chat has no title bar (the page title is
+          "Treinador CS2 PRO"), no "delete conversation" at the top (each conversation keeps its
+          own two-step delete in the list) and, on desktop, no bar at all — "Personalizar" is in
+          the sidebar under "Nova conversa". Phones keep a slim row: conversations, personalize,
+          new. The floating chat (drawer) is unchanged. */}
+      <div
+        className={cn(
+          "vgl-grid relative isolate flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/60 px-4 py-2 sm:py-2.5",
+          layout === "page" && "py-1.5 lg:hidden",
+        )}
+        data-coach-topbar={layout}
+      >
+        {layout === "drawer" ? (
+          <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-20 bg-primary" />
+        ) : null}
+        <div className={cn("min-w-0 flex-1 max-sm:contents", layout === "page" && "hidden")}>
           <p className="flex items-center gap-2 text-xs font-semibold text-foreground max-sm:order-1 sm:text-sm">
             <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
               <GameIcon name="crosshair" className="size-3.5" />
@@ -550,16 +580,22 @@ export function RealCoachChat({
               </Link>
             </Button>
           ) : null}
-          {prefsAvailable ? <PersonalizeButton onClick={() => setShowPrefs((v) => !v)} /> : null}
-          <DeleteConversationButton
-            conversationId={conversationId}
-            disabled={pending !== null}
-            onDeleted={() => {
-              setSelected(undefined);
-              setError(null);
-              void queryClient.invalidateQueries({ queryKey: COACH_STATE_KEY });
-            }}
-          />
+          {prefsAvailable ? (
+            <span className={layout === "page" ? "lg:hidden" : undefined}>
+              <PersonalizeButton onClick={() => setShowPrefs((v) => !v)} />
+            </span>
+          ) : null}
+          {layout === "drawer" ? (
+            <DeleteConversationButton
+              conversationId={conversationId}
+              disabled={pending !== null}
+              onDeleted={() => {
+                setSelected(undefined);
+                setError(null);
+                void queryClient.invalidateQueries({ queryKey: COACH_STATE_KEY });
+              }}
+            />
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
@@ -585,7 +621,10 @@ export function RealCoachChat({
         </p>
       ) : null}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6" aria-live="polite">
-        <div className="mx-auto w-full max-w-4xl space-y-5" data-coach-thread>
+        <div
+          className={cn("mx-auto w-full space-y-5", layout === "page" ? "max-w-5xl" : "max-w-4xl")}
+          data-coach-thread
+        >
           {loadingOther ? <LoadingState /> : null}
           {otherFailed ? (
             <p role="alert" className="text-sm text-destructive">
@@ -631,7 +670,14 @@ export function RealCoachChat({
             </div>
           ) : null}
           {messages.map((m) => (
-            <Bubble key={m.id} message={m} aiLabel={t("real.aicoach.aiLabel")} intlTag={intlTag} />
+            <Bubble
+              key={m.id}
+              message={m}
+              aiLabel={t("real.aicoach.aiLabel")}
+              intlTag={intlTag}
+              account={account}
+              youLabel={t("vgl51.coach.you")}
+            />
           ))}
           {pending !== null ? (
             <>
@@ -725,6 +771,7 @@ export function RealCoachChat({
           activeId={conversationId}
           disabled={pending !== null}
           canStartNew={messages.length > 0}
+          onPersonalize={prefsAvailable ? () => setShowPrefs((v) => !v) : undefined}
           onSelect={(id) => {
             setSelected(id);
             setError(null);

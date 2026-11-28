@@ -283,4 +283,9 @@ export const vgl5PtPT = {
     "Cursos completos de Conhecimentos Estratégicos e Competências Extra para complementar o seu treino dentro do jogo.",
   "vgl51.training.complementaryFew":
     "Ainda não há cursos suficientes destes percursos no seu idioma; mostramos só os que existem nele.",
+  "vgl51.coach.title": "Treinador CS2 PRO",
+  "vgl51.coach.tipLabel": "O que o Treinador faz",
+  "vgl51.coach.tip":
+    "O Treinador CS2 PRO responde com base nos seus jogos analisados, no seu Player DNA e no seu plano de treino: pergunte sobre erros, decisões de ronda, mapas e o que treinar a seguir. É uma IA e pode errar; confirme os números nas páginas da plataforma.",
+  "vgl51.coach.you": "Você",
 } as const;

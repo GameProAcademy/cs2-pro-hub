@@ -5,11 +5,14 @@ export function PageHeader({
   title,
   description,
   actions,
+  titleAddon,
 }: {
   eyebrow?: string | undefined;
   title: string;
   description?: string | undefined;
   actions?: ReactNode;
+  /** VGL 5.1: a small control right after the title (e.g. an explanatory InfoTip). */
+  titleAddon?: ReactNode;
 }) {
   return (
     <header className="relative isolate flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
@@ -37,9 +40,12 @@ export function PageHeader({
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="text-2xl font-semibold uppercase tracking-tight text-foreground sm:text-3xl">
-          {title}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold uppercase tracking-tight text-foreground sm:text-3xl">
+            {title}
+          </h1>
+          {titleAddon}
+        </div>
         {description ? (
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {description}
