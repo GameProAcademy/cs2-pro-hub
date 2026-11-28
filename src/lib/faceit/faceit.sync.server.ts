@@ -47,6 +47,7 @@ import {
 import { fetchFaceitPlayer } from "./faceit.player";
 import { fetchFaceitLifetimeStats } from "./faceit.stats";
 import { assertSafeConnectionMetadata } from "@/lib/sources/connectionMetadata";
+import { faceitWritableMatchIds } from "./faceitOwnership";
 
 export type FaceitSyncJobType =
   "initial" | "incremental" | "manual" | "profile" | "match" | "stats";
@@ -72,6 +73,8 @@ export interface SyncCounters {
   matchesSkipped: number;
   /** Insert lost a race with a concurrent worker; the existing row was reused. */
   matchesAlreadyExisted: number;
+  /** VGL 5.0: FACEIT observations attached to a demo match (link only, demo data kept). */
+  matchesLinkedToDemo: number;
   /** Individual matches we could not persist. */
   matchesFailed: number;
   /** Matches left for the next run because the budget ran out. */
@@ -92,6 +95,7 @@ function emptyCounters(): SyncCounters {
     matchesUpdated: 0,
     matchesSkipped: 0,
     matchesAlreadyExisted: 0,
+    matchesLinkedToDemo: 0,
     matchesFailed: 0,
     matchesDeferred: 0,
     historyTruncated: false,
@@ -254,6 +258,7 @@ export async function processClaimedFaceitSyncJob(
         last_error: null,
         metadata: {
           already_existed: counters.matchesAlreadyExisted,
+          linked_to_demo: counters.matchesLinkedToDemo,
           failed: counters.matchesFailed,
           deferred: counters.matchesDeferred,
           history_truncated: counters.historyTruncated,
@@ -590,6 +595,16 @@ export async function runFaceitSync(
       counters.matchesInserted += persisted.created;
       counters.matchesUpdated += persisted.matchIds.length - persisted.created;
 
+      // VGL 5.0 — a FACEIT observation attached to a DEMO match (cross-source convergence) is
+      // only a link: the demo row keeps its parsed metrics and its own source bookkeeping.
+      const { data: owners } = await db
+        .from("matches")
+        .select("id, data_source")
+        .in("id", persisted.matchIds);
+      const { writable, linkedToDemo } = faceitWritableMatchIds(owners ?? []);
+      counters.matchesLinkedToDemo += linkedToDemo.length;
+      if (writable.length === 0) continue;
+
       // Convergence bookkeeping stays on the source-scoped columns: they are
       // what stops a match FACEIT will never complete from being re-fetched.
       await db
@@ -601,14 +616,15 @@ export async function runFaceitSync(
           source_fetched_at: canonical.source_fetched_at,
           source_version: canonical.source_version,
         })
-        .in("id", persisted.matchIds);
+        .in("id", writable)
+        .eq("data_source", "faceit");
 
       // Match stats are frequently unavailable; absence is null, never zero.
       // These are a PLAYER-SCOPED PROJECTION of the canonical match, not a
       // second source of truth.
       if (metrics) {
         await db.from("match_metrics").upsert(
-          persisted.matchIds.map((matchId) => ({
+          writable.map((matchId) => ({
             match_id: matchId,
             player_id: playerId,
             ...metrics,

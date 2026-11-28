@@ -247,4 +247,16 @@ export const vgl5PtPT = {
   "vgl5.pub.settings.open": "Abrir perfil público",
   "vgl5.pub.settings.noPlayer": "Complete o seu perfil de jogador para obter um ID público.",
   "vgl5.pub.settings.error": "Não foi possível guardar. Tente novamente.",
+  "vgl5.faceit.title": "Jogos FACEIT",
+  "vgl5.faceit.description":
+    "Dados reportados pelo próprio FACEIT (resultado, marcador e, quando o FACEIT os publica, K/D e ADR). Ficam separados do CS2 PRO Score, do Player DNA e dos números de demo, que vêm só de demos analisadas.",
+  "vgl5.faceit.loading": "A carregar jogos FACEIT…",
+  "vgl5.faceit.error": "Não foi possível carregar os jogos FACEIT agora.",
+  "vgl5.faceit.empty":
+    "Nenhum jogo de CS2 encontrado no FACEIT para esta conta até à última sincronização.",
+  "vgl5.faceit.partial":
+    "O FACEIT ainda não publicou todos os dados deste jogo; a próxima sincronização tenta novamente.",
+  "vgl5.faceit.more": "A mostrar {shown} de {total}.",
+  "vgl5.faceit.linked":
+    "{n} jogo(s) FACEIT também enviado(s) como demo aparece(m) uma só vez, com os dados da demo.",
 } as const;
