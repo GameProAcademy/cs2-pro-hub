@@ -39,7 +39,7 @@ Implementação: `src/lib/maps/mapRanking.ts` (pura, determinística), testes em
 - o jogador jogou pelo menos 10 rounds (uma partida lida em parte ou abandonada cedo não conta como encerrada);
 - a partida tem rating.
 
-Partidas de demo e da FACEIT entram igualmente, com os valores comparáveis que o overview já expõe.
+Entram as partidas do overview, que é construído só a partir de demos analisadas (`loadPlayerOverview` parte de `demo_jobs`). Partidas nativas da FACEIT não entram (ver Frente 8).
 
 **Sinais e pesos.** Os sinais são agregados pela regra canônica (`metrics-catalog-v2.1`), com peso de recência de meia-vida de 120 dias, contada a partir da partida mais nova (o resultado não depende do relógio).
 
@@ -87,4 +87,108 @@ Fora da classificação: "Amostra insuficiente" (1–2 partidas) ou "Aguardando 
 - o painel "Mapa selecionado" de `/maps`, que passa a apresentar o melhor mapa;
 - os rótulos de classificação nos cards da galeria de mapas.
 
-Início e Mapas usam a mesma função, então mostram o mesmo melhor mapa. A classificação é recalculada sempre que o overview muda (nova demo ou nova partida da FACEIT).
+Início e Mapas usam a mesma função, então mostram o mesmo melhor mapa. A classificação é recalculada sempre que o overview muda (nova demo analisada).
+
+
+PRs: #436 (Frente 1, merged em `0e27ec9a`).
+
+## Frente 4 — CS2 PRO Score (#437)
+
+Fórmula `pro-score-v1` intocada; só a apresentação mudou.
+
+- `ScoreHero` (`src/components/score/ScoreHero.tsx`): número grande só no estado READY (`score.state === "READY" && score.score !== null`), medidor de 20 segmentos, chips de confiança, partidas e cobertura.
+- Os três textos explicativos viraram tooltips (`InfoTip`, Radix Popover, acessível por teclado).
+- "Como o seu Score é formado" virou um accordion fechado por padrão (`data-score-formation`), com a barra de contribuição e a tabela de componentes.
+- Removido o parágrafo `real.proScoreContext.instead` de `/performance`.
+
+## Frente 10 — Início (#437)
+
+Ordem: cabeçalho e pendências → estado do overview → destaque (Score e DNA lado a lado, `data-home-headline`) → Palavra do Treinador → Melhor Mapa (substitui "Última partida") → atalhos, agregados, últimas partidas, pool de mapas, uploads.
+
+## Frente 5 — Menu lateral (#438)
+
+`activeSectionOf(pathname)` (`src/config/navigation.ts`) decide uma única seção ativa. O item ativo tem fundo, barra lateral, peso de fonte e `aria-current="page"`, então nunca depende só da cor. No mobile há uma barra de seção. Upload, Admin e Perfil também ficam destacados.
+
+## Frente 6 — Coach (#438)
+
+- Desktop (`lg`): barra lateral de conversas (`ConversationSidebar`) com excluir no hover ou no foco. A exclusão pede confirmação em dois passos.
+- Mobile: o dropdown foi mantido.
+- No chat flutuante, "Conversas" leva a `/coach?conversation=<uuid>`.
+- Provedor, modelo, prompts e lógica do Coach não mudaram.
+
+## Frente 7 — Treino (#439)
+
+- Barras de prioridade com lacuna e legenda (`data-priority-bar`, `data-priority-gap`, `data-priority-legend`).
+- Os dois textos pedidos foram removidos (nota de acesso e contexto).
+- O plano recomenda só **cursos inteiros** (`coursesOnly: true`), com URLs reais de `hub.gamepro.academy`. A produção tem 23–24 cursos ativos por idioma, todos com tópicos.
+- Sem rastreamento de progresso (regra Tutor LMS).
+
+## Frente 9 — Player DNA (#440)
+
+- No desktop, um card de foco fica ao lado do radar. A seleção pode ser por eixo, tag ou especialidade: os chips são botões com `aria-pressed`, e a dimensão em foco sai da lista abaixo.
+- O texto "Índice CS2 PRO com referências fixas…" virou tooltip (`id="dna-legend"`).
+
+## Frente 2 — Palavra do Treinador (`coach-word-v1`, #441)
+
+Texto pré-escrito e determinístico, **sem IA**: `src/lib/coachWord/coachWord.ts`, 36 mensagens em 5 idiomas.
+
+Mínimo global para falar: 3 partidas e 60 rounds. Limiares:
+
+| Sinal | Regra |
+| --- | --- |
+| ADR | < 65 baixo, ≥ 85 alto |
+| KAST | < 65 baixo, ≥ 75 alto |
+| K/D | < 0,85 baixo, ≥ 1,15 alto |
+| Mira sem sobrevivência | HS ≥ 45 e ADR ≥ 80, com KAST < 68 ou DPR > 0,75 |
+| Tendência | ± 10 %, últimas 3 contra as 3 anteriores (exige ≥ 6 partidas) |
+| Inconsistência | CV > 0,35 com ≥ 5 partidas |
+| Mapa | ± 10 % |
+| DNA | ≥ 65 ponto forte, < 40 ponto fraco |
+
+Por partida (aba Resumo da sala), por ordem de prioridade:
+
+- partida curta: < 10 rounds;
+- dano: ADR ≥ 95;
+- sobrevivência: DPR ≥ 0,8 com KAST < 60;
+- partida difícil: K/D < 0,7 com ADR < 60;
+- derrota boa: K/D ≥ 1,2;
+- vitória sólida: KAST ≥ 75.
+
+Onde aparece: Início, Raio-X, DNA, Performance, Evolução, Mapas (oculto dentro da sala), Treino, Metas e o Resumo da partida.
+
+O botão "Falar com o Treinador" abre o chat flutuante da página atual com um rascunho (`cs2pro:open-coach`), então o contexto de tela existente vai junto e os prompts não mudam.
+
+## Frente 3 — Perfil público (#442)
+
+- **Migration** `20261128120000_vgl5_public_profile.sql`:
+  - `public_id` no formato `XXXXX-XXXXX`, com alfabeto de 32 símbolos sem 0/O/1/I (~50 bits), gerado de `gen_random_uuid()` com laço de colisão, índice único e CHECK;
+  - `public_profile boolean NOT NULL DEFAULT false`.
+- **Trigger:** um insert vindo do cliente sempre recebe um ID novo e fica privado; mudar o ID pelo cliente levanta `PUBLIC_ID_IMMUTABLE`.
+- **RLS** inalterada, sem policy nova para `anon`.
+- **Dry-run** em produção: 4 IDs válidos e distintos, todos privados, com rollback.
+- **Leitura pública:** `getPublicProfile` usa a service role só dentro do handler. Seleciona colunas em whitelist e exige `public_profile = true`. Perfil privado e ID inexistente recebem a mesma resposta `NOT_FOUND`, então não há oráculo de enumeração.
+- **Nunca expostos:** e-mail, auth, IDs internos, demos, nome de arquivo, histórico do Coach.
+- **Números:** os mesmos loaders e as mesmas funções puras das páginas do dono.
+- **Página `/p/$publicId`** (`noindex`): identidade, Score, melhor mapa, DNA, números e últimas 5 partidas.
+- **Comparação `?vs=`:**
+  - mesmas métricas e escalas para os dois lados;
+  - ninguém fica "à frente" com menos de 3 partidas ou sem o dado dos dois lados;
+  - HS% aparece só como contexto;
+  - estados cobertos: ID inválido, inexistente/privado e dados insuficientes.
+- **Perfil do dono:** card com switch (desligado por padrão), ID, copiar link e abrir.
+
+## Frente 8 — FACEIT nativo (#443)
+
+**Auditoria em produção (2026-11-28):**
+
+- O adapter nativo já existia: sync → motor canônico → `data_source='faceit'`. Ele cobre sync incremental com janela sobreposta, orçamento de chamadas, backoff, recuperação de jobs travados e dedup pelo Match Identity Resolver.
+- Há 4 jobs `completed`, todos com `matches_found = 0`, e `lifetime = null`. A conta conectada não tem histórico CS2 no FACEIT.
+- Há 0 partidas `faceit` e 0 `match_sources` FACEIT.
+
+**Defeito latente corrigido.** Quando o resolver ligava uma observação FACEIT a uma partida de demo, o worker sobrescrevia `source_*` e `match_metrics` da demo. Agora só linhas `data_source='faceit'` são gravadas (`faceitWritableMatchIds`, com `.eq("data_source","faceit")` como segunda trava). Uma ligação a uma demo vira só vínculo e é contada em `linked_to_demo`.
+
+**Superfície nova.** O card "Partidas FACEIT" no Perfil fica rotulado como dado do FACEIT e separado do Score, do DNA e dos agregados, que continuam só de demos.
+
+**Parser não tocado.**
+
+**Pendente:** a validação end-to-end exige uma conta FACEIT com partidas de CS2.
