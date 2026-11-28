@@ -16,15 +16,21 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { ChartCard } from "@/components/common/ChartCard";
-import { GameIcon } from "@/components/common/GameIcon";
-import { RadialGauge } from "@/components/cs2/Cs2Art";
+import { InfoTip } from "@/components/common/InfoTip";
+import { ScoreHero } from "@/components/score/ScoreHero";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
 import { useI18n, type TranslationKey } from "@/i18n";
 import { fill } from "@/lib/format";
 import {
-  PRO_SCORE_CONFIDENCE_ROUNDS,
   PRO_SCORE_MIN_COVERAGE,
+  PRO_SCORE_MIN_MATCHES,
   PRO_SCORE_MIN_EVENT_SAMPLE,
   type ProScore,
 } from "@/lib/proScore";
@@ -42,65 +48,26 @@ const pct = (v: number, tag: string, digits = 0) =>
     minimumFractionDigits: digits,
   }).format(v * 100);
 
-/** The state sentence when there is no number (never a placeholder value). */
-function stateText(score: ProScore, t: (k: TranslationKey) => string, tag: string): string {
-  if (score.state === "INSUFFICIENT_SAMPLE")
-    return fill(t("score.state.INSUFFICIENT_SAMPLE"), {
-      matches: score.matches,
-      minimum: score.minimumMatches,
-    });
-  if (score.state === "INSUFFICIENT_COVERAGE")
-    return fill(t("score.state.INSUFFICIENT_COVERAGE"), {
-      coverage: pct(score.coverage, tag),
-      min: pct(PRO_SCORE_MIN_COVERAGE, tag),
-    });
-  return t("score.state.EMPTY");
-}
-
-function ScoreValue({ score }: { score: ProScore }) {
+/** The three explanations of the Score, as tooltips (texts unchanged, 5 languages). */
+export function ScoreTips({ withRating = false }: { withRating?: boolean }) {
   const { t, intlTag } = useI18n();
-  if (score.state !== "READY" || score.score === null)
-    return (
-      <p
-        className="text-sm leading-relaxed text-muted-foreground"
-        data-pro-score-state={score.state}
-      >
-        {stateText(score, t, intlTag)}
-      </p>
-    );
-  const shown = new Intl.NumberFormat(intlTag, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(score.score);
   return (
-    <div className="space-y-2" data-pro-score-state="READY">
-      <div className="flex items-center gap-4">
-        {/* VGL 2.0: the same READY score as a ring (decorative; the number is written next to it). */}
-        <RadialGauge
-          value={score.score / 100}
-          size={64}
-          label={<GameIcon name="target" className="size-5 text-primary" />}
-        />
-        <p className="font-display text-4xl font-semibold tabular-nums text-foreground">
-          {fill(t("score.of100"), { score: shown })}
-        </p>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{t("score.confidence.label")}:</span>{" "}
-        {fill(t(`score.confidence.${score.confidence ?? "PROVISIONAL"}`), {
-          moderate: PRO_SCORE_CONFIDENCE_ROUNDS.moderate,
-          high: PRO_SCORE_CONFIDENCE_ROUNDS.high,
+    <>
+      <InfoTip id="method" label={t("vgl5.score.tip.method")} title={t("vgl5.score.tip.method")}>
+        {fill(t("score.method"), {
+          minimum: PRO_SCORE_MIN_MATCHES,
+          minCoverage: pct(PRO_SCORE_MIN_COVERAGE, intlTag),
         })}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        {fill(t("score.basis"), {
-          matches: score.matches,
-          rounds: score.rounds,
-          version: score.version,
-        })}{" "}
-        {fill(t("score.coverage"), { coverage: pct(score.coverage, intlTag) })}
-      </p>
-    </div>
+      </InfoTip>
+      <InfoTip id="meaning" label={t("vgl5.score.tip.meaning")} title={t("vgl5.score.tip.meaning")}>
+        {t("score.notPercentile")} {t("score.dnaDifference")}
+      </InfoTip>
+      {withRating ? (
+        <InfoTip id="rating" label={t("vgl5.score.tip.rating")} title={t("vgl5.score.tip.rating")}>
+          {t("real.proScoreContext.instead")}
+        </InfoTip>
+      ) : null}
+    </>
   );
 }
 
@@ -119,9 +86,8 @@ export function RealProScoreCard() {
           onRetry={() => void query.refetch()}
         />
       ) : (
-        <div className="space-y-3">
-          <ScoreValue score={query.data} />
-          <p className="text-xs text-muted-foreground">{t("score.notPercentile")}</p>
+        <div className="space-y-4">
+          <ScoreHero score={query.data} tips={<ScoreTips />} />
           <Button asChild size="sm" variant="outline">
             <Link to="/performance" hash="cs2-pro-score">
               {t("score.details")}
@@ -195,105 +161,115 @@ export function RealProScoreDetails() {
     );
   const score = query.data;
   return (
-    <div className="mt-3 space-y-4">
-      <ScoreValue score={score} />
+    <div className="mt-4 space-y-4">
+      <ScoreHero score={score} size="xl" tips={<ScoreTips withRating />} />
       {score.partialMatchesExcluded > 0 ? (
         <p className="text-xs text-muted-foreground">
           {fill(t("score.partialExcluded"), { n: score.partialMatchesExcluded })}
         </p>
       ) : null}
-      {score.state === "READY" ? <ContributionBar components={score.components} /> : null}
       {score.state !== "EMPTY" ? (
-        <div className="overflow-x-auto">
-          <table className={cn("w-full text-sm", STACK_TABLE)} data-pro-score-components>
-            <caption className="pb-2 text-left text-xs font-medium text-foreground">
-              {t("score.components.title")}
-            </caption>
-            <thead className={STACK_HEAD}>
-              <tr className="text-left font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                <th scope="col" className="py-2 pr-4 font-normal">
-                  {t("score.col.component")}
-                </th>
-                <th scope="col" className="py-2 pr-4 font-normal">
-                  {t("score.col.value")}
-                </th>
-                <th scope="col" className="py-2 pr-4 font-normal">
-                  {t("score.col.sample")}
-                </th>
-                <th scope="col" className="py-2 pr-4 text-right font-normal">
-                  {t("score.col.weight")}
-                </th>
-                <th scope="col" className="py-2 text-right font-normal">
-                  {t("score.col.points")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className={cn("divide-y divide-border", STACK_BODY, "max-md:divide-y-0")}>
-              {score.components.map((c) => (
-                <tr key={c.id} className={STACK_ROW}>
-                  <th
-                    scope="row"
-                    className={cn(
-                      "py-2 pr-4 text-left font-normal text-muted-foreground",
-                      STACK_WIDE,
-                      "max-md:p-0 max-md:font-medium max-md:text-foreground",
-                    )}
-                  >
-                    {t(`score.c.${c.id}` as TranslationKey)}
-                  </th>
-                  <td
-                    className={cn("py-2 pr-4 font-mono", STACK_CELL)}
-                    data-label={t("score.col.value")}
-                  >
-                    {c.value === null ? "—" : `${pct(c.value, intlTag, 1)}%`}
-                    {!c.available && c.unavailableReason ? (
-                      <span className="block font-sans text-xs text-muted-foreground">
-                        {fill(t(`score.unavailable.${c.unavailableReason}`), {
-                          min: PRO_SCORE_MIN_EVENT_SAMPLE,
-                        })}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td
-                    className={cn("py-2 pr-4 font-mono text-xs", STACK_CELL)}
-                    data-label={t("score.col.sample")}
-                  >
-                    {c.matches === 0
-                      ? "—"
-                      : fill(t(`score.sample.${c.sampleUnit}`), { n: c.sample })}
-                  </td>
-                  <td
-                    className={cn("py-2 pr-4 text-right font-mono", STACK_CELL)}
-                    data-label={t("score.col.weight")}
-                  >
-                    {pct(c.weight, intlTag)}%
-                  </td>
-                  <td
-                    className={cn("py-2 text-right font-mono", STACK_CELL)}
-                    data-label={t("score.col.points")}
-                  >
-                    {score.state === "READY" && c.available
-                      ? new Intl.NumberFormat(intlTag, {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
-                        }).format(c.contribution)
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Accordion type="single" collapsible data-score-formation>
+          <AccordionItem
+            value="formation"
+            className="overflow-hidden rounded-xl border border-border bg-background/40"
+          >
+            <AccordionTrigger className="min-h-12 gap-3 px-4 py-3 font-display text-sm font-semibold uppercase tracking-[0.12em] text-foreground hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&[data-state=open]]:border-b [&[data-state=open]]:border-border">
+              <span className="flex items-center gap-2">
+                <span aria-hidden className="h-4 w-1 -skew-x-12 rounded-sm bg-primary" />
+                {t("score.components.title")}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 px-4 pt-4">
+              {score.state === "READY" ? <ContributionBar components={score.components} /> : null}
+              <ComponentsTable score={score} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       ) : null}
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        {fill(t("score.method"), {
-          minimum: score.minimumMatches,
-          minCoverage: pct(PRO_SCORE_MIN_COVERAGE, intlTag),
-        })}
-      </p>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        {t("score.notPercentile")} {t("score.dnaDifference")}
-      </p>
+    </div>
+  );
+}
+
+/** The components of the Score with their samples, weights and points (unchanged content). */
+function ComponentsTable({ score }: { score: ProScore }) {
+  const { t, intlTag } = useI18n();
+  return (
+    <div className="overflow-x-auto">
+      <table className={cn("w-full text-sm", STACK_TABLE)} data-pro-score-components>
+        <caption className="sr-only">{t("score.components.title")}</caption>
+        <thead className={STACK_HEAD}>
+          <tr className="text-left font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            <th scope="col" className="py-2 pr-4 font-normal">
+              {t("score.col.component")}
+            </th>
+            <th scope="col" className="py-2 pr-4 font-normal">
+              {t("score.col.value")}
+            </th>
+            <th scope="col" className="py-2 pr-4 font-normal">
+              {t("score.col.sample")}
+            </th>
+            <th scope="col" className="py-2 pr-4 text-right font-normal">
+              {t("score.col.weight")}
+            </th>
+            <th scope="col" className="py-2 text-right font-normal">
+              {t("score.col.points")}
+            </th>
+          </tr>
+        </thead>
+        <tbody className={cn("divide-y divide-border", STACK_BODY, "max-md:divide-y-0")}>
+          {score.components.map((c) => (
+            <tr key={c.id} className={STACK_ROW}>
+              <th
+                scope="row"
+                className={cn(
+                  "py-2 pr-4 text-left font-normal text-muted-foreground",
+                  STACK_WIDE,
+                  "max-md:p-0 max-md:font-medium max-md:text-foreground",
+                )}
+              >
+                {t(`score.c.${c.id}` as TranslationKey)}
+              </th>
+              <td
+                className={cn("py-2 pr-4 font-mono", STACK_CELL)}
+                data-label={t("score.col.value")}
+              >
+                {c.value === null ? "—" : `${pct(c.value, intlTag, 1)}%`}
+                {!c.available && c.unavailableReason ? (
+                  <span className="block font-sans text-xs text-muted-foreground">
+                    {fill(t(`score.unavailable.${c.unavailableReason}`), {
+                      min: PRO_SCORE_MIN_EVENT_SAMPLE,
+                    })}
+                  </span>
+                ) : null}
+              </td>
+              <td
+                className={cn("py-2 pr-4 font-mono text-xs", STACK_CELL)}
+                data-label={t("score.col.sample")}
+              >
+                {c.matches === 0 ? "—" : fill(t(`score.sample.${c.sampleUnit}`), { n: c.sample })}
+              </td>
+              <td
+                className={cn("py-2 pr-4 text-right font-mono", STACK_CELL)}
+                data-label={t("score.col.weight")}
+              >
+                {pct(c.weight, intlTag)}%
+              </td>
+              <td
+                className={cn("py-2 text-right font-mono", STACK_CELL)}
+                data-label={t("score.col.points")}
+              >
+                {score.state === "READY" && c.available
+                  ? new Intl.NumberFormat(intlTag, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    }).format(c.contribution)
+                  : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
