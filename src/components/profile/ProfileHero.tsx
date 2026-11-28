@@ -49,8 +49,16 @@ export function ProfileHero({
   return (
     <MapArt map={lead?.map ?? null} className="vgl-rise rounded-xl border border-border">
       <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-7" data-profile-hero>
-        <span className="vgl-ring relative shrink-0 self-start rounded-full border-2 border-primary/60 p-1">
-          <UserAvatar source={avatarSource} name={name} size={88} />
+        <span
+          className="vgl-ring relative flex size-[104px] aspect-square shrink-0 self-start items-center justify-center overflow-hidden rounded-full border-2 border-primary/60 p-1"
+          data-profile-avatar-frame
+        >
+          <UserAvatar
+            source={avatarSource}
+            name={name}
+            size={88}
+            className="aspect-square rounded-full"
+          />
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">

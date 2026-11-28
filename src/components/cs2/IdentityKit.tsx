@@ -5,7 +5,6 @@
  * reads; it never computes the DNA. No snapshot → nothing is shown.
  */
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
 
 import { GameIcon } from "@/components/common/GameIcon";
@@ -119,7 +118,7 @@ export function SpecialtyStrip({ className }: { className?: string }) {
       aria-labelledby="specialty-title"
       data-specialty-strip
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-baseline gap-2">
         <h2
           id="specialty-title"
           className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.14em] text-foreground"
@@ -127,12 +126,6 @@ export function SpecialtyStrip({ className }: { className?: string }) {
           <GameIcon name="dna" className="size-4 text-primary" />
           {t("vgl3.specialty.title")}
         </h2>
-        <Link
-          to="/player-dna"
-          className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {t("real.dna.open")}
-        </Link>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {fill(t("vgl3.specialty.source"), {
