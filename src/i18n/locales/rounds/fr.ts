@@ -57,7 +57,7 @@ export const roundsFr: Record<keyof typeof roundsPtBR, string> = {
     "Clutch = vous êtes le dernier vivant de l'équipe contre N adversaires ; gagné = round gagné et vous avez survécu. Un match ne fait pas un joueur de clutch.",
   "rounds.me.byOwnBuy": "Par votre propre achat",
   "rounds.me.byOwnBuyValue": "{r} rounds · {k}K {d}D · {adr} de dégâts/round",
-  "rounds.section.list": "Rounds",
+  "rounds.section.list": "Détails de chaque manche",
   "rounds.section.list.subtitle":
     "Ouvrez un round pour voir la suite des événements, le décompte des vivants et le replay 2D au moment exact.",
   "rounds.roundN": "Round {n}",
