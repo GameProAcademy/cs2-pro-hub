@@ -19,6 +19,7 @@ import { FaceitPanel } from "@/components/integrations/FaceitPanel";
 import { SteamPanel } from "@/components/integrations/SteamPanel";
 import { IdentitiesCard } from "@/components/profile/IdentitiesCard";
 import { PasswordCard } from "@/components/profile/PasswordCard";
+import { PublicProfileCard } from "@/components/profile/PublicProfileCard";
 import { VerificationCard } from "@/components/profile/VerificationCard";
 import { NicknameHistoryCard } from "@/components/profile/NicknameHistoryCard";
 import { Button } from "@/components/ui/button";
@@ -392,6 +393,7 @@ function ProfilePage() {
               <ChartCard title={t("profile.preferences")} showDemoTag={false}>
                 <AvatarCard embedded />
               </ChartCard>
+              <PublicProfileCard />
               <VerificationCard result={verification} />
               <PasswordCard />
             </div>
