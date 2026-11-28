@@ -6,6 +6,7 @@ import { DEMO_DATA } from "@/config/app";
 import { CoachChat } from "@/components/coach/CoachChat";
 import { RealCoachChat } from "@/components/coach/RealCoachChat";
 import { ChartCard } from "@/components/common/ChartCard";
+import { InfoTip } from "@/components/common/InfoTip";
 import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { FEATURES } from "@/config/app";
@@ -44,15 +45,27 @@ function RealCoachPage() {
   const { conversation } = Route.useSearch();
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="space-y-4 lg:space-y-6">
+        {/* VGL 5.1 (Frente 10): one title ("Treinador CS2 PRO") with its explanation in a
+            tooltip; the chat below carries no second title, so it gets the reading space. */}
         <PageHeader
           eyebrow={t("coach.eyebrow")}
-          title={t("coach.title")}
-          description={t("coach.description")}
+          title={t("vgl51.coach.title")}
+          titleAddon={
+            <InfoTip
+              id="coach-what"
+              label={t("vgl51.coach.tipLabel")}
+              title={t("vgl51.coach.title")}
+            >
+              {t("vgl51.coach.tip")}
+            </InfoTip>
+          }
         />
-        {/* UX-1.0 M-10: below lg the composer must stay above the fixed bottom navigation
-            (3.5 rem + safe area), also on short phones; the header above takes ~14 rem. */}
-        <section className="surface-panel flex h-[68vh] min-h-[460px] flex-col overflow-hidden rounded-lg border border-border max-lg:h-[calc(100dvh-19rem-env(safe-area-inset-bottom))] max-lg:min-h-[500px]">
+        {/* Below lg the composer stays above the fixed bottom navigation (3.5 rem + safe area). */}
+        <section
+          className="surface-panel flex h-[calc(100dvh-12.5rem)] min-h-[520px] flex-col overflow-hidden rounded-lg border border-border max-lg:h-[calc(100dvh-14rem-env(safe-area-inset-bottom))] max-lg:min-h-[420px]"
+          data-coach-page-chat
+        >
           <RealCoachChat className="flex-1" layout="page" initialConversationId={conversation} />
         </section>
       </div>

@@ -110,7 +110,7 @@ describe("source contracts and locales", () => {
     expect(src("src/components/coach/CoachControls.tsx")).toContain(
       '<span className="max-sm:sr-only">',
     );
-    expect(src("src/routes/_authenticated/coach.tsx")).toContain("max-lg:min-h-[500px]");
+    expect(src("src/routes/_authenticated/coach.tsx")).toContain("max-lg:min-h-[420px]");
   });
   it("DNA basis keeps the same text inside 'how to read'", () => {
     const d = src("src/components/real/RealDna.tsx");

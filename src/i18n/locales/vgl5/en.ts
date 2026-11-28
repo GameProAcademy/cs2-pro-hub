@@ -276,4 +276,9 @@ export const vgl5En = {
     "Whole courses from Strategic Knowledge and Extra Skills to complement your in-game training.",
   "vgl51.training.complementaryFew":
     "There are not enough courses from these tracks in your language yet; only the ones available in it are shown.",
+  "vgl51.coach.title": "CS2 PRO Coach",
+  "vgl51.coach.tipLabel": "What the Coach does",
+  "vgl51.coach.tip":
+    "The CS2 PRO Coach answers from your analysed matches, your Player DNA and your training plan: ask about mistakes, round decisions, maps and what to train next. It is an AI and can be wrong; check the numbers on the platform's pages.",
+  "vgl51.coach.you": "You",
 } as const;

@@ -395,6 +395,7 @@ export function ConversationSidebar({
   onDeleted,
   disabled,
   canStartNew,
+  onPersonalize,
 }: {
   activeId: string | null;
   onSelect: (id: string) => void;
@@ -402,6 +403,8 @@ export function ConversationSidebar({
   onDeleted: (id: string) => void;
   disabled?: boolean;
   canStartNew: boolean;
+  /** VGL 5.1: "Personalizar" lives under "Nova conversa" on the Coach page (when available). */
+  onPersonalize?: (() => void) | undefined;
 }) {
   const t = useT();
   const { intlTag } = useI18n();
@@ -446,6 +449,19 @@ export function ConversationSidebar({
           <Plus className="size-4" aria-hidden />
           {t("real.aicoach.newConversation")}
         </Button>
+        {onPersonalize ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="mt-1 w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+            onClick={onPersonalize}
+            data-coach-personalize
+            data-coach-sidebar-personalize
+          >
+            <SlidersHorizontal className="size-4" aria-hidden />
+            {t("coach2.personalize")}
+          </Button>
+        ) : null}
       </div>
       <p className="px-4 pb-1 pt-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
         {t("coach2.conversations")}
