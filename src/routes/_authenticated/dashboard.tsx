@@ -39,6 +39,7 @@ import {
   getTrends,
 } from "@/services/playerService";
 import type { TranslationKey } from "@/i18n";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -80,6 +81,7 @@ function RealDashboardPage() {
                 <RealProScoreCard />
                 <DnaIdentityCard fallback={<RealDnaSummary />} />
               </div>
+              <CoachWordCard section="dashboard" />
               <BestMapHero matches={overview.matches} />
               <HomeCommandRow matches={overview.matches} />
               <RealAggregates overview={overview} />

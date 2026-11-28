@@ -40,6 +40,7 @@ import {
   type SpatialMapOption,
   type SpatialMatchOption,
 } from "@/lib/spatial.functions";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export interface HeatmapSearch {
   map?: string | undefined;
@@ -85,6 +86,10 @@ export function RealHeatmapPage({
           title={t("spatial.title")}
           description={t("spatial.description")}
         />
+        {/* Standalone /maps only (inside the Match Room the match summary has its own). */}
+        <MatchSelectSlot>
+          <CoachWordCard section="maps" />
+        </MatchSelectSlot>
         {query.isPending ? (
           <LoadingState />
         ) : query.isError || !query.data ? (

@@ -51,4 +51,147 @@ export const vgl5PtBR = {
   "vgl5.dna.legendTip": "Como ler os índices",
   "vgl5.dna.focusDefault": "Em foco: seu maior índice",
   "vgl5.dna.focusSelected": "Em foco: dimensão selecionada",
+  "cw.title": "Palavra do Treinador",
+  "cw.practice": "Na prática",
+  "cw.talk": "Falar com o Treinador",
+  "cw.priority.HIGH": "Prioridade alta",
+  "cw.priority.MEDIUM": "Ponto forte",
+  "cw.priority.INFO": "Orientação",
+  "cw.source":
+    "Mensagem escolhida por regras fixas a partir dos seus números ({version}); não é gerada por IA.",
+  "cw.insufficient.text":
+    "Ainda conheço pouco do seu jogo: tenho {n} partida(s) analisada(s). Com {min} partidas completas eu consigo apontar seus padrões com segurança.",
+  "cw.insufficient.tip":
+    "Envie as demos das suas próximas partidas completas, de preferência em mapas diferentes.",
+  "cw.aimSurvival.text":
+    "Sua mira está funcionando ({hs}% de headshots e ADR {adr}), mas você morre cedo demais para converter isso em rounds: o impacto some quando você cai primeiro.",
+  "cw.aimSurvival.tip":
+    "Depois de cada abate, reposicione antes de buscar o próximo duelo e jogue perto de um companheiro que possa trocar a sua morte.",
+  "cw.kastLow.text":
+    "Seu KAST está em {kast}%: em muitos rounds você não mata, não dá assistência, não sobrevive e não é trocado. É o sinal mais claro de rounds sem contribuição.",
+  "cw.kastLow.tip":
+    "Em cada round, busque uma tarefa concreta: uma granada útil, uma informação ou um duelo com apoio. Evite morrer sozinho, longe do time.",
+  "cw.adrLow.text":
+    "Seu ADR médio está em {adr}: você causa pouco dano por round. Mesmo sem abater, dano tira recursos do adversário e prepara o abate do time.",
+  "cw.adrLow.tip":
+    "Participe de mais trocas de tiro com apoio e use granadas de dano (HE e molotov) nas execuções e retakes.",
+  "cw.kdLow.text":
+    "Você está perdendo mais duelos do que ganha (K/D {kd}). Cada morte sem troca deixa o time em desvantagem numérica.",
+  "cw.kdLow.tip":
+    "Escolha melhor seus duelos: pré-mire ângulos comuns, evite repetir o mesmo pico e só entre em duelo quando um companheiro puder trocar.",
+  "cw.adrHigh.text":
+    "Excelente produção de dano: ADR {adr}. Você está entre os jogadores que mais pressionam o adversário em cada round.",
+  "cw.adrHigh.tip":
+    "Transforme esse dano em abates: comunique os inimigos que deixou com pouca vida para o time finalizar.",
+  "cw.kdHigh.text":
+    "Você vence a maioria dos seus duelos (K/D {kd}). Seu trabalho de mira e escolha de combate está dando resultado.",
+  "cw.kdHigh.tip":
+    "Use essa vantagem para abrir espaço: assuma mais duelos de entrada quando o time precisar de iniciativa.",
+  "cw.kastHigh.text":
+    "Você contribui na grande maioria dos rounds (KAST {kast}%): mata, ajuda, sobrevive ou é trocado com consistência.",
+  "cw.kastHigh.tip":
+    "Mantenha esse padrão e procure aumentar o impacto: mais dano por round e mais duelos de abertura vencidos.",
+  "cw.trendDown.text":
+    "Suas últimas 3 partidas renderam {d}% menos rating do que as 3 anteriores. É uma queda recente, não o seu nível de sempre.",
+  "cw.trendDown.tip":
+    "Revise as mortes das últimas partidas e procure o que mudou: mapa, função, horário ou cansaço. Volte ao aquecimento antes de jogar.",
+  "cw.trendUp.text":
+    "Boa evolução: suas últimas 3 partidas renderam {d}% mais rating do que as 3 anteriores.",
+  "cw.trendUp.tip":
+    "Identifique o que você mudou e transforme em rotina — mesmo aquecimento, mesmos mapas, mesma preparação.",
+  "cw.inconsistent.text":
+    "Seu desempenho varia muito de uma partida para outra: há jogos ótimos e jogos bem abaixo. A consistência é o que mais pesa no longo prazo.",
+  "cw.inconsistent.tip":
+    "Crie uma rotina fixa antes de jogar (aquecimento, configurações, foco) e compare as partidas boas com as ruins para achar a diferença.",
+  "cw.trendStable.text":
+    "Seu rating está estável nas últimas partidas, sem quedas nem saltos relevantes.",
+  "cw.trendStable.tip":
+    "Estabilidade é a base: escolha uma prioridade do treino para subir o seu nível a partir daqui.",
+  "cw.trendPending.text":
+    "Para falar da sua evolução preciso de pelo menos 6 partidas; agora são {n}.",
+  "cw.trendPending.tip":
+    "Continue enviando suas demos: a comparação entre partidas recentes e anteriores aparece automaticamente.",
+  "cw.balanced.text":
+    "Seus números principais estão equilibrados: nenhum ponto fraco evidente em dano, KAST ou duelos.",
+  "cw.balanced.tip":
+    "Para subir de nível, foque em uma especialidade e treine com objetivo — veja a primeira prioridade do treino.",
+  "cw.trainingFocus.text":
+    "Seu foco de treino agora é {dimension}: é onde seus números mostram o maior espaço para crescer.",
+  "cw.trainingFocus.tip":
+    "Siga os exercícios do plano para {dimension} pelo menos 3 vezes por semana e confira a evolução depois de novas partidas.",
+  "cw.trainingNone.text":
+    "Nenhum sinal está abaixo da referência no momento: seu treino pode ser de manutenção.",
+  "cw.trainingNone.tip":
+    "Mantenha o aquecimento diário e escolha um curso complementar para continuar evoluindo.",
+  "cw.scorePending.text":
+    "Seu CS2 PRO Score ainda não pode ser calculado: são necessárias {min} partidas completas com cobertura suficiente.",
+  "cw.scorePending.tip":
+    "Envie demos de partidas completas (sem abandono) para liberar o Score e a comparação entre seus sinais.",
+  "cw.dnaLow.text":
+    "Sua dimensão mais baixa no Player DNA é {dimension} ({v}/100). É o ponto do seu estilo que mais limita o seu jogo hoje.",
+  "cw.dnaLow.tip":
+    "Abra a dimensão {dimension} para ver os sinais que a puxam para baixo e treine um deles por vez.",
+  "cw.dnaTop.text":
+    "Sua especialidade é {dimension} ({v}/100): é o traço mais forte do seu estilo de jogo.",
+  "cw.dnaTop.tip":
+    "Procure funções e posições que usem essa força e combine-a com a sua dimensão mais baixa no treino.",
+  "cw.dnaEven.text":
+    "Seu Player DNA está equilibrado: nenhuma dimensão muito acima ou muito abaixo das outras.",
+  "cw.dnaEven.tip":
+    "Escolha uma dimensão para virar a sua especialidade e direcione o treino para ela.",
+  "cw.dnaPending.text":
+    "Seu Player DNA ainda está em formação: preciso de mais partidas para descrever o seu estilo.",
+  "cw.dnaPending.tip":
+    "Envie partidas completas em mapas e lados diferentes para que todas as dimensões tenham amostra.",
+  "cw.mapsPending.text":
+    "Ainda não há partidas suficientes em um mesmo mapa para classificar o seu melhor mapa (mínimo de {min}).",
+  "cw.mapsPending.tip":
+    "Jogue e envie mais partidas nos mapas da sua pool principal para a comparação ficar confiável.",
+  "cw.mapDevelop.text":
+    "{map} é o mapa em que você rende menos: {d}% abaixo da sua média. É o maior ganho rápido da sua pool.",
+  "cw.mapDevelop.tip":
+    "Estude 2 ou 3 posições padrão de {map} em cada lado e revise as suas mortes nesse mapa.",
+  "cw.mapBest.text": "{map} é o seu melhor mapa: você rende {d}% acima da sua média nele.",
+  "cw.mapBest.tip":
+    "Leve o que funciona em {map} (posições, tempo de rotação, granadas) para os seus mapas mais fracos.",
+  "cw.mapsEven.text": "Seu desempenho é parecido entre os mapas; {map} aparece um pouco à frente.",
+  "cw.mapsEven.tip":
+    "Uma pool equilibrada é uma vantagem: mantenha o volume de jogos em todos os mapas.",
+  "cw.goalsNone.text":
+    "Você ainda não definiu objetivos. Uma meta mensurável dá direção ao treino.",
+  "cw.goalsNone.tip":
+    "Crie um objetivo a partir da sua primeira prioridade, com uma meta realista para as próximas partidas.",
+  "cw.goalsProgress.text":
+    "{n} objetivo(s) ainda não alcançado(s). Os números das suas últimas partidas ainda estão abaixo da meta.",
+  "cw.goalsProgress.tip":
+    "Ligue cada objetivo a um exercício do treino e revise o avanço depois de cada sessão de jogos.",
+  "cw.goalsReached.text": "Objetivo cumprido: {n} meta(s) alcançada(s) nas suas últimas partidas.",
+  "cw.goalsReached.tip": "Suba a meta um degrau ou crie um novo objetivo para outra prioridade.",
+  "cw.goalsWaiting.text":
+    "Seus objetivos ainda não têm partidas suficientes para medir o progresso.",
+  "cw.goalsWaiting.tip": "Envie as demos das próximas partidas para acompanhar cada meta.",
+  "cw.matchShort.text": "Esta partida tem poucos rounds analisados para uma leitura confiável.",
+  "cw.matchShort.tip": "Use as abas de mortes e rounds para revisar os momentos que existem.",
+  "cw.matchGoodLoss.text":
+    "Derrota em {map}, mas o seu desempenho individual foi bom (ADR {adr}). O resultado não reflete tudo o que você fez.",
+  "cw.matchGoodLoss.tip":
+    "Revise os rounds perdidos com vantagem numérica: é onde o time deixou escapar a partida.",
+  "cw.matchSurvival.text":
+    "Em {map} você morreu em quase todos os rounds e contribuiu pouco (KAST {kast}%).",
+  "cw.matchSurvival.tip":
+    "Abra a aba de mortes: veja onde e como você caiu e qual posição se repetiu.",
+  "cw.matchDamage.text": "Excelente contribuição em dano em {map}: ADR {adr} nesta partida.",
+  "cw.matchDamage.tip":
+    "Veja nos rounds quantos desses danos viraram abates do time: comunicar inimigos feridos faz a diferença.",
+  "cw.matchTough.text":
+    "Partida difícil em {map}: poucos duelos vencidos e pouco dano (ADR {adr}).",
+  "cw.matchTough.tip":
+    "Escolha 3 mortes desta partida e veja o que você faria diferente — posição, tempo ou utilitário.",
+  "cw.matchSolidWin.text": "Vitória sólida em {map}: você contribuiu em {kast}% dos rounds.",
+  "cw.matchSolidWin.tip": "Salve um momento desta partida como referência do que funcionou.",
+  "cw.matchNeutral.text":
+    "Partida dentro do esperado em {map}: nenhum destaque extremo nem problema evidente nos seus números.",
+  "cw.matchNeutral.tip":
+    "Use o replay para revisar 2 rounds decisivos e encontrar um detalhe para melhorar.",
+  "cw.ask": 'Sobre a Palavra do Treinador: "{text}" O que devo treinar primeiro?',
 } as const;

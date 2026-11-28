@@ -1,13 +1,14 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bot, Maximize2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CoachChat } from "@/components/coach/CoachChat";
 import { RealCoachChat } from "@/components/coach/RealCoachChat";
 import { Button } from "@/components/ui/button";
 import { DEMO_DATA, FEATURES } from "@/config/app";
 import { useT } from "@/i18n";
+import { OPEN_COACH_EVENT, type OpenCoachDetail } from "@/lib/coachWord/coachWordBridge";
 
 /**
  * Floating access to the AI Coach at every width (UX-1 R-12 / M-10). A Radix dialog: Esc closes,
@@ -19,7 +20,18 @@ import { useT } from "@/i18n";
 export function CoachFab() {
   const t = useT();
   const [open, setOpen] = useState(false);
+  // VGL 5.0: a Palavra do Treinador card opens the drawer with a suggested question.
+  const [draft, setDraft] = useState<{ text: string; n: number } | null>(null);
   const onCoachPage = useRouterState({ select: (s) => s.location.pathname === "/coach" });
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent<OpenCoachDetail>).detail;
+      setDraft((prev) => ({ text: detail?.draft ?? "", n: (prev?.n ?? 0) + 1 }));
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_COACH_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_COACH_EVENT, onOpen);
+  }, []);
   if (onCoachPage) return null;
 
   return (
@@ -75,7 +87,11 @@ export function CoachFab() {
           {DEMO_DATA ? (
             <CoachChat className="min-h-0 flex-1" />
           ) : (
-            <RealCoachChat className="min-h-0 flex-1" />
+            <RealCoachChat
+              key={draft?.n ?? 0}
+              className="min-h-0 flex-1"
+              initialDraft={draft?.text}
+            />
           )}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

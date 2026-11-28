@@ -357,6 +357,7 @@ export function RealCoachChat({
   className,
   layout = "drawer",
   initialConversationId,
+  initialDraft,
 }: {
   className?: string | undefined;
   /**
@@ -367,12 +368,14 @@ export function RealCoachChat({
   layout?: "page" | "drawer";
   /** A conversation to open first (e.g. /coach?conversation=… from the floating chat). */
   initialConversationId?: string | undefined;
+  /** A suggested question placed in the composer (never sent automatically). */
+  initialDraft?: string | undefined;
 }) {
   const { t, intlTag, locale } = useI18n();
   const queryClient = useQueryClient();
   const state = useQuery({ queryKey: COACH_STATE_KEY, queryFn: () => getCoachState() });
   const prefs = useQuery({ queryKey: COACH_PREFERENCES_KEY, queryFn: () => getCoachPreferences() });
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(() => (initialDraft ?? "").slice(0, COACH_MAX_MESSAGE_CHARS));
   // UX-1.8: the page behind the drawer (or /coach itself) goes with each question.
   const location = useRouterState({ select: (st) => st.location });
   const screen = coachScreenFrom(location.pathname, location.search as Record<string, unknown>);

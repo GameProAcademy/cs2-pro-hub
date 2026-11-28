@@ -29,6 +29,7 @@ import {
 import type { OverviewMatch } from "@/lib/playerOverview";
 import { fill } from "@/lib/format";
 import { getMapPerformance, getMetrics, getSideSplit, getTrends } from "@/services/playerService";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export const Route = createFileRoute("/_authenticated/performance")({
   head: () => ({
@@ -59,6 +60,7 @@ function RealPerformancePage() {
           title={t("performance.title")}
           description={t("performance.description")}
         />
+        <CoachWordCard section="performance" />
         <ProScoreContext />
         <WithOverview>
           {(overview) =>

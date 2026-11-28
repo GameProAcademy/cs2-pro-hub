@@ -32,6 +32,7 @@ import { DNA_MIN_EVENT_SAMPLE, type RealPlayerDna } from "@/lib/playerDna";
 import { DNA_VERSION_V3 } from "@/lib/playerDnaV3";
 import { cn } from "@/lib/utils";
 import type { DnaDimension } from "@/types";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export const PLAYER_DNA_QUERY_KEY = ["player", "dna"] as const;
 
@@ -521,6 +522,7 @@ export function RealPlayerDnaPage() {
           title={t("dna.title")}
           description={t("real.dna.description")}
         />
+        <CoachWordCard section="playerDna" />
         {query.isPending ? (
           <LoadingState />
         ) : query.isError || !query.data ? (

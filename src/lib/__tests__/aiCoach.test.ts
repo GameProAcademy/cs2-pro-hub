@@ -507,7 +507,8 @@ describe("AI Coach server wiring", () => {
     const fab = readFileSync(resolve(__dirname, "../../components/coach/CoachFab.tsx"), "utf8");
     // Demo build → demonstration chat; real mode → the real Coach (no fixed replies).
     expect(fab.replace(/\s+/g, " ")).toMatch(
-      /DEMO_DATA \? \( <CoachChat className="[^"]*" \/> \) : \( <RealCoachChat className="[^"]*" \/> \)/,
+      // VGL 5.0: the real chat may start with a suggested question (never sent automatically).
+      /DEMO_DATA \? \( <CoachChat className="[^"]*" \/> \) : \( <RealCoachChat key=\{draft\?\.n \?\? 0\} className="[^"]*" initialDraft=\{draft\?\.text\} \/> \)/,
     );
   });
 });

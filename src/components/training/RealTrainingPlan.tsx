@@ -16,6 +16,7 @@ import { dnaLabelKey } from "@/lib/dna";
 import type { DnaDimension } from "@/types";
 import { getTrainingPlan } from "@/lib/training.functions";
 import type { TrainingPlanModel } from "@/lib/training/trainingPlan";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 function fill(text: string, vars: Record<string, string | number>): string {
   return text.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
@@ -57,6 +58,7 @@ export function RealTrainingPlan() {
         {/* UX-1.7 / R-13: one list, one engine (cs2.training-priority.v2); the adaptive plan
             below is built from it. The catalogue plan (trainingPlan.ts) is no longer a second
             list on this page. */}
+        <CoachWordCard section="training" />
         <TrainingOverview />
         <TrainingPrioritiesV2 />
         <AdaptiveTraining />

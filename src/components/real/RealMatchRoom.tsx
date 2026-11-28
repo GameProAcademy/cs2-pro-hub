@@ -37,6 +37,7 @@ import { getPlayerOverview } from "@/lib/playerData.functions";
 import type { OverviewMatch } from "@/lib/playerOverview";
 import { getMatchRounds } from "@/lib/rounds.functions";
 import { cn } from "@/lib/utils";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export const MATCH_ROOM_TABS = [
   "summary",
@@ -284,6 +285,7 @@ function RoomSummary({ m }: { m: OverviewMatch }) {
   const kd = m.kills !== null && m.deaths ? m.kills / m.deaths : null;
   return (
     <div className="space-y-6" data-room-summary>
+      <CoachWordCard section="match" match={m} />
       <section aria-label={t("room.kpis")} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MetricCard
           showDemoTag={false}

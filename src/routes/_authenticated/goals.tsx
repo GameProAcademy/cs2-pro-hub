@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { GoalsPanel } from "@/components/notifications/GoalsPanel";
 import { useT } from "@/i18n";
+import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 export const Route = createFileRoute("/_authenticated/goals")({
   head: () => ({ meta: [{ title: "Objetivos — CS2 PRO AI COACH" }] }),
@@ -16,6 +17,7 @@ function GoalsPage() {
     <AppShell>
       <div className="space-y-6">
         <PageHeader title={t("goals.title")} description={t("goals.description")} />
+        <CoachWordCard section="goals" />
         <GoalsPanel />
       </div>
     </AppShell>
