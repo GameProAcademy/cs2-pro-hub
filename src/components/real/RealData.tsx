@@ -7,7 +7,15 @@ import { MapTile } from "@/components/common/GameVisuals";
 import { ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Ban, CircleDashed, CircleHelp, Clock3, Fingerprint, ShieldAlert, Upload } from "lucide-react";
+import {
+  Ban,
+  CircleDashed,
+  CircleHelp,
+  Clock3,
+  Fingerprint,
+  ShieldAlert,
+  Upload,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
@@ -16,7 +24,12 @@ import { AppShell } from "@/components/layout/AppShell";
 import { MetricCard } from "@/components/common/MetricCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -247,14 +260,14 @@ function MatchColumnInfo({ label, help }: { label: string; help: string }) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={label}
-            data-match-column-help={label}
-          >
-            <CircleHelp className="size-3.5" aria-hidden />
-          </button>
+            <button
+              type="button"
+              className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={label}
+              data-match-column-help={label}
+            >
+              <CircleHelp className="size-3.5" aria-hidden />
+            </button>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs text-left leading-relaxed">
             {help}
