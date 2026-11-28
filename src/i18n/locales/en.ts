@@ -219,7 +219,7 @@ export const en: Dictionary = {
   "vgl4.overview.flash": "Flash assists",
   "vgl4.overview.go": "Explore the match",
   "vgl4.tabIntro.rounds": "Every round with side, economy, events and recorded positions.",
-  "vgl4.tabIntro.rounds.title": "Round-by-round details",
+  "vgl4.tabIntro.rounds.title": "Rounds",
   "vgl4.tabIntro.duels": "Your duels: who you killed, who killed you and with what.",
   "vgl4.tabIntro.deaths": "Each of your deaths, with weapon, context and replay at the tick.",
   "vgl4.tabIntro.utility": "Grenades thrown and their recorded effects.",
