@@ -21,8 +21,10 @@ import { adaptiveFr } from "./adaptive/fr";
 import { benchmarksFr } from "./benchmarks/fr";
 import { reviewFr } from "./review/fr";
 import { replayFr } from "./replay/fr";
+import { vgl5Fr } from "./vgl5/fr";
 
 export const fr: Dictionary = {
+  ...vgl5Fr,
   ...profileFr,
   ...spatialFr,
   ...diagnosisFr,
@@ -282,12 +284,6 @@ export const fr: Dictionary = {
     "Uniquement les snapshots enregistrés de la méthode actuelle ({version}) avec un profil complet. Chaque point est un snapshot ; les lacunes restent sans ligne et rien n'est interpolé.",
   "vgl.dna.trend.needTwo":
     "Il y a {n} snapshot(s) comparable(s) ; il en faut 2 de la méthode actuelle pour montrer l'évolution.",
-  "vgl.hero.lastMatch": "Dernier match",
-  "vgl.hero.openRoom": "Ouvrir la Salle du match",
-  "vgl.stat.openings": "Ouvertures",
-  "vgl.stat.trades": "Échanges",
-  "vgl.stat.flashAssists": "Assist. flash",
-  "vgl.stat.clutches": "Clutchs (G/T)",
   "vgl.matches.recent": "Matchs récents",
   "vgl.mapPool.subtitle": "Cartes de vos matchs analysés et nombre de matchs sur chacune.",
   "vgl.mapPool.matches": "{n} matchs",

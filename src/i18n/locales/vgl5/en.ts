@@ -1,0 +1,33 @@
+/** VGL 5.0 — en. */
+export const vgl5En = {
+  "bestMap.eyebrow": "Your best map",
+  "bestMap.tier.BEST": "Your best map",
+  "bestMap.tier.SECOND": "Your second-best map",
+  "bestMap.tier.THIRD": "Your third-best map",
+  "bestMap.tier.MEDIAN": "Your middle map",
+  "bestMap.tier.DEVELOP": "Map to develop",
+  "bestMap.tier.PROVISIONAL": "Not enough matches",
+  "bestMap.tier.NO_DATA": "Waiting for matches",
+  "bestMap.short.BEST": "Best",
+  "bestMap.short.SECOND": "2nd best",
+  "bestMap.short.THIRD": "3rd best",
+  "bestMap.short.MEDIAN": "Middle",
+  "bestMap.short.DEVELOP": "To develop",
+  "bestMap.short.PROVISIONAL": "Small sample",
+  "bestMap.short.NO_DATA": "No matches",
+  "bestMap.matches": "{n} match(es) analysed",
+  "bestMap.vsAverage": "Performance vs your average",
+  "bestMap.vsAverageValue": "{v}% vs your average",
+  "bestMap.confidence.label": "Ranking confidence",
+  "bestMap.confidence.PROVISIONAL": "Provisional (3–4 matches)",
+  "bestMap.confidence.MODERATE": "Moderate (5–9 matches)",
+  "bestMap.confidence.HIGH": "High (10 matches or more)",
+  "bestMap.winRate": "Win rate",
+  "bestMap.empty.title": "Waiting for more matches",
+  "bestMap.empty.description":
+    "Your best map appears once a map of the current pool has at least {min} complete analysed matches. No map is ranked without data.",
+  "bestMap.method":
+    "Personal ranking ({version}): each map against your own average — rating, ADR, KAST, K/D and wins, recent matches weigh more and small samples are corrected. Not a comparison with other players.",
+  "bestMap.open": "See maps",
+  "bestMap.rankBadge": "Ranking: {tier}",
+} as const;

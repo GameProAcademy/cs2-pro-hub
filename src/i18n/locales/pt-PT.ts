@@ -21,8 +21,10 @@ import { adaptivePtPT } from "./adaptive/pt-PT";
 import { benchmarksPtPT } from "./benchmarks/pt-PT";
 import { reviewPtPT } from "./review/pt-PT";
 import { replayPtPT } from "./replay/pt-PT";
+import { vgl5PtPT } from "./vgl5/pt-PT";
 
 export const ptPT: Dictionary = {
+  ...vgl5PtPT,
   ...profilePtPT,
   ...spatialPtPT,
   ...diagnosisPtPT,
@@ -279,12 +281,6 @@ export const ptPT: Dictionary = {
     "Só snapshots guardados do método atual ({version}) com perfil completo. Cada ponto é um snapshot; as lacunas ficam sem linha e nada é interpolado.",
   "vgl.dna.trend.needTwo":
     "Há {n} snapshot(s) comparável(is); são necessários 2 do método atual para mostrar a evolução.",
-  "vgl.hero.lastMatch": "Última partida",
-  "vgl.hero.openRoom": "Abrir a Sala da Partida",
-  "vgl.stat.openings": "Aberturas",
-  "vgl.stat.trades": "Trocas",
-  "vgl.stat.flashAssists": "Assist. de flash",
-  "vgl.stat.clutches": "Clutches (G/T)",
   "vgl.matches.recent": "Partidas recentes",
   "vgl.mapPool.subtitle": "Mapas das suas partidas analisadas e quantas partidas há em cada um.",
   "vgl.mapPool.matches": "{n} partidas",

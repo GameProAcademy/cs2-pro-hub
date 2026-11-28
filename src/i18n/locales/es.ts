@@ -21,8 +21,10 @@ import { adaptiveEs } from "./adaptive/es";
 import { benchmarksEs } from "./benchmarks/es";
 import { reviewEs } from "./review/es";
 import { replayEs } from "./replay/es";
+import { vgl5Es } from "./vgl5/es";
 
 export const es: Dictionary = {
+  ...vgl5Es,
   ...profileEs,
   ...spatialEs,
   ...diagnosisEs,
@@ -278,12 +280,6 @@ export const es: Dictionary = {
     "Solo snapshots guardados del método actual ({version}) con perfil completo. Cada punto es un snapshot; los huecos quedan sin línea y nada se interpola.",
   "vgl.dna.trend.needTwo":
     "Hay {n} snapshot(s) comparable(s); se necesitan 2 del método actual para mostrar la evolución.",
-  "vgl.hero.lastMatch": "Última partida",
-  "vgl.hero.openRoom": "Abrir la Sala de la Partida",
-  "vgl.stat.openings": "Aperturas",
-  "vgl.stat.trades": "Intercambios",
-  "vgl.stat.flashAssists": "Asist. de flash",
-  "vgl.stat.clutches": "Clutches (G/I)",
   "vgl.matches.recent": "Partidas recientes",
   "vgl.mapPool.subtitle": "Mapas de tus partidas analizadas y cuántas partidas hay en cada uno.",
   "vgl.mapPool.matches": "{n} partidas",

@@ -25,8 +25,10 @@ import { adaptivePtBR } from "./adaptive/pt-BR";
 import { benchmarksPtBR } from "./benchmarks/pt-BR";
 import { reviewPtBR } from "./review/pt-BR";
 import { replayPtBR } from "./replay/pt-BR";
+import { vgl5PtBR } from "./vgl5/pt-BR";
 
 export const ptBR = {
+  ...vgl5PtBR,
   ...profilePtBR,
   ...spatialPtBR,
   ...diagnosisPtBR,
@@ -282,12 +284,6 @@ export const ptBR = {
     "Só snapshots salvos do método atual ({version}) com perfil completo. Cada ponto é um snapshot; lacunas ficam sem linha e nada é interpolado.",
   "vgl.dna.trend.needTwo":
     "Há {n} snapshot(s) comparável(is); são necessários 2 do método atual para mostrar a evolução.",
-  "vgl.hero.lastMatch": "Última partida",
-  "vgl.hero.openRoom": "Abrir a Sala da Partida",
-  "vgl.stat.openings": "Aberturas",
-  "vgl.stat.trades": "Trocas",
-  "vgl.stat.flashAssists": "Assist. de flash",
-  "vgl.stat.clutches": "Clutches (V/T)",
   "vgl.matches.recent": "Partidas recentes",
   "vgl.mapPool.subtitle": "Mapas das suas partidas analisadas e quantas partidas há em cada um.",
   "vgl.mapPool.matches": "{n} partidas",

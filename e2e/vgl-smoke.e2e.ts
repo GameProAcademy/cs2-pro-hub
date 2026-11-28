@@ -136,7 +136,7 @@ test("VGL smoke — every player screen, seven widths, AI Coach", async ({ page 
   // VGL 2.0 scenes: real artwork decoded and masks applied.
   const scenes: Record<string, unknown> = {};
   for (const [path, selector] of [
-    ["/dashboard", "[data-last-match-hero]"],
+    ["/dashboard", "[data-best-map-hero]"],
     ["/matches", "[data-match-card]"],
     ["/player-dna", "[data-dna-card]"],
     ["/maps", "[data-map-gallery-item]"],

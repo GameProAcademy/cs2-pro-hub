@@ -21,8 +21,10 @@ import { adaptiveEn } from "./adaptive/en";
 import { benchmarksEn } from "./benchmarks/en";
 import { reviewEn } from "./review/en";
 import { replayEn } from "./replay/en";
+import { vgl5En } from "./vgl5/en";
 
 export const en: Dictionary = {
+  ...vgl5En,
   ...profileEn,
   ...spatialEn,
   ...diagnosisEn,
@@ -277,12 +279,6 @@ export const en: Dictionary = {
     "Only saved snapshots of the current method ({version}) with a complete profile. Each point is a snapshot; gaps stay without a line and nothing is interpolated.",
   "vgl.dna.trend.needTwo":
     "There are {n} comparable snapshot(s); 2 of the current method are needed to show the evolution.",
-  "vgl.hero.lastMatch": "Latest match",
-  "vgl.hero.openRoom": "Open the Match Room",
-  "vgl.stat.openings": "Opening kills",
-  "vgl.stat.trades": "Trade kills",
-  "vgl.stat.flashAssists": "Flash assists",
-  "vgl.stat.clutches": "Clutches (W/A)",
   "vgl.matches.recent": "Recent matches",
   "vgl.mapPool.subtitle": "Maps of your analysed matches and how many matches each one has.",
   "vgl.mapPool.matches": "{n} matches",
