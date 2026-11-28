@@ -81,9 +81,13 @@ describe("matches table and room (source contracts)", () => {
   });
 
   it("match date and result explanations use the click-triggered dark popover pattern", () => {
-    expect(data).toContain('import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";');
+    expect(data).toContain(
+      'import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";',
+    );
     expect(data).toContain("<PopoverTrigger asChild>");
-    expect(data).toContain('<PopoverContent className="w-72 text-left normal-case tracking-normal"');
+    expect(data).toContain(
+      '<PopoverContent className="w-72 text-left normal-case tracking-normal"',
+    );
     expect(data).toContain('help={t("real.date.processedNote")}');
     expect(data).toContain('help={t("real.result.unresolvedNote")}');
     expect(data).not.toContain("TooltipProvider");
