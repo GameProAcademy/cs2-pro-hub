@@ -27,6 +27,7 @@ import { useAccount } from "@/hooks/useAccount";
 import { signOutEverywhere } from "@/lib/auth";
 import { fill } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { InstallAppButton, InstallInvite } from "@/components/pwa/InstallApp";
 
 /** VGL 5.0 — the visual language of "you are here": surface, side bar, weight and colour. */
 const ACTIVE_ITEM =
@@ -174,6 +175,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
         </p>
         <NavLinks onNavigate={onNavigate} />
       </div>
+      {/* VGL 5.1 (Frente 1): discreet, only while the app is not installed. */}
+      <InstallAppButton />
       {adminSession ? (
         <Button
           asChild
@@ -258,6 +261,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <DialogPrimitive.Root open={mobileOpen} onOpenChange={setMobileOpen}>
       <div className="min-h-screen min-w-0 overflow-x-clip bg-background bg-[radial-gradient(1200px_600px_at_80%_-10%,color-mix(in_oklch,var(--primary)_6%,transparent),transparent)]">
+        <InstallInvite />
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border bg-sidebar lg:block">
           <SidebarContent />
