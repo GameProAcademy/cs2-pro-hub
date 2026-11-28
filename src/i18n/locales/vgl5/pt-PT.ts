@@ -276,4 +276,7 @@ export const vgl5PtPT = {
   "cw.xrayGaps.tip":
     "Veja no fim da página o que o CS2 PRO ainda não mede e envie demos completas para fechar as lacunas.",
   "vgl51.score.top": "Maiores contribuições",
+  "real.dna.statusShort.NO_SAMPLE": "Sem amostra",
+  "real.dna.statusShort.NOT_MEASURED": "Não medido",
+  "vgl51.dna.dimensions": "Todas as dimensões",
 } as const;

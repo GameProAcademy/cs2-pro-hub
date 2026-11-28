@@ -600,7 +600,7 @@ describe("VGL 5.0 — Player DNA card in focus beside the radar", () => {
   it("READY: the default focus is the highest index; it is not repeated in the list below", () => {
     const page = render(<DnaBody dna={publishableDna(dna("READY"))} />);
     expect(page).toContain("data-dna-focus-layout");
-    expect(page).toContain("lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]");
+    expect(page).toContain("lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]");
     const top = Object.entries(VALUES)
       .filter((e): e is [string, number] => e[1] !== null)
       .sort((a, b) => b[1] - a[1])[0]![0];

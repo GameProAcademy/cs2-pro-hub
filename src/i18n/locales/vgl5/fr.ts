@@ -279,4 +279,7 @@ export const vgl5Fr = {
   "cw.xrayGaps.tip":
     "Regarde en bas de page ce que CS2 PRO ne mesure pas encore et envoie des démos complètes pour combler les manques.",
   "vgl51.score.top": "Plus fortes contributions",
+  "real.dna.statusShort.NO_SAMPLE": "Pas d’échantillon",
+  "real.dna.statusShort.NOT_MEASURED": "Non mesuré",
+  "vgl51.dna.dimensions": "Toutes les dimensions",
 } as const;
