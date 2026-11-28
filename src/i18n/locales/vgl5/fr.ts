@@ -1,0 +1,33 @@
+/** VGL 5.0 — fr. */
+export const vgl5Fr = {
+  "bestMap.eyebrow": "Ta meilleure carte",
+  "bestMap.tier.BEST": "Ta meilleure carte",
+  "bestMap.tier.SECOND": "Ta deuxième meilleure carte",
+  "bestMap.tier.THIRD": "Ta troisième meilleure carte",
+  "bestMap.tier.MEDIAN": "Ta carte intermédiaire",
+  "bestMap.tier.DEVELOP": "Carte à travailler",
+  "bestMap.tier.PROVISIONAL": "Échantillon insuffisant",
+  "bestMap.tier.NO_DATA": "En attente de matchs",
+  "bestMap.short.BEST": "Meilleure",
+  "bestMap.short.SECOND": "2ᵉ meilleure",
+  "bestMap.short.THIRD": "3ᵉ meilleure",
+  "bestMap.short.MEDIAN": "Intermédiaire",
+  "bestMap.short.DEVELOP": "À travailler",
+  "bestMap.short.PROVISIONAL": "Petit échantillon",
+  "bestMap.short.NO_DATA": "Aucun match",
+  "bestMap.matches": "{n} match(s) analysé(s)",
+  "bestMap.vsAverage": "Performance vs ta moyenne",
+  "bestMap.vsAverageValue": "{v} % vs ta moyenne",
+  "bestMap.confidence.label": "Fiabilité du classement",
+  "bestMap.confidence.PROVISIONAL": "Provisoire (3–4 matchs)",
+  "bestMap.confidence.MODERATE": "Modérée (5–9 matchs)",
+  "bestMap.confidence.HIGH": "Élevée (10 matchs ou plus)",
+  "bestMap.winRate": "Taux de victoire",
+  "bestMap.empty.title": "En attente de plus de matchs",
+  "bestMap.empty.description":
+    "Ta meilleure carte apparaît dès qu’une carte du pool actuel compte au moins {min} matchs complets analysés. Aucune carte n’est classée sans données.",
+  "bestMap.method":
+    "Classement personnel ({version}) : chaque carte face à ta propre moyenne — rating, ADR, KAST, K/D et victoires, les matchs récents comptent davantage et les petits échantillons sont corrigés. Ce n’est pas une comparaison avec d’autres joueurs.",
+  "bestMap.open": "Voir les cartes",
+  "bestMap.rankBadge": "Classement : {tier}",
+} as const;

@@ -7,6 +7,7 @@
  */
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { MapTierBadge, useOverviewMapRanking } from "@/components/cs2/BestMap";
 import { MapIdentityPanel } from "@/components/cs2/MapIdentity";
 import { CircleDashed, MapPinned } from "lucide-react";
 import { useMemo, useState, type CSSProperties } from "react";
@@ -26,11 +27,12 @@ import {
   type HeatmapResult,
   type SideFilter,
 } from "@/lib/spatial/heatmap";
-import { mapDisplayName } from "@/lib/cs2/maps";
+import { mapDisplayName, normalizeMapCode } from "@/lib/cs2/maps";
+import { tierOf, type MapRanking } from "@/lib/maps/mapRanking";
 import { MapTile } from "@/components/common/GameVisuals";
 import { MapArt, MapEmblem } from "@/components/cs2/Cs2Art";
 import { cn } from "@/lib/utils";
-import { MAP_OVERVIEWS, RADAR_SIZE, type MapLevel } from "@/lib/spatial/maps";
+import { MAP_OVERVIEWS, RADAR_SIZE, mapSupport, type MapLevel } from "@/lib/spatial/maps";
 import { radarAsset } from "@/lib/spatial/radarAssets";
 import {
   getSpatialHeatmap,
@@ -109,6 +111,8 @@ export function HeatmapBody({
   onSearch: (next: HeatmapSearch) => void;
 }) {
   const t = useT();
+  // VGL 5.0: one ranking (map-rank-v1) for the identity panel and the gallery labels.
+  const ranking = useOverviewMapRanking();
   if (!r.heatmap || !r.maps.length)
     return (
       <EmptyState
@@ -121,8 +125,13 @@ export function HeatmapBody({
   return (
     <div className="space-y-6" data-heatmap-status={h.events.status} data-map-support={h.support}>
       <MatchSelectSlot>
-        <MapGallery maps={r.maps} current={h.map} onPick={(map) => onSearch({ map })} />
-        <MapIdentityPanel map={h.map} support={h.support} />
+        <MapGallery
+          maps={r.maps}
+          current={h.map}
+          onPick={(map) => onSearch({ map })}
+          ranking={ranking}
+        />
+        <BestMapIdentity ranking={ranking} maps={r.maps} fallback={h} />
       </MatchSelectSlot>
       <Filters r={r} h={h} search={search} onSearch={onSearch} />
       {h.support !== "SUPPORTED" ? (
@@ -175,14 +184,38 @@ function Select<T extends string>({
  * VGL 2.0: the player's maps as in-game scenes. Same choice as the map select (same handler);
  * each card shows the real number of matches and the support state the server returned.
  */
+/**
+ * VGL 5.0: the "selected map" panel now presents the player's BEST map (map-rank-v1). Before a
+ * map can be ranked, it keeps showing the selected map with the honest "waiting" state.
+ */
+function BestMapIdentity({
+  ranking,
+  maps,
+  fallback,
+}: {
+  ranking: MapRanking | null;
+  maps: SpatialMapOption[];
+  fallback: HeatmapResult;
+}) {
+  const best = ranking?.best ?? null;
+  const raw = best ? (maps.find((m) => normalizeMapCode(m.map) === best.map)?.map ?? null) : null;
+  if (best && raw)
+    return <MapIdentityPanel map={raw} support={mapSupport(raw).status} rank={best} />;
+  return (
+    <MapIdentityPanel map={fallback.map} support={fallback.support} rankingState={ranking?.state} />
+  );
+}
+
 function MapGallery({
   maps,
   current,
   onPick,
+  ranking,
 }: {
   maps: SpatialMapOption[];
   current: string;
   onPick: (map: string) => void;
+  ranking: MapRanking | null;
 }) {
   const t = useT();
   return (
@@ -221,6 +254,12 @@ function MapGallery({
             </MapArt>
             <span className="block truncate bg-card px-3 py-2 font-display text-sm font-semibold uppercase tracking-wide text-foreground">
               {mapDisplayName(m.map)}
+              {(() => {
+                const rank = ranking ? tierOf(ranking, m.map) : null;
+                return rank ? (
+                  <MapTierBadge rank={rank} className="mt-1 flex w-fit font-sans normal-case" />
+                ) : null;
+              })()}
               {m.support !== "SUPPORTED" ? (
                 <span className="block font-sans text-xs font-normal normal-case tracking-normal text-muted-foreground">
                   {t(`spatial.support.${m.support}` as TranslationKey)}

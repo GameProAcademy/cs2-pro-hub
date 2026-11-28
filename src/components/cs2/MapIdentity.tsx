@@ -18,6 +18,13 @@ import type { OverviewMatch } from "@/lib/playerOverview";
 import type { MapSupport } from "@/lib/spatial/maps";
 import { normalizeMapName } from "@/lib/spatial/maps";
 import { radarAsset } from "@/lib/spatial/radarAssets";
+import {
+  MAP_RANK_MIN_MATCHES,
+  MAP_RANK_VERSION,
+  type MapRank,
+  type MapRankingState,
+} from "@/lib/maps/mapRanking";
+import { BestMapFacts, BestMapVerdict } from "@/components/cs2/BestMap";
 import { cn } from "@/lib/utils";
 
 /** The player's matches on one map, newest first, and the date span. Pure. */
@@ -32,7 +39,19 @@ export function matchesOnMap(matches: ReadonlyArray<OverviewMatch>, map: string)
   };
 }
 
-export function MapIdentityPanel({ map, support }: { map: string; support: MapSupport["status"] }) {
+export function MapIdentityPanel({
+  map,
+  support,
+  rank,
+  rankingState,
+}: {
+  map: string;
+  support: MapSupport["status"];
+  /** VGL 5.0: the map's place in map-rank-v1 (the panel then presents the BEST map). */
+  rank?: MapRank | null;
+  /** When no map is ranked yet: why (EMPTY / INSUFFICIENT), to show the waiting state. */
+  rankingState?: MapRankingState | undefined;
+}) {
   const t = useT();
   const { intlTag } = useI18n();
   const q = usePlayerOverview();
@@ -52,7 +71,7 @@ export function MapIdentityPanel({ map, support }: { map: string; support: MapSu
             <MapEmblem map={map} className="size-16 sm:size-20" />
             <div className="min-w-0">
               <p className="font-mono text-xs uppercase tracking-[0.22em] text-primary">
-                {t("vgl4.map.eyebrow")}
+                {rank ? t(`bestMap.tier.${rank.tier}` as TranslationKey) : t("vgl4.map.eyebrow")}
               </p>
               <h2
                 id="map-identity-title"
@@ -62,6 +81,23 @@ export function MapIdentityPanel({ map, support }: { map: string; support: MapSu
               </h2>
             </div>
           </div>
+          {rank ? (
+            <>
+              <BestMapVerdict rank={rank} className="mt-3" />
+              <BestMapFacts rank={rank} />
+              <p className="mt-3 text-xs text-muted-foreground" data-best-map-method>
+                {fill(t("bestMap.method"), { version: MAP_RANK_VERSION })}
+              </p>
+            </>
+          ) : rankingState === "EMPTY" || rankingState === "INSUFFICIENT" ? (
+            <p
+              className="mt-3 max-w-xl text-sm text-muted-foreground"
+              data-best-map-waiting={rankingState}
+            >
+              {t("bestMap.empty.title")} —{" "}
+              {fill(t("bestMap.empty.description"), { min: MAP_RANK_MIN_MATCHES })}
+            </p>
+          ) : null}
           <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" data-map-identity-facts>
             <div className="rounded-lg border border-border bg-background/60 p-3">
               <dt className="text-xs text-muted-foreground">{t("vgl4.map.matches")}</dt>

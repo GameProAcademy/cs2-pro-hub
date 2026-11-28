@@ -1,0 +1,33 @@
+/** VGL 5.0 — pt-PT. */
+export const vgl5PtPT = {
+  "bestMap.eyebrow": "O seu melhor mapa",
+  "bestMap.tier.BEST": "O seu melhor mapa",
+  "bestMap.tier.SECOND": "O seu segundo melhor mapa",
+  "bestMap.tier.THIRD": "O seu terceiro melhor mapa",
+  "bestMap.tier.MEDIAN": "O seu mapa mediano",
+  "bestMap.tier.DEVELOP": "Mapa a desenvolver",
+  "bestMap.tier.PROVISIONAL": "Amostra insuficiente",
+  "bestMap.tier.NO_DATA": "A aguardar jogos",
+  "bestMap.short.BEST": "Melhor",
+  "bestMap.short.SECOND": "2.º melhor",
+  "bestMap.short.THIRD": "3.º melhor",
+  "bestMap.short.MEDIAN": "Mediano",
+  "bestMap.short.DEVELOP": "A desenvolver",
+  "bestMap.short.PROVISIONAL": "Amostra pequena",
+  "bestMap.short.NO_DATA": "Sem jogos",
+  "bestMap.matches": "{n} jogo(s) analisado(s)",
+  "bestMap.vsAverage": "Desempenho face à sua média",
+  "bestMap.vsAverageValue": "{v}% face à sua média",
+  "bestMap.confidence.label": "Confiança da classificação",
+  "bestMap.confidence.PROVISIONAL": "Provisória (3–4 jogos)",
+  "bestMap.confidence.MODERATE": "Moderada (5–9 jogos)",
+  "bestMap.confidence.HIGH": "Alta (10 jogos ou mais)",
+  "bestMap.winRate": "Taxa de vitória",
+  "bestMap.empty.title": "A aguardar mais jogos",
+  "bestMap.empty.description":
+    "O seu melhor mapa aparece quando um mapa da rotação atual tiver pelo menos {min} jogos completos analisados. Nenhum mapa é classificado sem dados.",
+  "bestMap.method":
+    "Classificação pessoal ({version}): cada mapa face à sua própria média — rating, ADR, KAST, K/D e vitórias, com mais peso para jogos recentes e correção para amostras pequenas. Não é comparação com outros jogadores.",
+  "bestMap.open": "Ver mapas",
+  "bestMap.rankBadge": "Classificação: {tier}",
+} as const;

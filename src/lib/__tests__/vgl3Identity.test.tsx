@@ -72,7 +72,8 @@ describe("latestSpecialties", () => {
 describe("Home and matches layout contracts", () => {
   const src = (p: string) => readFileSync(resolve(p), "utf8");
   it("hero CTA takes its own row on phones", () => {
-    expect(src("src/components/cs2/MatchVisuals.tsx")).toMatch(
+    // VGL 5.0: the home hero is the best map scene (same CTA contract).
+    expect(src("src/components/cs2/BestMap.tsx")).toMatch(
       /w-full items-center justify-center[^"]*sm:w-auto"\s*data-hero-cta/,
     );
   });

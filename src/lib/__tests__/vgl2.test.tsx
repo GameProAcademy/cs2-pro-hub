@@ -77,54 +77,45 @@ describe("radial gauge", () => {
   });
 });
 
-describe("last match hero", () => {
-  it("shows real events and the em dash for missing ones", async () => {
-    const { LastMatchHero } = await import("@/components/cs2/MatchVisuals");
-    const m = {
-      matchId: "a",
-      map: "de_mirage",
-      playedAt: "2026-11-25T20:00:00Z",
-      dateSource: "played",
-      resultStatus: "RESOLVED",
-      result: "win",
-      scorePlayer: 13,
-      scoreOpponent: 9,
-      source: "demo",
-      kills: 21,
-      deaths: 14,
-      assists: 4,
-      adr: 88.4,
-      kast: 74,
-      hsPercent: 52,
-      rating: 1.1,
-      firstKills: null,
-      firstDeaths: null,
-      tradeKills: 3,
-      flashAssists: 2,
-      utilityDamage: 64,
-      clutchAttempts: 2,
-      clutchWins: null,
-    } as never;
+describe("best map hero (VGL 5.0, replaces the last match scene)", () => {
+  it("shows the ranked best map with its facts, or an honest waiting state", async () => {
+    const { BestMapHero } = await import("@/components/cs2/BestMap");
+    const match = (i: number, map: string, rating: number) =>
+      ({
+        matchId: `m${i}`,
+        map,
+        playedAt: `2026-11-${String(10 + i).padStart(2, "0")}T20:00:00Z`,
+        result: "win",
+        kills: 20,
+        deaths: 15,
+        adr: 80 + rating,
+        kast: 72,
+        hsPercent: 45,
+        rating,
+        roundsPlayed: 24,
+      }) as never;
+    const matches = [
+      ...[0, 1, 2, 3].map((i) => match(i, "de_mirage", 1.3)),
+      ...[4, 5, 6].map((i) => match(i, "de_nuke", 0.9)),
+    ];
     const html = renderToString(
       <I18nProvider initialLocale="pt-BR">
-        <LastMatchHero m={m} />
+        <BestMapHero matches={matches} />
       </I18nProvider>,
     );
+    expect(html).toContain('data-best-map-hero="mirage"');
     expect(html).toContain('data-map-art="de_mirage"');
-    expect(html).toContain(">21<");
-    // Unknown opening kills → em dash in a dashed cell; unknown clutch wins → "—/2".
-    expect(html).toContain("border-dashed");
-    expect(html).toContain("—/2");
+    expect(html).toContain("data-best-map-facts");
+    const none = renderToString(
+      <I18nProvider initialLocale="en">
+        <BestMapHero matches={[match(0, "de_mirage", 1.3)]} />
+      </I18nProvider>,
+    );
+    expect(none).toContain('data-best-map-hero="none"');
+    expect(none).toContain("Waiting for more matches");
+    expect(none).not.toContain("data-best-map-facts");
     for (const l of LOCALES)
-      for (const k of [
-        "vgl.hero.lastMatch",
-        "vgl.hero.openRoom",
-        "vgl.stat.openings",
-        "vgl.stat.trades",
-        "vgl.stat.flashAssists",
-        "vgl.stat.clutches",
-        "vgl.matches.recent",
-      ] as const)
+      for (const k of ["bestMap.eyebrow", "bestMap.empty.title", "vgl.matches.recent"] as const)
         expect(dictionaries[l][k], `${l} ${k}`).toBeTruthy();
   });
 });
