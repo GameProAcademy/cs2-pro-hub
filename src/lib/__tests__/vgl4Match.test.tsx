@@ -141,6 +141,10 @@ describe("MatchOverview and TabIntro", () => {
     expect(html).toContain("1,20");
     expect(html.match(/data-overview-link=/g)).toHaveLength(ROOM_DETAIL_TABS.length);
   });
+  it("the match overview rounds shortcut is labeled Rounds in every locale", () => {
+    for (const locale of ["pt-BR", "pt-PT", "en", "es", "fr"] as Locale[])
+      expect(dictionaries[locale]["vgl4.tabIntro.rounds.title"]).toBe("Rounds");
+  });
   it("tab intros and new strings in five locales", () => {
     expect(render(<TabIntro tab="rounds" />)).toContain('data-tab-intro="rounds"');
     const keys = Object.keys(dictionaries["pt-BR"]).filter((k) => k.startsWith("vgl4."));
