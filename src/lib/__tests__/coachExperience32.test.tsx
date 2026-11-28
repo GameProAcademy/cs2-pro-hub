@@ -166,6 +166,11 @@ describe("the chat UI uses real server functions only", () => {
     expect(ui).not.toMatch(/placeholderReply|getCoachHistory|setTimeout/);
   });
 
+  it("delete conversation keeps its accessible label but visually hides text on mobile", () => {
+    expect(controls).toContain('<span className="max-sm:sr-only">{t("coach2.delete")}</span>');
+    expect(controls).toContain('aria-label={t("coach2.delete")}');
+  });
+
   it("the onboarding is optional and dismissible; storage failures never break the chat", () => {
     expect(ui).toContain("prefs.data?.saved === false");
     expect(ui).toMatch(/try \{\s*return globalThis\.localStorage\?\.getItem/);
