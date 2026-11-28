@@ -254,19 +254,19 @@ function MatchColumnInfo({ label, help }: { label: string; help: string }) {
       {label}
       <Popover>
         <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={label}
-              data-match-column-help={label}
-            >
-              <CircleHelp className="size-3.5" aria-hidden />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 text-left normal-case tracking-normal" align="start">
-            <p className="text-xs leading-relaxed text-muted-foreground">{help}</p>
-          </PopoverContent>
-        </Popover>
+          <button
+            type="button"
+            className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={label}
+            data-match-column-help={label}
+          >
+            <CircleHelp className="size-3.5" aria-hidden />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 text-left normal-case tracking-normal" align="start">
+          <p className="text-xs leading-relaxed text-muted-foreground">{help}</p>
+        </PopoverContent>
+      </Popover>
     </span>
   );
 }
