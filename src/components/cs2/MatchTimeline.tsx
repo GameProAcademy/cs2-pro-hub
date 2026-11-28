@@ -241,10 +241,10 @@ export function RoundJump({
   return (
     <nav
       aria-label={t("vgl3.jump.label")}
-      className="mb-4 min-h-14 overflow-y-hidden"
+      className="mb-4 min-h-[78px] overflow-y-hidden"
       data-round-jump
     >
-      <ol className="flex min-h-14 items-start gap-1.5 overflow-x-auto overflow-y-hidden pb-1">
+      <ol className="flex min-h-[78px] items-center gap-1.5 overflow-x-auto overflow-y-hidden pl-1">
         {rounds.map((r) => {
           const state = r.side && r.won !== null ? (r.won ? "won" : "lost") : "unknown";
           const label = fill(t("room.strip.round"), {

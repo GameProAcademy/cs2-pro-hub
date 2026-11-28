@@ -55,7 +55,7 @@ export const roundsPtBR = {
     "Clutch = você é o último vivo da equipe contra N adversários; vencido = round vencido e você sobreviveu. Uma partida não define um jogador de clutch.",
   "rounds.me.byOwnBuy": "Pela sua compra",
   "rounds.me.byOwnBuyValue": "{r} rounds · {k}K {d}D · {adr} de dano/round",
-  "rounds.section.list": "Rounds",
+  "rounds.section.list": "Detalhes de cada rodada",
   "rounds.section.list.subtitle":
     "Abra um round para ver a sequência de eventos, a contagem de vivos e o replay 2D no momento exato.",
   "rounds.roundN": "Round {n}",
