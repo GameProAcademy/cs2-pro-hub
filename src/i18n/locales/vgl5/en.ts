@@ -48,4 +48,7 @@ export const vgl5En = {
   "vgl5.training.above": "{d} points above the reference",
   "vgl5.training.legend":
     "How to read: the bar is your value, the line is the signal's fixed reference and the light band is the confidence interval. The further below the reference, the higher the priority.",
+  "vgl5.dna.legendTip": "How to read the indexes",
+  "vgl5.dna.focusDefault": "In focus: your highest index",
+  "vgl5.dna.focusSelected": "In focus: selected dimension",
 } as const;

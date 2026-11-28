@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
 import { ChartCard } from "@/components/common/ChartCard";
+import { InfoTip } from "@/components/common/InfoTip";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { Cs2Mask, RadialGauge } from "@/components/cs2/Cs2Art";
 import { DNA_ICON, DnaSignature, DnaTrend } from "@/components/cs2/DnaVisuals";
@@ -57,6 +58,12 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   // Below the minimum sample, dimension indexes are not a profile: no radar, no "N / 100".
   const stable = dna.state === "READY";
   const ranks = dimensionRanks(dna.dimensions);
+  // VGL 5.0: the card in focus beside the radar — the selected dimension, else (default) the
+  // highest measured index (same signature rule as the identity card). Shown only with the radar.
+  const lead = [...ranks.entries()].find(([, r]) => r.rank === 1)?.[0] ?? null;
+  const focusDim =
+    selectedDim ?? dna.dimensions.find((d) => d.dimension === lead) ?? dna.dimensions[0] ?? null;
+  const focusOn = stable && observed.length >= 3 && focusDim !== null;
   return (
     <div className="space-y-8">
       {stable ? (
@@ -114,161 +121,251 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
         </p>
       ) : null}
       {stable && observed.length >= 3 ? (
-        <ChartCard showDemoTag={false} title={t("dna.radarTitle")}>
-          {/* UX-1.6 / R-14: radar A — ten axes always, empty axes dashed, one selection. */}
-          <DnaRadarA axes={axes} selected={selected} onSelect={setSelected} />
+        <ChartCard
+          showDemoTag={false}
+          title={t("dna.radarTitle")}
+          actions={
+            <InfoTip
+              id="dna-legend"
+              label={t("vgl5.dna.legendTip")}
+              title={t("vgl5.dna.legendTip")}
+            >
+              {t("real.dna.legend")}
+            </InfoTip>
+          }
+        >
           <div
-            role="group"
-            aria-label={t("real.dna.select")}
-            className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1"
-            data-dna-chips
+            className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start"
+            data-dna-focus-layout
           >
-            {axes.map((a) => (
-              <button
-                key={a.dimension}
-                type="button"
-                aria-pressed={selected === a.dimension}
-                onClick={() => setSelected(a.dimension)}
-                className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs",
-                  selected === a.dimension
-                    ? "border-primary/60 bg-primary/10 text-foreground"
-                    : "border-border text-muted-foreground",
-                )}
+            <div className="min-w-0">
+              {/* UX-1.6 / R-14: radar A — ten axes always, empty axes dashed, one selection. */}
+              <DnaRadarA axes={axes} selected={selected} onSelect={setSelected} />
+              <div
+                role="group"
+                aria-label={t("real.dna.select")}
+                className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1"
+                data-dna-chips
               >
-                {t(dnaLabelKey(a.dimension))}
-                <span className="font-mono">{a.value === null ? NOT_AVAILABLE_MARK : a.value}</span>
-              </button>
-            ))}
+                {axes.map((a) => (
+                  <button
+                    key={a.dimension}
+                    type="button"
+                    aria-pressed={selected === a.dimension}
+                    onClick={() => setSelected(a.dimension)}
+                    className={cn(
+                      "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs",
+                      selected === a.dimension
+                        ? "border-primary/60 bg-primary/10 text-foreground"
+                        : "border-border text-muted-foreground",
+                    )}
+                  >
+                    {t(dnaLabelKey(a.dimension))}
+                    <span className="font-mono">
+                      {a.value === null ? NOT_AVAILABLE_MARK : a.value}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="sr-only" aria-live="polite" data-dna-announce>
+                {selectedDim
+                  ? fill(t("real.dna.selected"), {
+                      dimension: t(dnaLabelKey(selectedDim.dimension)),
+                      value:
+                        selectedDim.value === null
+                          ? t(
+                              `real.dna.status.${selectedDim.status === "NOT_MEASURED" ? "NOT_MEASURED" : "NO_SAMPLE"}` as TranslationKey,
+                            )
+                          : `${Math.round(selectedDim.value * 100)} / 100`,
+                      n: selectedDim.signals.length,
+                    })
+                  : ""}
+              </p>
+              {selected ? null : (
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-dna-legend>
+                  {t("real.dna.pick")}
+                </p>
+              )}
+            </div>
+            {focusOn && focusDim ? (
+              <div className="min-w-0" aria-live="polite" data-dna-focus={focusDim.dimension}>
+                <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-primary">
+                  {selected ? t("vgl5.dna.focusSelected") : t("vgl5.dna.focusDefault")}
+                </p>
+                <DnaDimensionCard
+                  d={focusDim}
+                  i={0}
+                  stable={stable}
+                  selected={selected === focusDim.dimension}
+                  rank={ranks.get(focusDim.dimension)}
+                  dna={dna}
+                  clutchAttempts={clutchAttempts}
+                  focus
+                />
+              </div>
+            ) : null}
           </div>
-          <p className="sr-only" aria-live="polite" data-dna-announce>
-            {selectedDim
-              ? fill(t("real.dna.selected"), {
-                  dimension: t(dnaLabelKey(selectedDim.dimension)),
-                  value:
-                    selectedDim.value === null
-                      ? t(
-                          `real.dna.status.${selectedDim.status === "NOT_MEASURED" ? "NOT_MEASURED" : "NO_SAMPLE"}` as TranslationKey,
-                        )
-                      : `${Math.round(selectedDim.value * 100)} / 100`,
-                  n: selectedDim.signals.length,
-                })
-              : ""}
-          </p>
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-dna-legend>
-            {t("real.dna.legend")} {selected ? null : t("real.dna.pick")}
-          </p>
         </ChartCard>
       ) : null}
-      {stable ? <DnaSignature dims={dna.dimensions} /> : null}
+      {stable ? (
+        <DnaSignature
+          dims={dna.dimensions}
+          selected={selected}
+          onSelect={(dimension) => {
+            setSelected(dimension);
+            document
+              .querySelector("[data-dna-focus-layout]")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
+      ) : null}
       <div className="grid gap-5 lg:grid-cols-2">
-        {ordered.map((d, i) => (
-          <article
-            key={d.dimension}
-            className={cn(
-              "vgl-rise vgl-lift surface-panel relative isolate overflow-hidden rounded-xl border border-border p-4 sm:p-5",
-              selected === d.dimension && "ring-1 ring-primary/50",
-            )}
-            style={{ "--vgl-i": i } as CSSProperties}
-            data-dna-card={d.dimension}
-          >
-            {/* Authentic CS2 silhouette as a watermark (decorative). */}
-            <Cs2Mask
-              src={DNA_ART[d.dimension] ?? DIMENSION_ART["aim"]!}
-              className="pointer-events-none absolute -right-4 top-3 -z-10 h-20 w-44 text-primary opacity-[0.07]"
+        {ordered
+          .filter((d) => !(focusOn && d.dimension === focusDim?.dimension))
+          .map((d, i) => (
+            <DnaDimensionCard
+              key={d.dimension}
+              d={d}
+              i={i}
+              stable={stable}
+              selected={selected === d.dimension}
+              rank={ranks.get(d.dimension)}
+              dna={dna}
+              clutchAttempts={clutchAttempts}
             />
-            <header className="mb-4 flex items-center gap-4">
-              <RadialGauge
-                value={stable && d.value !== null ? d.value : null}
-                size={68}
-                label={
-                  stable && d.value !== null ? (
-                    <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
-                      {Math.round(d.value * 100)}
-                    </span>
-                  ) : (
-                    <GameIcon
-                      name={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
-                      className="size-5 text-muted-foreground"
-                    />
-                  )
-                }
-              />
-              <div className="min-w-0">
-                <h3 className="flex items-center gap-2 font-display text-base font-semibold uppercase tracking-wide text-foreground">
-                  <GameIcon
-                    name={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
-                    className="size-4 text-primary"
-                  />
-                  {t(dnaLabelKey(d.dimension))}
-                </h3>
-                {stable ? <DimensionRank rank={ranks.get(d.dimension)} /> : null}
-                <p className="mt-0.5 text-xs text-muted-foreground" data-dna-card-status>
-                  {d.status === "NOT_MEASURED"
-                    ? t("real.dna.status.NOT_MEASURED")
-                    : d.status === "NO_SAMPLE" && !d.observed
-                      ? d.dimension === "clutch" && clutchAttempts !== null
-                        ? `${t("real.dna.status.NO_SAMPLE")} · ${fill(t("real.dna.clutchAttempts"), { n: clutchAttempts, min: DNA_MIN_EVENT_SAMPLE })}`
-                        : t("real.dna.status.NO_SAMPLE")
-                      : d.value === null && !d.observed
-                        ? t("real.dna.notObserved")
-                        : stable && d.value !== null
-                          ? `${Math.round(d.value * 100)} / 100`
-                          : fill(t("real.dna.inFormationIndex"), {
-                              matches: dna.matches,
-                              minimum: dna.minimumMatches,
-                            })}
-                </p>
-              </div>
-            </header>
-            <ul className="grid gap-2 sm:grid-cols-2" data-dna-signals>
-              {d.signals.map((s) => (
-                <li
-                  key={s.name}
-                  className="flex flex-col gap-1 rounded-lg border border-border bg-background/40 px-3 py-2 text-sm"
-                >
-                  <span className="text-xs text-muted-foreground">
-                    {signalLabel(s.name, locale)}
-                    {s.mean !== null &&
-                    (s.notFolded === "COMPLEMENT" ||
-                      s.notFolded === "THIN_SAMPLE" ||
-                      s.notFolded === "DUPLICATE") ? (
-                      <span className="block text-xs" data-dna-not-folded={s.notFolded}>
-                        {fill(t(`real.dna.notFolded.${s.notFolded}`), {
-                          min: DNA_MIN_EVENT_SAMPLE,
-                        })}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="font-mono text-base font-semibold tabular-nums text-foreground">
-                    {s.mean === null
-                      ? t("real.dna.notObserved")
-                      : formatSignalValue(
-                          s.name,
-                          s.mean,
-                          s.unit,
-                          { yes: t("real.dna.flagYes"), no: t("real.dna.flagNo") },
-                          intlTag,
-                        )}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {t("real.dna.inMatches").replace("{n}", String(s.matches))}
-                      {s.mean !== null &&
-                      s.sample != null &&
-                      (s.sampleUnit === "opening_duels" ||
-                        s.sampleUnit === "clutches" ||
-                        s.sampleUnit === "kills")
-                        ? ` · ${fill(t(`real.dna.sample.${s.sampleUnit}`), { n: s.sample })}`
-                        : ""}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
+          ))}
       </div>
       <DnaHistory />
     </div>
+  );
+}
+
+/** One Player DNA dimension card (index, rank, status, signals). Same content everywhere. */
+function DnaDimensionCard({
+  d,
+  i,
+  stable,
+  selected,
+  rank,
+  dna,
+  clutchAttempts,
+  focus = false,
+}: {
+  d: RealPlayerDna["dimensions"][number];
+  i: number;
+  stable: boolean;
+  selected: boolean;
+  rank: Parameters<typeof DimensionRank>[0]["rank"];
+  dna: RealPlayerDna;
+  clutchAttempts: number | null;
+  focus?: boolean;
+}) {
+  const { t, intlTag, locale } = useI18n();
+  return (
+    <article
+      key={d.dimension}
+      className={cn(
+        "vgl-rise vgl-lift surface-panel relative isolate overflow-hidden rounded-xl border border-border p-4 sm:p-5",
+        selected && "ring-1 ring-primary/50",
+        focus && "border-primary/40 shadow-[var(--shadow-elevated)]",
+      )}
+      style={{ "--vgl-i": i } as CSSProperties}
+      data-dna-card={d.dimension}
+      data-dna-focus-card={focus ? d.dimension : undefined}
+    >
+      {/* Authentic CS2 silhouette as a watermark (decorative). */}
+      <Cs2Mask
+        src={DNA_ART[d.dimension] ?? DIMENSION_ART["aim"]!}
+        className="pointer-events-none absolute -right-4 top-3 -z-10 h-20 w-44 text-primary opacity-[0.07]"
+      />
+      <header className="mb-4 flex items-center gap-4">
+        <RadialGauge
+          value={stable && d.value !== null ? d.value : null}
+          size={68}
+          label={
+            stable && d.value !== null ? (
+              <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
+                {Math.round(d.value * 100)}
+              </span>
+            ) : (
+              <GameIcon
+                name={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
+                className="size-5 text-muted-foreground"
+              />
+            )
+          }
+        />
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-2 font-display text-base font-semibold uppercase tracking-wide text-foreground">
+            <GameIcon
+              name={DNA_ICON[d.dimension as keyof typeof DNA_ICON]}
+              className="size-4 text-primary"
+            />
+            {t(dnaLabelKey(d.dimension))}
+          </h3>
+          {stable ? <DimensionRank rank={rank} /> : null}
+          <p className="mt-0.5 text-xs text-muted-foreground" data-dna-card-status>
+            {d.status === "NOT_MEASURED"
+              ? t("real.dna.status.NOT_MEASURED")
+              : d.status === "NO_SAMPLE" && !d.observed
+                ? d.dimension === "clutch" && clutchAttempts !== null
+                  ? `${t("real.dna.status.NO_SAMPLE")} · ${fill(t("real.dna.clutchAttempts"), { n: clutchAttempts, min: DNA_MIN_EVENT_SAMPLE })}`
+                  : t("real.dna.status.NO_SAMPLE")
+                : d.value === null && !d.observed
+                  ? t("real.dna.notObserved")
+                  : stable && d.value !== null
+                    ? `${Math.round(d.value * 100)} / 100`
+                    : fill(t("real.dna.inFormationIndex"), {
+                        matches: dna.matches,
+                        minimum: dna.minimumMatches,
+                      })}
+          </p>
+        </div>
+      </header>
+      <ul className="grid gap-2 sm:grid-cols-2" data-dna-signals>
+        {d.signals.map((s) => (
+          <li
+            key={s.name}
+            className="flex flex-col gap-1 rounded-lg border border-border bg-background/40 px-3 py-2 text-sm"
+          >
+            <span className="text-xs text-muted-foreground">
+              {signalLabel(s.name, locale)}
+              {s.mean !== null &&
+              (s.notFolded === "COMPLEMENT" ||
+                s.notFolded === "THIN_SAMPLE" ||
+                s.notFolded === "DUPLICATE") ? (
+                <span className="block text-xs" data-dna-not-folded={s.notFolded}>
+                  {fill(t(`real.dna.notFolded.${s.notFolded}`), {
+                    min: DNA_MIN_EVENT_SAMPLE,
+                  })}
+                </span>
+              ) : null}
+            </span>
+            <span className="font-mono text-base font-semibold tabular-nums text-foreground">
+              {s.mean === null
+                ? t("real.dna.notObserved")
+                : formatSignalValue(
+                    s.name,
+                    s.mean,
+                    s.unit,
+                    { yes: t("real.dna.flagYes"), no: t("real.dna.flagNo") },
+                    intlTag,
+                  )}
+              <span className="ml-2 text-xs text-muted-foreground">
+                {t("real.dna.inMatches").replace("{n}", String(s.matches))}
+                {s.mean !== null &&
+                s.sample != null &&
+                (s.sampleUnit === "opening_duels" ||
+                  s.sampleUnit === "clutches" ||
+                  s.sampleUnit === "kills")
+                  ? ` · ${fill(t(`real.dna.sample.${s.sampleUnit}`), { n: s.sample })}`
+                  : ""}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </article>
   );
 }
 

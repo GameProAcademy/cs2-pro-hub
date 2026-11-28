@@ -59,21 +59,19 @@ function DimChip({
   d,
   tone,
   i,
+  onSelect,
+  selected,
 }: {
   d: SignatureDim & { value: number };
   tone: "top" | "low";
   i: number;
+  /** VGL 5.0: picking a specialty puts its card in focus beside the radar. */
+  onSelect?: ((dimension: DnaDimension) => void) | undefined;
+  selected?: boolean | undefined;
 }) {
   const { t } = useI18n();
-  return (
-    <li
-      className={cn(
-        "vgl-rise relative isolate flex items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5",
-        tone === "top" ? "border-primary/35 bg-primary/8" : "border-warning/30 bg-warning/8",
-      )}
-      style={{ "--vgl-i": i } as CSSProperties}
-      data-signature-dim={d.dimension}
-    >
+  const body = (
+    <>
       <Cs2Mask
         src={DIMENSION_ART[d.dimension] ?? DIMENSION_ART["aim"]!}
         className={cn(
@@ -85,18 +83,54 @@ function DimChip({
         name={icon(d.dimension)}
         className={cn("size-5", tone === "top" ? "text-primary" : "text-warning")}
       />
-      <span className="min-w-0 flex-1 truncate font-display text-sm font-semibold uppercase tracking-wide text-foreground">
+      <span className="min-w-0 flex-1 truncate text-left font-display text-sm font-semibold uppercase tracking-wide text-foreground">
         {t(dnaLabelKey(d.dimension))}
       </span>
       <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
         {Math.round(d.value * 100)}
       </span>
+    </>
+  );
+  const box = cn(
+    "vgl-rise relative isolate flex w-full items-center gap-3 overflow-hidden rounded-lg border px-3 py-2.5",
+    tone === "top" ? "border-primary/35 bg-primary/8" : "border-warning/30 bg-warning/8",
+    selected && "ring-2 ring-primary/60",
+  );
+  return (
+    <li
+      className={onSelect ? undefined : box}
+      style={{ "--vgl-i": i } as CSSProperties}
+      data-signature-dim={d.dimension}
+    >
+      {onSelect ? (
+        <button
+          type="button"
+          aria-pressed={selected ?? false}
+          className={cn(
+            box,
+            "min-h-11 hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          )}
+          onClick={() => onSelect(d.dimension as DnaDimension)}
+        >
+          {body}
+        </button>
+      ) : (
+        body
+      )}
     </li>
   );
 }
 
 /** READY only: the profile's indexes compared with each other. */
-export function DnaSignature({ dims }: { dims: ReadonlyArray<SignatureDim> }) {
+export function DnaSignature({
+  dims,
+  onSelect,
+  selected,
+}: {
+  dims: ReadonlyArray<SignatureDim>;
+  onSelect?: ((dimension: DnaDimension) => void) | undefined;
+  selected?: string | null | undefined;
+}) {
   const { t } = useI18n();
   const s = signature(dims);
   if (!s.measured.length) return null;
@@ -123,7 +157,14 @@ export function DnaSignature({ dims }: { dims: ReadonlyArray<SignatureDim> }) {
             </h3>
             <ol className="space-y-2">
               {s.top.map((d, i) => (
-                <DimChip key={d.dimension} d={d} tone="top" i={i} />
+                <DimChip
+                  key={d.dimension}
+                  d={d}
+                  tone="top"
+                  i={i}
+                  onSelect={onSelect}
+                  selected={selected === d.dimension}
+                />
               ))}
             </ol>
           </div>
@@ -134,7 +175,14 @@ export function DnaSignature({ dims }: { dims: ReadonlyArray<SignatureDim> }) {
               </h3>
               <ol className="space-y-2">
                 {s.low.map((d, i) => (
-                  <DimChip key={d.dimension} d={d} tone="low" i={i + 3} />
+                  <DimChip
+                    key={d.dimension}
+                    d={d}
+                    tone="low"
+                    i={i + 3}
+                    onSelect={onSelect}
+                    selected={selected === d.dimension}
+                  />
                 ))}
               </ol>
             </div>

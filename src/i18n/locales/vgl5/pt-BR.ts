@@ -48,4 +48,7 @@ export const vgl5PtBR = {
   "vgl5.training.above": "{d} pontos acima da referência",
   "vgl5.training.legend":
     "Como ler: a barra é o seu valor, o traço é a referência fixa do sinal e a faixa clara é o intervalo de confiança. Quanto mais abaixo da referência, mais alta a prioridade.",
+  "vgl5.dna.legendTip": "Como ler os índices",
+  "vgl5.dna.focusDefault": "Em foco: seu maior índice",
+  "vgl5.dna.focusSelected": "Em foco: dimensão selecionada",
 } as const;
