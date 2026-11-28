@@ -16,7 +16,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { MetricCard } from "@/components/common/MetricCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -244,8 +244,9 @@ function MatchColumnInfo({ label, help }: { label: string; help: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       {label}
-      <Tooltip>
-        <TooltipTrigger asChild>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
           <button
             type="button"
             className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -254,11 +255,12 @@ function MatchColumnInfo({ label, help }: { label: string; help: string }) {
           >
             <CircleHelp className="size-3.5" aria-hidden />
           </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs text-left leading-relaxed">
-          {help}
-        </TooltipContent>
-      </Tooltip>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs text-left leading-relaxed">
+            {help}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </span>
   );
 }
@@ -397,12 +399,24 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
 /** Footnotes that explain why a date or a result is what it is (shown only when they apply). */
 function MatchTableNotes({ rows }: { rows: OverviewMatch[] }) {
   const t = useT();
+  const processed = rows.some((r) => r.dateSource === "processed");
+  const unresolved = rows.some((r) => r.resultStatus === "UNRESOLVED_BY_DEMO");
   const partialAdr = rows.some((r) => r.adr !== null && r.adrPartial);
-  if (!partialAdr) return null;
+  if (!processed && !unresolved && !partialAdr) return null;
   return (
-    <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground" data-match-notes>
-      <p data-adr-partial-note>{t("adr.partial.hint")}</p>
-    </div>
+    <>
+      {processed || unresolved ? (
+        <div className="sr-only" data-match-notes>
+          {processed ? <p>{t("real.date.processedNote")}</p> : null}
+          {unresolved ? <p>{t("real.result.unresolvedNote")}</p> : null}
+        </div>
+      ) : null}
+      {partialAdr ? (
+        <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground">
+          <p data-adr-partial-note>{t("adr.partial.hint")}</p>
+        </div>
+      ) : null}
+    </>
   );
 }
 
