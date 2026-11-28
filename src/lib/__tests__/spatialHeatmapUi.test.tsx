@@ -3,6 +3,7 @@
  * NOT_OBSERVED, UNAVAILABLE (no positions), PARTIAL with coverage, radar background from the
  * asset registry, drill-down to round/tick, absence never shown as 0.
  */
+import { readFileSync } from "node:fs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
@@ -187,5 +188,32 @@ describe("search params", () => {
     expect(clean(withExtra)).toEqual({ map: "de_mirage" });
     expect(spatialHeatmapInput.safeParse(clean(withExtra)).success).toBe(true);
     expect(spatialHeatmapInput.safeParse(withExtra).success).toBe(false);
+  });
+});
+
+describe("VGL 5.1 — Frente 11: map first, secondary info in three closed accordions", () => {
+  it("cells list sits beside the map; Legend / Off the map / Not measured are closed accordions at the end", () => {
+    const html = body(response([death(1, { victim_position: w(100, 200) }), death(13, {})]));
+    const main = html.indexOf("data-map-main");
+    const secondary = html.indexOf("data-map-secondary");
+    expect(main).toBeGreaterThan(0);
+    expect(secondary).toBeGreaterThan(main);
+    for (const id of ["legend", "excluded", "not-measured"])
+      expect(html).toContain(`data-map-secondary-card="${id}"`);
+    const tail = html.slice(secondary);
+    const count = (re: RegExp) => (tail.match(re) ?? []).length;
+    expect(count(/aria-expanded="false"/g)).toBe(3);
+    expect(tail).not.toContain('aria-expanded="true"');
+    // Closed content stays in the DOM (find-in-page) but is hidden while its region is closed.
+    expect(count(/\[\[data-state=closed\]&gt;&amp;\]:hidden/g)).toBe(3);
+    expect(html.slice(0, secondary)).not.toContain("data-map-legend");
+  });
+
+  it("the main grid class is valid (no stray token)", () => {
+    const src = readFileSync("src/components/real/RealHeatmap.tsx", "utf8");
+    expect(src).not.toContain("22rem), showAll]");
+    expect(src).toMatch(
+      /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(0,22rem\)\] lg:items-start"\s+data-map-main/,
+    );
   });
 });
