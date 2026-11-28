@@ -2,6 +2,7 @@
  * VGL 5.0 — Frente 8: native FACEIT matches, labelled as FACEIT data and kept apart from the
  * demo-based numbers (Score, DNA and aggregates come from parsed demos only).
  */
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { ChartCard } from "@/components/common/ChartCard";
@@ -51,7 +52,13 @@ export function FaceitMatchesCard() {
                 <span className="rounded border border-border px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                   FACEIT
                 </span>
-                <span className="min-w-24 font-medium">{mapDisplayName(m.map)}</span>
+                <Link
+                  to="/matches/$matchId"
+                  params={{ matchId: m.matchId }}
+                  className="min-w-24 font-medium underline-offset-4 hover:text-primary hover:underline"
+                >
+                  {mapDisplayName(m.map)}
+                </Link>
                 <span className="text-xs text-muted-foreground">
                   {formatDate(m.playedAt, intlTag)}
                 </span>

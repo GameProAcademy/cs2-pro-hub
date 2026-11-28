@@ -50,6 +50,11 @@ export interface FaceitConnectionView {
   /** Data API configured? The connection can exist while sync is unavailable. */
   dataApiReady: boolean;
   oauthReady: boolean;
+  /**
+   * VGL 5.1: automatic import of new matches. null = the player has not chosen yet (no periodic
+   * sync happens until they do), true = on, false = off.
+   */
+  autoSync: boolean | null;
 }
 
 function profileNumber(metadata: unknown, key: string): number | null {
@@ -94,6 +99,7 @@ export const getFaceitConnection = createServerFn({ method: "GET" })
       currentJob: null,
       dataApiReady: status.dataApiReady,
       oauthReady: status.oauthReady,
+      autoSync: null,
     };
 
     const { data: player } = await supabase
@@ -106,7 +112,7 @@ export const getFaceitConnection = createServerFn({ method: "GET" })
     const { data: connection } = await supabase
       .from("player_connections")
       .select(
-        "id, status, external_username, profile_url, metadata, connected_at, last_sync_at, last_sync_status, last_sync_error",
+        "id, status, external_username, profile_url, metadata, connected_at, last_sync_at, last_sync_status, last_sync_error, auto_sync",
       )
       .eq("player_id", player.id)
       .eq("source", "faceit")
@@ -170,6 +176,7 @@ export const getFaceitConnection = createServerFn({ method: "GET" })
       currentJob,
       dataApiReady: status.dataApiReady,
       oauthReady: status.oauthReady,
+      autoSync: typeof connection.auto_sync === "boolean" ? connection.auto_sync : null,
     };
   });
 
@@ -239,6 +246,60 @@ export const requestFaceitSync = createServerFn({ method: "POST" })
       // guaranteed to complete on a serverless/edge runtime.
       console.info("[faceit] faceit_sync_enqueued");
       return { ok: true, alreadyRunning: false };
+    } catch (error) {
+      return { ok: false, errorCode: toFaceitError(error).code };
+    }
+  });
+
+export interface AutoSyncResult {
+  ok: boolean;
+  autoSync?: boolean;
+  errorCode?: FaceitErrorCode;
+}
+
+/**
+ * VGL 5.1 — the player's choice for automatic FACEIT import. Written by the server for the
+ * caller's OWN connection only (clients have no UPDATE on player_connections). Turning it on
+ * queues one incremental sync right away (no duplicate: one active job per connection, and
+ * matches are deduplicated by the canonical resolver); turning it off stops future automatic
+ * syncs and deletes nothing.
+ */
+export const setFaceitAutoSync = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => ({
+    enabled: (input as { enabled?: unknown } | null)?.enabled === true,
+  }))
+  .handler(async ({ context, data }): Promise<AutoSyncResult> => {
+    try {
+      const { requirePlayerId } = await import("./faceit/faceit.connect.server");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const playerId = await requirePlayerId(context.userId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+      const { data: connection } = await db
+        .from("player_connections")
+        .select("id, status")
+        .eq("player_id", playerId)
+        .eq("source", "faceit")
+        .eq("connection_type", "oauth")
+        .maybeSingle();
+      if (!connection || connection.status !== "connected")
+        return { ok: false, errorCode: "FACEIT_NOT_CONNECTED" };
+      const { error } = await db
+        .from("player_connections")
+        .update({ auto_sync: data.enabled, auto_sync_set_at: new Date().toISOString() })
+        .eq("id", connection.id)
+        .eq("player_id", playerId);
+      if (error) return { ok: false, errorCode: "FACEIT_INTERNAL_ERROR" };
+      if (data.enabled) {
+        const { faceitConfigStatus } = await import("./faceit/faceit.config.server");
+        if (faceitConfigStatus().dataApiReady) {
+          const { enqueueFaceitSync } = await import("./faceit/faceit.sync.server");
+          await enqueueFaceitSync(playerId, connection.id, "incremental");
+        }
+      }
+      console.info(`[faceit] faceit_auto_sync_${data.enabled ? "on" : "off"}`);
+      return { ok: true, autoSync: data.enabled };
     } catch (error) {
       return { ok: false, errorCode: toFaceitError(error).code };
     }

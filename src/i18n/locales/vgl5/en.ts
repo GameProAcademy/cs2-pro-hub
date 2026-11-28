@@ -241,7 +241,7 @@ export const vgl5En = {
   "vgl5.pub.settings.error": "Could not save. Try again.",
   "vgl5.faceit.title": "FACEIT matches",
   "vgl5.faceit.description":
-    "Data reported by FACEIT itself (score, result and, when FACEIT publishes them, K/D and ADR). Kept apart from the CS2 PRO Score, Player DNA and demo numbers, which come from analysed demos only.",
+    "Data reported by FACEIT itself. These matches also appear in My Matches with a FACEIT tag, and enter the overall numbers only where the metric is comparable (K/D, ADR, HS%, win rate). CS2 PRO Score, Player DNA and Best Map still come from analysed demos only.",
   "vgl5.faceit.loading": "Loading FACEIT matches…",
   "vgl5.faceit.error": "FACEIT matches could not be loaded right now.",
   "vgl5.faceit.empty": "No CS2 match found on FACEIT for this account as of the last sync.",
@@ -318,4 +318,38 @@ export const vgl5En = {
   "vgl51.pwa.unsupported":
     "This browser does not install web apps on desktop. Open CS2 PRO in Google Chrome or Microsoft Edge to install it, or keep using it here as usual.",
   "vgl51.pwa.done": "Done",
+  "vgl51.faceit.tag": "FACEIT · Imported automatically",
+  "vgl51.faceit.tagShort": "FACEIT",
+  "vgl51.faceit.demoTag": "Demo",
+  "vgl51.faceit.auto.title": "Automatic FACEIT match sync",
+  "vgl51.faceit.auto.on": "On",
+  "vgl51.faceit.auto.off": "Off",
+  "vgl51.faceit.auto.explain":
+    "On: new CS2 matches from FACEIT reach My Matches by themselves, a few times a day. Off: the platform does not sync on its own; you can use “Sync now”. Either way you keep uploading your demos as usual — the FACEIT import does not replace the demo analysis, and nothing already imported is deleted.",
+  "vgl51.faceit.auto.choose": "Choose how you want your FACEIT matches:",
+  "vgl51.faceit.auto.enable": "Turn on automatic sync",
+  "vgl51.faceit.auto.keepManual": "Keep manual only",
+  "vgl51.faceit.auto.error": "Your choice could not be saved. Try again.",
+  "vgl51.faceit.room.sourceTitle": "Match source",
+  "vgl51.faceit.room.sourceBody":
+    "Data reported by FACEIT through its official API. There is no demo of this match on CS2 PRO.",
+  "vgl51.faceit.room.synced": "Synced on {date}",
+  "vgl51.faceit.room.competition": "Competition",
+  "vgl51.faceit.room.region": "Region",
+  "vgl51.faceit.room.open": "Open match on FACEIT",
+  "vgl51.faceit.room.stats": "Your performance in this match",
+  "vgl51.faceit.room.teams": "Teams and score",
+  "vgl51.faceit.room.notReported": "Not reported by FACEIT",
+  "vgl51.faceit.room.pending":
+    "FACEIT has not published this match's stats yet; the next sync tries again.",
+  "vgl51.faceit.room.unavailableTitle": "Available only with the demo",
+  "vgl51.faceit.room.unavailableBody":
+    "Rounds, duels, deaths, utility, event map and replay depend on the demo's events and are not available from FACEIT. Upload this match's demo to see the full analysis — it is linked to the same match.",
+  "vgl51.faceit.room.upload": "Upload the demo",
+  "vgl51.faceit.room.loading": "Loading FACEIT data…",
+  "vgl51.faceit.room.error": "This match's data could not be loaded right now.",
+  "vgl51.faceit.metric.kills": "Kills",
+  "vgl51.faceit.metric.deaths": "Deaths",
+  "vgl51.faceit.metric.assists": "Assists",
+  "vgl51.faceit.metric.rounds": "Rounds",
 } as const;

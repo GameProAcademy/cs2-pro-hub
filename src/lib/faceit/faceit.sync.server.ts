@@ -140,6 +140,52 @@ export async function enqueueFaceitSync(
   return { jobId: data.id, alreadyRunning: false };
 }
 
+/** VGL 5.1: how often an opted-in connection is re-checked for new matches. */
+export const FACEIT_AUTO_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
+/** At most this many connections are queued per scheduler tick (rate limit friendly). */
+export const FACEIT_AUTO_SYNC_BATCH = 10;
+
+/**
+ * VGL 5.1 — automatic import for players who opted in (`auto_sync = true`). Queues an
+ * INCREMENTAL job (the worker reads only the history window after the last sync) for connected
+ * links whose last sync is older than the interval. The unique active-job index keeps it at one
+ * job per connection; the worker's API budget and backoff are unchanged. Never queues for a
+ * disconnected link, an undecided (NULL) or opted-out (false) player.
+ */
+export async function enqueueDueFaceitAutoSyncs(
+  now: number = Date.now(),
+): Promise<{ queued: number; skipped: number }> {
+  const db = await admin();
+  const cutoff = new Date(now - FACEIT_AUTO_SYNC_INTERVAL_MS).toISOString();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (db as any)
+    .from("player_connections")
+    .select("id, player_id, last_sync_at")
+    .eq("source", "faceit")
+    .eq("status", "connected")
+    .eq("auto_sync", true)
+    .or(`last_sync_at.is.null,last_sync_at.lt.${cutoff}`)
+    .order("last_sync_at", { ascending: true, nullsFirst: true })
+    .limit(FACEIT_AUTO_SYNC_BATCH);
+  if (error) {
+    console.warn("[faceit] auto_sync_scan_failed");
+    return { queued: 0, skipped: 0 };
+  }
+  let queued = 0;
+  let skipped = 0;
+  for (const row of (data ?? []) as Array<{ id: string; player_id: string }>) {
+    try {
+      const r = await enqueueFaceitSync(row.player_id, row.id, "incremental");
+      if (r.alreadyRunning) skipped += 1;
+      else queued += 1;
+    } catch {
+      skipped += 1;
+    }
+  }
+  if (queued) console.info(`[faceit] auto_sync_queued count=${queued}`);
+  return { queued, skipped };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Job engine                                                                  */
 /* -------------------------------------------------------------------------- */

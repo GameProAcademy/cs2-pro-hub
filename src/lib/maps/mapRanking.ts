@@ -42,6 +42,7 @@
  */
 import { CURRENT_MAP_POOL_VERSION, normalizeMapCode, type Cs2MapCode } from "@/lib/cs2/maps";
 import {
+  isImportedSource,
   pooledParts,
   type PooledMatchInput,
   type PooledMetricKey,
@@ -188,6 +189,8 @@ function confidenceOf(n: number): MapRankConfidence {
 export function isEligibleForMapRank(m: MapRankInput, pool: readonly Cs2MapCode[]): boolean {
   const code = normalizeMapCode(m.map);
   return (
+    // VGL 5.1: the ranking reads CS2 PRO's rating, which only parsed demos carry.
+    !isImportedSource(m.source) &&
     code !== null &&
     pool.includes(code) &&
     typeof m.roundsPlayed === "number" &&

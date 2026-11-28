@@ -250,7 +250,7 @@ export const vgl5Fr = {
   "vgl5.pub.settings.error": "Enregistrement impossible. Réessaie.",
   "vgl5.faceit.title": "Matchs FACEIT",
   "vgl5.faceit.description":
-    "Données fournies par FACEIT lui-même (score, résultat et, quand FACEIT les publie, K/D et ADR). Elles restent séparées du CS2 PRO Score, du Player DNA et des chiffres de démo, issus uniquement des démos analysées.",
+    "Données fournies par FACEIT. Ces matchs apparaissent aussi dans Mes matchs avec l’étiquette FACEIT, et n’entrent dans les chiffres globaux que là où la métrique est comparable (K/D, ADR, HS %, taux de victoire). Le CS2 PRO Score, le Player DNA et la Meilleure carte viennent toujours uniquement des démos analysées.",
   "vgl5.faceit.loading": "Chargement des matchs FACEIT…",
   "vgl5.faceit.error": "Impossible de charger les matchs FACEIT pour le moment.",
   "vgl5.faceit.empty":
@@ -333,4 +333,38 @@ export const vgl5Fr = {
   "vgl51.pwa.unsupported":
     "Ce navigateur n’installe pas d’applications web sur ordinateur. Ouvre CS2 PRO dans Google Chrome ou Microsoft Edge pour l’installer, ou continue à l’utiliser ici normalement.",
   "vgl51.pwa.done": "Terminé",
+  "vgl51.faceit.tag": "FACEIT · Importé automatiquement",
+  "vgl51.faceit.tagShort": "FACEIT",
+  "vgl51.faceit.demoTag": "Démo",
+  "vgl51.faceit.auto.title": "Synchronisation automatique des matchs FACEIT",
+  "vgl51.faceit.auto.on": "Activée",
+  "vgl51.faceit.auto.off": "Désactivée",
+  "vgl51.faceit.auto.explain":
+    "Activée : les nouveaux matchs CS2 de FACEIT arrivent seuls dans Mes matchs, plusieurs fois par jour. Désactivée : la plateforme ne synchronise pas d’elle-même ; tu peux utiliser « Synchroniser maintenant ». Dans tous les cas, tu continues d’envoyer tes démos normalement : l’import FACEIT ne remplace pas l’analyse de la démo et rien de ce qui a été importé n’est supprimé.",
+  "vgl51.faceit.auto.choose": "Choisis comment recevoir tes matchs FACEIT :",
+  "vgl51.faceit.auto.enable": "Activer la synchronisation automatique",
+  "vgl51.faceit.auto.keepManual": "Garder seulement l’envoi manuel",
+  "vgl51.faceit.auto.error": "Impossible d’enregistrer ton choix. Réessaie.",
+  "vgl51.faceit.room.sourceTitle": "Origine du match",
+  "vgl51.faceit.room.sourceBody":
+    "Données fournies par FACEIT via son API officielle. Il n’y a pas de démo de ce match sur CS2 PRO.",
+  "vgl51.faceit.room.synced": "Synchronisé le {date}",
+  "vgl51.faceit.room.competition": "Compétition",
+  "vgl51.faceit.room.region": "Région",
+  "vgl51.faceit.room.open": "Ouvrir le match sur FACEIT",
+  "vgl51.faceit.room.stats": "Ta performance dans ce match",
+  "vgl51.faceit.room.teams": "Équipes et score",
+  "vgl51.faceit.room.notReported": "Non fourni par FACEIT",
+  "vgl51.faceit.room.pending":
+    "FACEIT n’a pas encore publié les statistiques de ce match ; la prochaine synchronisation réessaiera.",
+  "vgl51.faceit.room.unavailableTitle": "Disponible uniquement avec la démo",
+  "vgl51.faceit.room.unavailableBody":
+    "Rounds, duels, morts, utilitaires, carte des événements et replay dépendent des événements de la démo et ne sont pas disponibles depuis FACEIT. Envoie la démo de ce match pour voir l’analyse complète : elle est liée au même match.",
+  "vgl51.faceit.room.upload": "Envoyer la démo",
+  "vgl51.faceit.room.loading": "Chargement des données FACEIT…",
+  "vgl51.faceit.room.error": "Impossible de charger les données de ce match pour le moment.",
+  "vgl51.faceit.metric.kills": "Éliminations",
+  "vgl51.faceit.metric.deaths": "Morts",
+  "vgl51.faceit.metric.assists": "Assistances",
+  "vgl51.faceit.metric.rounds": "Rounds",
 } as const;

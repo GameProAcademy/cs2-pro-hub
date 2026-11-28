@@ -3736,6 +3736,8 @@ export type Database = {
       }
       player_connections: {
         Row: {
+          auto_sync: boolean | null
+          auto_sync_set_at: string | null
           connected_at: string | null
           connection_type: Database["public"]["Enums"]["connection_type"]
           created_at: string
@@ -3756,6 +3758,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_sync?: boolean | null
+          auto_sync_set_at?: string | null
           connected_at?: string | null
           connection_type: Database["public"]["Enums"]["connection_type"]
           created_at?: string
@@ -3776,6 +3780,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_sync?: boolean | null
+          auto_sync_set_at?: string | null
           connected_at?: string | null
           connection_type?: Database["public"]["Enums"]["connection_type"]
           created_at?: string

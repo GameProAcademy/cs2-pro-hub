@@ -57,11 +57,13 @@ describe("read surface", () => {
     expect(fn).not.toMatch(/client\.server|supabaseAdmin/);
   });
 
-  it("demo-based aggregates stay demo-only (overview is built from demo jobs)", () => {
+  it("VGL 5.1: imported matches reach the overview through match_metrics, under the per-metric policy", () => {
+    // Correction of the VGL 5.0 note: the overview reads every own match_metrics row (any
+    // source); what keeps non-comparable numbers out is METRIC_SOURCE_POLICY, tested in
+    // vgl51FaceitIntegration.test.ts.
     const overview = read("src/lib/playerData.functions.ts");
     const loader = overview.slice(overview.indexOf("export async function loadPlayerOverview"));
-    expect(loader).toContain('.from("demo_jobs")');
-    expect(loader).not.toContain('"faceit"');
+    expect(loader).toContain('.from("match_metrics")');
   });
 
   it("the profile shows the FACEIT list next to the connection panel", () => {

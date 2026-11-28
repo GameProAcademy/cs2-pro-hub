@@ -13,6 +13,7 @@ import { useState } from "react";
 import { FaceitIcon } from "@/components/brand/BrandIcons";
 import { ChartCard } from "@/components/common/ChartCard";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useT } from "@/i18n";
 import type { FaceitErrorCode } from "@/lib/faceit/faceit.errors";
 import { invalidateExternalLinks } from "@/lib/identity/useExternalLinks";
@@ -20,6 +21,7 @@ import {
   disconnectFaceitConnection,
   getFaceitConnection,
   requestFaceitSync,
+  setFaceitAutoSync,
   type FaceitConnectionView,
 } from "@/lib/faceit.functions";
 
@@ -107,6 +109,16 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
     onError: () => setLocalReason("error"),
   });
 
+  const [autoError, setAutoError] = useState(false);
+  const autoMutation = useMutation({
+    mutationFn: (enabled: boolean) => setFaceitAutoSync({ data: { enabled } }),
+    onSuccess: (result) => {
+      setAutoError(!result.ok);
+      invalidateExternalLinks(queryClient);
+    },
+    onError: () => setAutoError(true),
+  });
+
   const data = connection.data;
   const state = data?.state ?? "disconnected";
   const busy = startMutation.isPending || syncMutation.isPending || disconnectMutation.isPending;
@@ -185,6 +197,15 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
           </div>
         ) : null}
 
+        {data?.connected ? (
+          <AutoSyncControl
+            value={autoMutation.isPending ? (autoMutation.variables ?? null) : data.autoSync}
+            busy={autoMutation.isPending}
+            error={autoError}
+            onChange={(v) => autoMutation.mutate(v)}
+          />
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
           {!data?.connected ? (
             <Button
@@ -222,6 +243,77 @@ export function FaceitPanel({ callback }: FaceitPanelProps) {
         <p className="text-xs leading-relaxed text-muted-foreground">{t("faceit.limits")}</p>
       </div>
     </ChartCard>
+  );
+}
+
+/**
+ * VGL 5.1 — automatic FACEIT import. Undecided (null): an explicit choice, nothing runs until the
+ * player picks. Decided: a switch, changeable at any time.
+ */
+function AutoSyncControl({
+  value,
+  busy,
+  error,
+  onChange,
+}: {
+  value: boolean | null;
+  busy: boolean;
+  error: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  const t = useT();
+  return (
+    <section
+      className="rounded-lg border border-border bg-background/40 p-4"
+      aria-labelledby="faceit-auto-sync-title"
+      data-faceit-auto-sync={value === null ? "unset" : value ? "on" : "off"}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 id="faceit-auto-sync-title" className="text-sm font-semibold text-foreground">
+          {t("vgl51.faceit.auto.title")}
+        </h3>
+        {value !== null ? (
+          <label className="flex items-center gap-2">
+            <span className="font-mono text-xs text-muted-foreground">
+              {value ? t("vgl51.faceit.auto.on") : t("vgl51.faceit.auto.off")}
+            </span>
+            <Switch
+              checked={value}
+              disabled={busy}
+              onCheckedChange={onChange}
+              aria-label={t("vgl51.faceit.auto.title")}
+            />
+          </label>
+        ) : null}
+      </div>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+        {t("vgl51.faceit.auto.explain")}
+      </p>
+      {value === null ? (
+        <div className="mt-3 space-y-2" data-faceit-auto-sync-choice>
+          <p className="text-sm text-foreground">{t("vgl51.faceit.auto.choose")}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" disabled={busy} onClick={() => onChange(true)}>
+              {t("vgl51.faceit.auto.enable")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => onChange(false)}
+            >
+              {t("vgl51.faceit.auto.keepManual")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {error ? (
+        <p role="alert" className="mt-2 text-sm text-destructive">
+          {t("vgl51.faceit.auto.error")}
+        </p>
+      ) : null}
+    </section>
   );
 }
 
