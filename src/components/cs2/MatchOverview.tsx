@@ -118,13 +118,10 @@ export function MatchOverview({ m }: { m: OverviewMatch }) {
                 search={{ tab }}
                 className="vgl-lift flex min-h-11 items-center gap-2 rounded-lg border border-border bg-background/60 px-3 py-2 text-sm font-medium text-foreground hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <GameIcon
-                  name={ROOM_TAB_ICON[tab]}
-                  className="size-4 text-primary"
-                />
+                <GameIcon name={ROOM_TAB_ICON[tab]} className="size-4 text-primary" />
                 {tab === "rounds"
-            ? t("vgl4.tabIntro.rounds.title")
-            : t(`room.tab.${tab}` as TranslationKey)}
+                  ? t("vgl4.tabIntro.rounds.title")
+                  : t(`room.tab.${tab}` as TranslationKey)}
               </Link>
             </li>
           ))}
