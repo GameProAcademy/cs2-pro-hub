@@ -38,6 +38,7 @@ import { Route as AuthenticatedUtilityRouteImport } from './routes/_authenticate
 import { Route as AuthFaceitRouteImport } from './routes/auth/faceit'
 import { Route as FaceitCallbackRouteImport } from './routes/faceit.callback'
 import { Route as FaceitLoginRouteImport } from './routes/faceit.login'
+import { Route as PPublicIdRouteImport } from './routes/p/$publicId'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminCatalogRouteImport } from './routes/_authenticated/admin/catalog'
@@ -209,6 +210,11 @@ const FaceitLoginRoute = FaceitLoginRouteImport.update({
   path: '/faceit/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PPublicIdRoute = PPublicIdRouteImport.update({
+  id: '/p/$publicId',
+  path: '/p/$publicId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -373,6 +379,7 @@ export interface FileRoutesByFullPath {
   '/auth/faceit': typeof AuthFaceitRoute
   '/faceit/callback': typeof FaceitCallbackRoute
   '/faceit/login': typeof FaceitLoginRoute
+  '/p/$publicId': typeof PPublicIdRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -425,6 +432,7 @@ export interface FileRoutesByTo {
   '/auth/faceit': typeof AuthFaceitRoute
   '/faceit/callback': typeof FaceitCallbackRoute
   '/faceit/login': typeof FaceitLoginRoute
+  '/p/$publicId': typeof PPublicIdRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -480,6 +488,7 @@ export interface FileRoutesById {
   '/auth/faceit': typeof AuthFaceitRoute
   '/faceit/callback': typeof FaceitCallbackRoute
   '/faceit/login': typeof FaceitLoginRoute
+  '/p/$publicId': typeof PPublicIdRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/catalog': typeof AuthenticatedAdminCatalogRoute
   '/_authenticated/admin/demo-e2e': typeof AuthenticatedAdminDemoE2eRoute
@@ -535,6 +544,7 @@ export interface FileRouteTypes {
     | '/auth/faceit'
     | '/faceit/callback'
     | '/faceit/login'
+    | '/p/$publicId'
     | '/admin/audit'
     | '/admin/catalog'
     | '/admin/demo-e2e'
@@ -587,6 +597,7 @@ export interface FileRouteTypes {
     | '/auth/faceit'
     | '/faceit/callback'
     | '/faceit/login'
+    | '/p/$publicId'
     | '/admin/audit'
     | '/admin/catalog'
     | '/admin/demo-e2e'
@@ -641,6 +652,7 @@ export interface FileRouteTypes {
     | '/auth/faceit'
     | '/faceit/callback'
     | '/faceit/login'
+    | '/p/$publicId'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/catalog'
     | '/_authenticated/admin/demo-e2e'
@@ -675,6 +687,7 @@ export interface RootRouteChildren {
   AuthFaceitRoute: typeof AuthFaceitRoute
   FaceitCallbackRoute: typeof FaceitCallbackRoute
   FaceitLoginRoute: typeof FaceitLoginRoute
+  PPublicIdRoute: typeof PPublicIdRoute
   ApiPublicA91ReferenceFixtureRoute: typeof ApiPublicA91ReferenceFixtureRoute
   ApiPublicH3eRawAuditReasonsRoute: typeof ApiPublicH3eRawAuditReasonsRoute
   ApiPublicH3eRetentionOperatorRoute: typeof ApiPublicH3eRetentionOperatorRoute
@@ -893,6 +906,13 @@ declare module '@tanstack/react-router' {
       path: '/faceit/login'
       fullPath: '/faceit/login'
       preLoaderRoute: typeof FaceitLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/p/$publicId': {
+      id: '/p/$publicId'
+      path: '/p/$publicId'
+      fullPath: '/p/$publicId'
+      preLoaderRoute: typeof PPublicIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -1151,6 +1171,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthFaceitRoute: AuthFaceitRoute,
   FaceitCallbackRoute: FaceitCallbackRoute,
   FaceitLoginRoute: FaceitLoginRoute,
+  PPublicIdRoute: PPublicIdRoute,
   ApiPublicA91ReferenceFixtureRoute: ApiPublicA91ReferenceFixtureRoute,
   ApiPublicH3eRawAuditReasonsRoute: ApiPublicH3eRawAuditReasonsRoute,
   ApiPublicH3eRetentionOperatorRoute: ApiPublicH3eRetentionOperatorRoute,
