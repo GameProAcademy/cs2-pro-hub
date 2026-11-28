@@ -24,7 +24,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { MetricCard } from "@/components/common/MetricCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -252,9 +252,8 @@ function MatchColumnInfo({ label, help }: { label: string; help: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
       {label}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
+      <Popover>
+        <PopoverTrigger asChild>
             <button
               type="button"
               className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -263,12 +262,11 @@ function MatchColumnInfo({ label, help }: { label: string; help: string }) {
             >
               <CircleHelp className="size-3.5" aria-hidden />
             </button>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs text-left leading-relaxed">
-            {help}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 text-left normal-case tracking-normal" align="start">
+            <p className="text-xs leading-relaxed text-muted-foreground">{help}</p>
+          </PopoverContent>
+        </Popover>
     </span>
   );
 }
