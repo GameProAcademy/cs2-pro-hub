@@ -40,6 +40,12 @@ export interface TrainingPlanInput {
    */
   focus?: string[];
   candidates: CatalogCandidate[];
+  /**
+   * VGL 5.0: recommend whole catalog COURSES (their own /courses/<slug>/ page), never a single
+   * lesson. Only real course rows from the catalog are used; with no fitting course the week
+   * shows the honest empty state.
+   */
+  coursesOnly?: boolean;
 }
 
 export interface PlanPriority {
@@ -122,12 +128,15 @@ export function buildTrainingPlan(input: TrainingPlanInput): TrainingPlanModel {
   if (!needs.length)
     return { ...base, state: "NO_PRIORITY", priorities: [], weeks: [], complementary: [] };
 
-  const inGame = pickRecommendations(input.candidates, needs, input.locale, {
+  const pool = input.coursesOnly
+    ? input.candidates.filter((c) => c.kind === "course")
+    : input.candidates;
+  const inGame = pickRecommendations(pool, needs, input.locale, {
     max: 6,
     tracks: IN_GAME,
     perGroup: 3,
   });
-  const complementary = pickRecommendations(input.candidates, needs, input.locale, {
+  const complementary = pickRecommendations(pool, needs, input.locale, {
     max: 3,
     tracks: COMPLEMENTARY,
     onePerNeed: true,

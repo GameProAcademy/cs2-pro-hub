@@ -217,11 +217,11 @@ describe("wiring", () => {
     );
   });
 
-  it("training explains where lessons open and that progress is not tracked here", () => {
-    expect(read("src/components/training/RealTrainingPlan.tsx")).toContain(
-      't("training.real.accessNote")',
-    );
-    expect(uxPtBR["training.real.accessNote"]).toContain("hub.gamepro.academy");
+  it("VGL 5.0: the catalogue access note was removed by the owner (no empty box left)", () => {
+    const ui = read("src/components/training/RealTrainingPlan.tsx");
+    expect(ui).not.toContain("training.real.accessNote");
+    expect(ui).not.toContain("data-training-access-note");
+    expect("training.real.accessNote" in uxPtBR).toBe(false);
   });
 
   it("the limited-admission badge uses the warning token, not raw palette colours", () => {

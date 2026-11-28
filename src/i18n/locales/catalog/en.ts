@@ -74,17 +74,16 @@ export const catalogEn: Record<keyof typeof catalogPtBR, string> = {
   "training.real.week": "Week",
   "training.real.focusConsolidation": "Consolidation and review",
   "training.real.practice": "Practice in CS2",
-  "training.real.lessons": "Recommended lessons",
+  "training.real.lessons": "Recommended courses",
   "training.real.complementary": "Complementary tracks",
-  "training.real.complementaryHint":
-    "Content from other tracks linked to your priorities. Suggestion: one lesson per week.",
+  "training.real.complementaryHint": "Content from other tracks linked to your priorities.",
   "training.real.frequency": "Suggestion: 3 to 4 sessions per week, in this order.",
   "training.real.open": "Open lesson",
   "training.real.openCourse": "Open course",
   "training.real.why.dna": "Your {dimension} dimension is at {value}.",
   "training.real.why.goal": "Linked to your goal: {goal}.",
   "training.real.why.map": "Positions on {map}, a map you played.",
-  "training.real.noLesson": "No catalog lesson for this priority in your language.",
+  "training.real.noLesson": "No catalog course for this priority in your language.",
   "training.practice.aim":
     "15 min of aim_botz keeping the crosshair at head height + 10 min of deathmatch with one-taps only.",
   "training.practice.dueling":

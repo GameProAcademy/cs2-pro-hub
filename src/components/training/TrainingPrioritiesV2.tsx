@@ -104,6 +104,9 @@ export function TrainingPrioritiesBody({ r }: { r: PriorityResultV2 }) {
             ) : null}
           </div>
         ) : null}
+        <p className="text-xs text-muted-foreground" data-priority-legend>
+          {t("vgl5.training.legend")}
+        </p>
         <p className="text-xs text-muted-foreground">{t("training.v2.method")}</p>
       </div>
     </ChartCard>
@@ -162,7 +165,7 @@ export function SignalLine({ s, rank }: { s: PrioritySignal; rank?: number }) {
                 })
               : `${pct(s.value)}%`}
           </p>
-          <ReferenceGauge s={s} />
+          <PriorityBar s={s} />
         </>
       ) : null}
       <p className="text-xs text-muted-foreground">
@@ -200,43 +203,66 @@ function SignalStateBadge({ s, ranked }: { s: PrioritySignal; ranked: boolean })
 }
 
 /**
- * Visual phase: the same numbers as the text line drawn on one 0–100% track: the interval as a
- * band, the value as a mark and the fixed reference as a tick. Decorative (aria-hidden): the text
- * above already states every number; nothing here is computed beyond placing them.
+ * VGL 5.0 — the same numbers as the text line, as a labelled horizontal bar that answers at a
+ * glance: what it is (your rate vs the fixed reference of this signal), what it means (how far
+ * below or above, in percentage points), and — with the rank and the link — what to do. The
+ * interval is a light band. Nothing is computed beyond placing the existing numbers.
  */
-function ReferenceGauge({ s }: { s: PrioritySignal }) {
+export function PriorityBar({ s }: { s: PrioritySignal }) {
+  const t = useT();
+  const { intlTag } = useI18n();
   if (s.value === null) return null;
-  const at = (v: number) => `${Math.max(0, Math.min(1, v)) * 100}%`;
-  const below = s.interval ? s.interval[1] < s.reference : s.value < s.reference;
+  const clamp = (v: number) => Math.max(0, Math.min(1, v));
+  const at = (v: number) => `${clamp(v) * 100}%`;
+  const pct = (v: number) => formatNumber(clamp(v) * 100, intlTag, 1);
+  const gap = (s.value - s.reference) * 100;
+  const below = gap < 0;
+  const gapText = fill(t(below ? "vgl5.training.below" : "vgl5.training.above"), {
+    d: formatNumber(Math.abs(gap), intlTag, 1),
+  });
   return (
-    <div
-      className="relative h-2 w-full max-w-md rounded-full bg-secondary"
-      aria-hidden
-      data-reference-gauge
+    <figure
+      className="w-full max-w-xl space-y-1.5"
+      role="img"
+      aria-label={`${t("vgl5.training.you")} ${pct(s.value)}% · ${t("vgl5.training.reference")} ${pct(s.reference)}% · ${gapText}`}
+      data-priority-bar
+      data-priority-gap={below ? "below" : "above"}
     >
-      {s.interval ? (
+      <div className="flex items-baseline justify-between gap-3 font-mono text-xs tabular-nums">
+        <span className={cn("font-semibold", below ? "text-primary" : "text-context")}>
+          {t("vgl5.training.you")} {pct(s.value)}%
+        </span>
+        <span className="text-muted-foreground">
+          {t("vgl5.training.reference")} {pct(s.reference)}%
+        </span>
+      </div>
+      <div className="relative h-3 w-full rounded-full bg-secondary" aria-hidden>
+        {s.interval ? (
+          <span
+            className="absolute inset-y-0 rounded-full bg-foreground/10"
+            style={{
+              left: at(s.interval[0]),
+              width: `calc(${at(s.interval[1])} - ${at(s.interval[0])})`,
+            }}
+          />
+        ) : null}
         <span
           className={cn(
-            "absolute inset-y-0 rounded-full",
-            below ? "bg-primary/35" : "bg-context/35",
+            "absolute inset-y-0 left-0 rounded-full",
+            below ? "bg-primary" : "bg-context",
           )}
-          style={{
-            left: at(s.interval[0]),
-            width: `calc(${at(s.interval[1])} - ${at(s.interval[0])})`,
-          }}
+          style={{ width: at(s.value) }}
         />
-      ) : null}
-      <span
-        className={cn(
-          "absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background",
-          below ? "bg-primary" : "bg-context",
-        )}
-        style={{ left: at(s.value) }}
-      />
-      <span
-        className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 rounded-full bg-foreground/70"
-        style={{ left: at(s.reference) }}
-      />
-    </div>
+        <span
+          className="absolute -top-1 h-5 w-0.5 -translate-x-1/2 rounded-full bg-foreground"
+          style={{ left: at(s.reference) }}
+        />
+      </div>
+      <figcaption
+        className={cn("text-xs font-medium", below ? "text-primary" : "text-muted-foreground")}
+      >
+        {gapText}
+      </figcaption>
+    </figure>
   );
 }

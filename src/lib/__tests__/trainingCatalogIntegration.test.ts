@@ -279,3 +279,29 @@ describe("integration wiring (source)", () => {
     expect(trainingFn).not.toContain("supabaseAdmin");
   });
 });
+
+describe("VGL 5.0 — whole courses, never single lessons", () => {
+  it.each(CATALOG_LOCALES)("%s: every recommendation is a real catalog course page", (locale) => {
+    const p = plan(locale, { coursesOnly: true });
+    const recs = items(p);
+    expect(recs.length, locale).toBeGreaterThan(0);
+    for (const r of recs) {
+      expect(r.kind, r.url).toBe("course");
+      expect(r.url).toMatch(/^https:\/\/hub\.gamepro\.academy\/courses\/[a-z0-9-]+\/$/);
+      // Real catalog row, not a URL built by assumption.
+      expect(byUrl.get(r.url)?.kind).toBe("course");
+    }
+  });
+  it("with no fitting course the week is empty (honest state), never a lesson", () => {
+    const p = plan("pt-BR", {
+      coursesOnly: true,
+      dimensions: OWNER.map((d) => ({ ...d, index: d.dimension === "economy" ? 10 : 99 })),
+    });
+    for (const r of items(p)) expect(r.kind).toBe("course");
+  });
+  it("the server builds the plan with courses only", () => {
+    expect(readFileSync(resolve(process.cwd(), "src/lib/training.functions.ts"), "utf8")).toContain(
+      "coursesOnly: true",
+    );
+  });
+});

@@ -68,6 +68,4 @@ export const uxPtPT: Record<keyof typeof uxPtBR, string> = {
   "real.proScoreContext.instead":
     "O rating que aparece na tabela de partidas vale só para cada partida isolada e não substitui o CS2 PRO Score.",
   "real.proScore.where": "Saiba mais em Desempenho",
-  "training.real.accessNote":
-    "O CS2 PRO apenas recomenda aulas do catálogo GamePro, escolhidas a partir das suas partidas e objetivos, e mostra a ligação. A aula abre em hub.gamepro.academy, num novo separador, com o seu próprio início de sessão nessa plataforma. O CS2 PRO não recebe qualquer informação de lá: não sabe se abriu, viu ou concluiu uma aula, e nada disso entra nas suas métricas ou recomendações.",
 };

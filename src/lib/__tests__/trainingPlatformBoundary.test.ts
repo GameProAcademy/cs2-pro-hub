@@ -256,7 +256,9 @@ describe("what the player is told", () => {
       expect(realTraining.length, locale).toBeGreaterThan(10);
       const claims = realTraining.filter(([, v]) => /progr[eè]s|progreso/i.test(v));
       expect(claims, locale).toEqual([]);
-      expect(dict["training.real.accessNote"], locale).toContain("hub.gamepro.academy");
+      // VGL 5.0: the access note and the "one lesson a week" suggestion were removed (owner).
+      expect(dict["training.real.accessNote"], locale).toBeUndefined();
+      expect(dict["training.real.complementaryHint"], locale).not.toMatch(/semana|week|semaine/i);
     }
   });
 
