@@ -13,7 +13,14 @@ import { UserAvatar } from "@/components/common/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { DEMO_DATA } from "@/config/app";
 import { NotificationBell } from "@/components/notifications/NotificationComponents";
-import { areaOf, navAreas, navItems, uploadNavItem } from "@/config/navigation";
+import {
+  activeSectionOf,
+  areaOf,
+  isOnPath,
+  navAreas,
+  navItems,
+  uploadNavItem,
+} from "@/config/navigation";
 import { useT } from "@/i18n";
 import { useAdminSession } from "@/hooks/useAdminSession";
 import { useAccount } from "@/hooks/useAccount";
@@ -21,24 +28,30 @@ import { signOutEverywhere } from "@/lib/auth";
 import { fill } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+/** VGL 5.0 — the visual language of "you are here": surface, side bar, weight and colour. */
+const ACTIVE_ITEM =
+  "relative border-primary/30 bg-sidebar-accent font-semibold text-sidebar-accent-foreground shadow-[inset_3px_0_0_0_var(--primary)] [&_svg]:text-primary";
+
 function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   const t = useT();
   const pathname = useRouterState({ select: (st) => st.location.pathname });
   const active = areaOf(pathname);
+  const section = activeSectionOf(pathname);
   return (
     <nav className="space-y-1" aria-label={t("nav.mainLabel")}>
       {navAreas.map((area) => {
         const isActive = active?.id === area.id;
+        // With sections, the current PAGE is the section; the area is its open parent.
+        const areaCurrent = isActive ? (area.sections ? "true" : "page") : undefined;
         return (
-          <div key={area.id} data-nav-area={area.id}>
+          <div key={area.id} data-nav-area={area.id} data-nav-active={isActive || undefined}>
             <Link
               to={area.to}
               onClick={onNavigate}
-              aria-current={isActive ? "page" : undefined}
+              aria-current={areaCurrent}
               className={cn(
-                "flex min-h-11 items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                isActive &&
-                  "relative border-primary/30 bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_0_var(--primary)] [&_svg]:text-primary",
+                "flex min-h-11 items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isActive && ACTIVE_ITEM,
               )}
             >
               <area.icon className="size-4 shrink-0" aria-hidden />
@@ -46,19 +59,34 @@ function NavLinks({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
             </Link>
             {isActive && area.sections ? (
               <ul className="mb-1 ml-7 mt-1 space-y-0.5 border-l border-sidebar-border pl-2">
-                {area.sections.map((sec) => (
-                  <li key={sec.to}>
-                    <Link
-                      to={sec.to}
-                      onClick={onNavigate}
-                      activeOptions={{ exact: false }}
-                      activeProps={{ className: "text-foreground", "aria-current": "page" }}
-                      className="flex min-h-9 items-center rounded px-2 text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      {t(sec.labelKey)}
-                    </Link>
-                  </li>
-                ))}
+                {area.sections.map((sec) => {
+                  const on = section === sec.to;
+                  return (
+                    <li key={sec.to}>
+                      <Link
+                        to={sec.to}
+                        onClick={onNavigate}
+                        aria-current={on ? "page" : undefined}
+                        data-nav-section={sec.to}
+                        data-nav-section-active={on || undefined}
+                        className={cn(
+                          "relative flex min-h-9 items-center gap-2 rounded px-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          on &&
+                            "bg-primary/10 font-semibold text-foreground before:absolute before:-left-[9px] before:top-1.5 before:h-6 before:w-0.5 before:rounded-full before:bg-primary",
+                        )}
+                      >
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "size-1.5 shrink-0 rotate-45 rounded-[1px]",
+                            on ? "bg-primary" : "bg-transparent",
+                          )}
+                        />
+                        {t(sec.labelKey)}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </div>
@@ -76,6 +104,7 @@ function AreaSections() {
   const t = useT();
   const pathname = useRouterState({ select: (st) => st.location.pathname });
   const area = areaOf(pathname);
+  const section = activeSectionOf(pathname);
   if (!area?.sections) return null;
   return (
     <nav
@@ -84,21 +113,27 @@ function AreaSections() {
       data-area-sections={area.id}
     >
       <ul className="flex min-w-max gap-1">
-        {area.sections.map((sec) => (
-          <li key={sec.to}>
-            <Link
-              to={sec.to}
-              activeOptions={{ exact: false }}
-              activeProps={{
-                className: "border-primary/50 bg-primary/10 text-foreground",
-                "aria-current": "page",
-              }}
-              className="inline-flex min-h-11 items-center rounded-full border border-border px-3 text-xs font-medium text-muted-foreground"
-            >
-              {t(sec.labelKey)}
-            </Link>
-          </li>
-        ))}
+        {area.sections.map((sec) => {
+          const on = section === sec.to;
+          return (
+            <li key={sec.to}>
+              <Link
+                to={sec.to}
+                aria-current={on ? "page" : undefined}
+                data-nav-section-active={on || undefined}
+                className={cn(
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-medium text-muted-foreground",
+                  on && "border-primary/50 bg-primary/10 font-semibold text-foreground",
+                )}
+              >
+                {on ? (
+                  <span aria-hidden className="size-1.5 rotate-45 rounded-[1px] bg-primary" />
+                ) : null}
+                {t(sec.labelKey)}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
@@ -106,6 +141,7 @@ function AreaSections() {
 
 function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined }) {
   const t = useT();
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: adminSession } = useAdminSession();
@@ -113,8 +149,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
   return (
     <div className="flex h-full flex-col gap-6 p-4">
       <Brand className="px-1 py-2" />
-      <Button asChild variant="default" className="w-full justify-start gap-2">
-        <Link to={uploadNavItem.to} onClick={onNavigate}>
+      <Button
+        asChild
+        variant="default"
+        className={cn(
+          "w-full justify-start gap-2",
+          isOnPath(pathname, uploadNavItem.to) &&
+            "ring-2 ring-primary/60 ring-offset-2 ring-offset-sidebar",
+        )}
+      >
+        <Link
+          to={uploadNavItem.to}
+          onClick={onNavigate}
+          aria-current={isOnPath(pathname, uploadNavItem.to) ? "page" : undefined}
+        >
           <Upload className="size-4" aria-hidden />
           {t(uploadNavItem.labelKey)}
           <PendingActionsBadge className="ml-auto" />
@@ -127,17 +175,33 @@ function SidebarContent({ onNavigate }: { onNavigate?: (() => void) | undefined 
         <NavLinks onNavigate={onNavigate} />
       </div>
       {adminSession ? (
-        <Button asChild variant="outline" className="w-full justify-start gap-2">
-          <Link to="/admin" onClick={onNavigate}>
+        <Button
+          asChild
+          variant="outline"
+          className={cn("w-full justify-start gap-2", isOnPath(pathname, "/admin") && ACTIVE_ITEM)}
+        >
+          <Link
+            to="/admin"
+            onClick={onNavigate}
+            aria-current={isOnPath(pathname, "/admin") ? "page" : undefined}
+          >
             <Shield className="size-4" aria-hidden />
             {t("admin.area")}
           </Link>
         </Button>
       ) : null}
-      <div className="rounded-md border border-sidebar-border bg-sidebar-accent/40 p-3">
+      <div
+        className={cn(
+          "rounded-md border border-sidebar-border bg-sidebar-accent/40 p-3",
+          isOnPath(pathname, "/profile") &&
+            "border-primary/40 shadow-[inset_3px_0_0_0_var(--primary)]",
+        )}
+        data-nav-profile-active={isOnPath(pathname, "/profile") || undefined}
+      >
         <Link
           to="/profile"
           onClick={onNavigate}
+          aria-current={isOnPath(pathname, "/profile") ? "page" : undefined}
           aria-label={t("nav.openProfile")}
           className="flex items-center gap-3 rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
         >
@@ -284,7 +348,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   data-bottom-area={area.id}
                   className={cn(
                     "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center text-xs font-medium leading-tight text-muted-foreground transition-colors",
-                    isActive && "text-primary",
+                    isActive &&
+                      "relative font-semibold text-primary before:absolute before:inset-x-4 before:top-0 before:h-0.5 before:rounded-full before:bg-primary",
                   )}
                 >
                   <area.icon className="size-5" aria-hidden />

@@ -4,8 +4,8 @@
  * no local or fixed reply. Text is rendered as React text nodes, never as HTML.
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouterState } from "@tanstack/react-router";
-import { CircleHelp, Plus, RotateCcw, Send, User } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { CircleHelp, History, Plus, RotateCcw, Send, User } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -22,6 +22,7 @@ const FRESH_ID_AFTER = new Set<string>([
 ]);
 import {
   ConversationMenu,
+  ConversationSidebar,
   COACH_CONVERSATIONS_KEY,
   COACH_PREFERENCES_KEY,
   DeleteConversationButton,
@@ -352,7 +353,21 @@ function writeDismissed() {
   }
 }
 
-export function RealCoachChat({ className }: { className?: string | undefined }) {
+export function RealCoachChat({
+  className,
+  layout = "drawer",
+  initialConversationId,
+}: {
+  className?: string | undefined;
+  /**
+   * VGL 5.0. "page" (/coach): on desktop (lg+) the conversations are a sidebar beside the chat;
+   * below lg the dropdown stays. "drawer" (floating chat): on desktop "Conversations" opens
+   * /coach with the current conversation; below lg the dropdown stays.
+   */
+  layout?: "page" | "drawer";
+  /** A conversation to open first (e.g. /coach?conversation=… from the floating chat). */
+  initialConversationId?: string | undefined;
+}) {
   const { t, intlTag, locale } = useI18n();
   const queryClient = useQueryClient();
   const state = useQuery({ queryKey: COACH_STATE_KEY, queryFn: () => getCoachState() });
@@ -364,7 +379,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<CoachErrorCode | null>(null);
   /** undefined: the latest conversation; null: a new one; string: one picked from the list. */
-  const [selected, setSelected] = useState<string | null | undefined>(undefined);
+  const [selected, setSelected] = useState<string | null | undefined>(initialConversationId);
   const [showPrefs, setShowPrefs] = useState(false);
   const [dismissed, setDismissed] = useState(readDismissed);
   const requestRef = useRef<{
@@ -478,8 +493,8 @@ export function RealCoachChat({ className }: { className?: string | undefined })
     prefs.data?.saved === false &&
     messages.length === 0;
 
-  return (
-    <div className={cn("flex min-h-0 flex-col", className)}>
+  const chat = (
+    <div className={cn("flex min-h-0 flex-col", layout === "page" ? "min-w-0 flex-1" : className)}>
       <div className="vgl-grid relative isolate flex flex-wrap items-center justify-between gap-2 border-b border-border bg-elevated/60 px-4 py-2 sm:py-2.5">
         <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-20 bg-primary" />
         <div className="min-w-0 flex-1 max-sm:contents">
@@ -508,14 +523,30 @@ export function RealCoachChat({ className }: { className?: string | undefined })
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1 max-sm:order-2" data-coach-actions>
-          <ConversationMenu
-            activeId={conversationId}
-            disabled={pending !== null}
-            onSelect={(id) => {
-              setSelected(id);
-              setError(null);
-            }}
-          />
+          <div className="lg:hidden">
+            <ConversationMenu
+              activeId={conversationId}
+              disabled={pending !== null}
+              onSelect={(id) => {
+                setSelected(id);
+                setError(null);
+              }}
+            />
+          </div>
+          {layout === "drawer" ? (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="hidden lg:inline-flex"
+              data-coach-conversations-page
+            >
+              <Link to="/coach" search={conversationId ? { conversation: conversationId } : {}}>
+                <History className="size-3.5" aria-hidden />
+                <span>{t("coach2.conversations")}</span>
+              </Link>
+            </Button>
+          ) : null}
           {prefsAvailable ? <PersonalizeButton onClick={() => setShowPrefs((v) => !v)} /> : null}
           <DeleteConversationButton
             conversationId={conversationId}
@@ -529,6 +560,7 @@ export function RealCoachChat({ className }: { className?: string | undefined })
           <Button
             variant="ghost"
             size="sm"
+            className={layout === "page" ? "lg:hidden" : undefined}
             disabled={pending !== null || messages.length === 0}
             onClick={() => {
               setSelected(null);
@@ -680,6 +712,32 @@ export function RealCoachChat({ className }: { className?: string | undefined })
           </span>
         </p>
       </form>
+    </div>
+  );
+  if (layout !== "page") return chat;
+  return (
+    <div className={cn("flex min-h-0", className)} data-coach-layout="page">
+      <div className="hidden min-h-0 lg:flex">
+        <ConversationSidebar
+          activeId={conversationId}
+          disabled={pending !== null}
+          canStartNew={messages.length > 0}
+          onSelect={(id) => {
+            setSelected(id);
+            setError(null);
+          }}
+          onNew={() => {
+            setSelected(null);
+            setError(null);
+          }}
+          onDeleted={(id) => {
+            if (id === conversationId) setSelected(undefined);
+            setError(null);
+            void queryClient.invalidateQueries({ queryKey: COACH_STATE_KEY });
+          }}
+        />
+      </div>
+      {chat}
     </div>
   );
 }
