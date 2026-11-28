@@ -435,7 +435,7 @@ export function DnaIdentityCard({ fallback }: { fallback: ReactNode }) {
         />
       ) : null}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary">
           <GameIcon name="dna" className="size-3.5" />
           {t("vgl5.dna.badge")}
         </span>
