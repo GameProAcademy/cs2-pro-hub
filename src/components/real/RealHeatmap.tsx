@@ -13,6 +13,13 @@ import { CircleDashed, MapPinned } from "lucide-react";
 import { useMemo, useState, type CSSProperties } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
+import { GameIcon } from "@/components/common/GameIcon";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { SaveMomentButton } from "@/components/moments/SaveMoment";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -148,7 +155,74 @@ export function HeatmapBody({
       ) : (
         <SupportedHeatmap h={h} matches={r.matches} />
       )}
-      <NotMeasured h={h} />
+      <SecondaryInfo h={h} />
+    </div>
+  );
+}
+
+/**
+ * VGL 5.1 (Frente 11) — the secondary information of every map view (Maps page and the Match
+ * Room "Map" tab), at the end, as three cards of one pattern: Legend · Off the map · Not measured
+ * in this version. Each card is an accordion, closed by default (Radix: aria-expanded, keyboard).
+ */
+function SecondaryInfo({ h }: { h: HeatmapResult }) {
+  const t = useT();
+  const supported = h.support === "SUPPORTED";
+  const max = h.cells.reduce((m, c) => Math.max(m, c.count), 0);
+  const cards: Array<{
+    id: string;
+    icon: Parameters<typeof GameIcon>[0]["name"];
+    title: string;
+    body: React.ReactNode;
+  }> = [
+    ...(supported
+      ? [
+          {
+            id: "legend",
+            icon: "map" as const,
+            title: t("spatial.legend.title"),
+            body: <LegendBody h={h} max={max} />,
+          },
+          {
+            id: "excluded",
+            icon: "alert" as const,
+            title: t("spatial.excluded.title"),
+            body: <ExcludedBody h={h} />,
+          },
+        ]
+      : []),
+    {
+      id: "not-measured",
+      icon: "clock" as const,
+      title: t("spatial.notMeasured.title"),
+      body: <NotMeasuredBody h={h} />,
+    },
+  ];
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-3" data-map-secondary>
+      {cards.map((c) => (
+        <Accordion
+          key={c.id}
+          type="single"
+          collapsible
+          className="surface-panel rounded-xl border border-border px-4"
+          data-map-secondary-card={c.id}
+        >
+          <AccordionItem value={c.id} className="border-b-0">
+            <AccordionTrigger className="min-h-12 gap-3 py-3 font-display text-sm font-semibold uppercase tracking-wide text-foreground hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <span className="flex items-center gap-2.5">
+                <span className="flex size-7 items-center justify-center rounded-md border border-border bg-background/60 text-muted-foreground">
+                  <GameIcon name={c.icon} className="size-4" />
+                </span>
+                {c.title}
+              </span>
+            </AccordionTrigger>
+            <AccordionContent forceMount className="pb-4 [[data-state=closed]>&]:hidden">
+              {c.body}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      ))}
     </div>
   );
 }
@@ -389,7 +463,13 @@ function SupportedHeatmap({ h, matches }: { h: HeatmapResult; matches: SpatialMa
   const showShare =
     h.perRound.status !== "INSUFFICIENT_SAMPLE" && h.perRound.status !== "UNAVAILABLE";
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem), showAll]">
+    // VGL 5.1 (Frente 11): map | "cells with most events" side by side, the selected cell's
+    // events right below across both columns. (The previous column class carried a stray
+    // ", showAll" that made Tailwind drop it, so everything stacked.)
+    <div
+      className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start"
+      data-map-main
+    >
       <ChartCard
         title={t(`spatial.layer.${h.layer}`)}
         subtitle={t(`spatial.layer.${h.layer}.semantics`)}
@@ -409,12 +489,8 @@ function SupportedHeatmap({ h, matches }: { h: HeatmapResult; matches: SpatialMa
           {t("spatial.legend.points")}
         </p>
       </ChartCard>
-      <div className="space-y-6">
-        <Legend h={h} max={max} />
-        <Excluded h={h} />
-      </div>
       {h.cells.length ? (
-        <ChartCard title={t("spatial.cells.title")}>
+        <ChartCard title={t("spatial.cells.title")} className="lg:sticky lg:top-4">
           <ol className="space-y-1 text-sm" data-cells-list>
             {top.map((c) => (
               <li key={c.cell}>
@@ -566,12 +642,12 @@ function HeatmapSvg({
   );
 }
 
-function Legend({ h, max }: { h: HeatmapResult; max: number }) {
+function LegendBody({ h, max }: { h: HeatmapResult; max: number }) {
   const t = useT();
   const { intlTag } = useI18n();
   const cov = h.events.coverage;
   return (
-    <ChartCard title={t("spatial.legend.title")}>
+    <div data-map-legend>
       <dl className="space-y-2 text-sm">
         <Row label={t("spatial.legend.events")}>
           {h.events.value === null ? (
@@ -616,7 +692,7 @@ function Legend({ h, max }: { h: HeatmapResult; max: number }) {
       <p className="mt-2 text-xs text-muted-foreground">
         {fill(t("spatial.version"), { version: h.version, transform: h.transformVersion })}
       </p>
-    </ChartCard>
+    </div>
   );
 }
 
@@ -629,11 +705,11 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function Excluded({ h }: { h: HeatmapResult }) {
+function ExcludedBody({ h }: { h: HeatmapResult }) {
   const t = useT();
   const entries = Object.entries(h.excluded) as Array<[ExclusionReason, number]>;
   return (
-    <ChartCard title={t("spatial.excluded.title")}>
+    <div>
       {entries.length ? (
         <ul className="space-y-1 text-sm" data-excluded>
           {entries.map(([reason, n]) => (
@@ -646,15 +722,16 @@ function Excluded({ h }: { h: HeatmapResult }) {
       ) : (
         <p className="text-sm text-muted-foreground">{t("spatial.excluded.none")}</p>
       )}
-    </ChartCard>
+    </div>
   );
 }
 
-function NotMeasured({ h }: { h: HeatmapResult }) {
+function NotMeasuredBody({ h }: { h: HeatmapResult }) {
   const t = useT();
   return (
-    <ChartCard title={t("spatial.notMeasured.title")} subtitle={t("spatial.notMeasured.note")}>
-      <ul className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2" data-not-measured>
+    <div>
+      <p className="mb-2 text-sm text-muted-foreground">{t("spatial.notMeasured.note")}</p>
+      <ul className="grid gap-1 text-sm text-muted-foreground" data-not-measured>
         {h.notMeasured.map((l) => (
           <li key={l.layer}>
             <span aria-hidden>{NOT_AVAILABLE_MARK} </span>
@@ -662,7 +739,7 @@ function NotMeasured({ h }: { h: HeatmapResult }) {
           </li>
         ))}
       </ul>
-    </ChartCard>
+    </div>
   );
 }
 
