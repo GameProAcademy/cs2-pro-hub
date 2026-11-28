@@ -213,7 +213,7 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
       ) : null}
 
       <ChartCard title={t("rounds.section.list")} subtitle={t("rounds.section.list.subtitle")}>
-        <ol className="flex flex-col gap-3" data-round-list>
+        <ol className="flex flex-col gap-2" data-round-list>
           {r.rounds.map((round) => (
             <RoundItem key={round.roundNumber} round={round} matchId={r.matchId} />
           ))}
