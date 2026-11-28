@@ -123,3 +123,23 @@ export function areaOf(pathname: string): NavArea | null {
     null
   );
 }
+
+/**
+ * VGL 5.0 — the ONE section of the current area that is the current page (null for one-page
+ * areas and account pages). Exact path or a child route of the section wins; another page of the
+ * area that has no section of its own (a Match Room tab such as /rounds) belongs to the area's
+ * first section. Never more than one section.
+ */
+export function activeSectionOf(pathname: string): string | null {
+  const area = areaOf(pathname);
+  if (!area?.sections) return null;
+  const match = area.sections
+    .filter((s) => pathname === s.to || pathname.startsWith(`${s.to}/`))
+    .sort((a, b) => b.to.length - a.to.length)[0];
+  return match ? match.to : area.sections[0]!.to;
+}
+
+/** The account destination the path is on (/profile, /upload, /admin…), for its own highlight. */
+export function isOnPath(pathname: string, to: string): boolean {
+  return pathname === to || pathname.startsWith(`${to}/`);
+}

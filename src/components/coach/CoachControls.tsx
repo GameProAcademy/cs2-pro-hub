@@ -5,7 +5,7 @@
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { History, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { History, Plus, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { useState } from "react";
 
 import { GameIcon } from "@/components/common/GameIcon";
@@ -380,5 +380,167 @@ export function SuggestedQuestions({ onPick }: { onPick: (text: string) => void 
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * VGL 5.0 — the conversations as a sidebar beside the chat (desktop /coach). Same list query and
+ * the same two-step delete as the dropdown: the trash icon appears on hover and on keyboard focus
+ * and only asks; nothing is deleted until "Confirm". The active conversation is marked.
+ */
+export function ConversationSidebar({
+  activeId,
+  onSelect,
+  onNew,
+  onDeleted,
+  disabled,
+  canStartNew,
+}: {
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+  onDeleted: (id: string) => void;
+  disabled?: boolean;
+  canStartNew: boolean;
+}) {
+  const t = useT();
+  const { intlTag } = useI18n();
+  const queryClient = useQueryClient();
+  const list = useQuery({
+    queryKey: COACH_CONVERSATIONS_KEY,
+    queryFn: () => listCoachConversations(),
+  });
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  const remove = async (conversationId: string) => {
+    setBusy(true);
+    setFailed(null);
+    try {
+      const r = await deleteCoachConversation({ data: { conversationId } });
+      if (!r.deleted) throw new Error("not deleted");
+      await queryClient.invalidateQueries({ queryKey: COACH_CONVERSATIONS_KEY });
+      setConfirming(null);
+      onDeleted(conversationId);
+    } catch {
+      setFailed(conversationId);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <aside
+      className="flex w-72 shrink-0 flex-col border-r border-border bg-elevated/40"
+      aria-label={t("coach2.conversations")}
+      data-coach-sidebar
+    >
+      <div className="border-b border-border p-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-start gap-2"
+          disabled={disabled || !canStartNew}
+          onClick={onNew}
+          data-coach-sidebar-new
+        >
+          <Plus className="size-4" aria-hidden />
+          {t("real.aicoach.newConversation")}
+        </Button>
+      </div>
+      <p className="px-4 pb-1 pt-3 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        {t("coach2.conversations")}
+      </p>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+        {list.isPending ? (
+          <p className="p-3 text-xs text-muted-foreground">…</p>
+        ) : list.isError ? (
+          <p className="p-3 text-xs text-destructive">{t("coach2.loadError")}</p>
+        ) : !list.data?.length ? (
+          <p className="p-3 text-xs text-muted-foreground">{t("coach2.conversationsEmpty")}</p>
+        ) : (
+          <ul className="space-y-0.5">
+            {list.data.map((c) => {
+              const active = c.id === activeId;
+              const asking = confirming === c.id;
+              return (
+                <li
+                  key={c.id}
+                  className={cn(
+                    "group relative rounded-md",
+                    active && "bg-primary/10 shadow-[inset_3px_0_0_0_var(--primary)]",
+                  )}
+                  data-coach-sidebar-item={c.id}
+                  data-active={active || undefined}
+                >
+                  {asking ? (
+                    <div className="space-y-2 px-3 py-2">
+                      <p className="truncate text-sm text-foreground">
+                        {c.title || t("coach2.untitled")}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => void remove(c.id)}
+                          data-coach-sidebar-confirm
+                        >
+                          {t("coach2.deleteConfirm")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => setConfirming(null)}
+                        >
+                          {t("coach2.deleteCancel")}
+                        </Button>
+                      </div>
+                      {failed === c.id ? (
+                        <p role="alert" className="text-xs text-destructive">
+                          {t("coach2.deleteError")}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <button
+                        type="button"
+                        aria-current={active ? "true" : undefined}
+                        disabled={disabled}
+                        className={cn(
+                          "min-w-0 flex-1 rounded-md px-3 py-2 text-left text-sm hover:bg-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          active ? "font-semibold text-foreground" : "text-muted-foreground",
+                        )}
+                        onClick={() => onSelect(c.id)}
+                      >
+                        <span className="block truncate">{c.title || t("coach2.untitled")}</span>
+                        <span className="block font-mono text-xs font-normal text-muted-foreground">
+                          <time dateTime={c.updatedAt}>{formatDateTime(c.updatedAt, intlTag)}</time>
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${t("coach2.delete")}: ${c.title || t("coach2.untitled")}`}
+                        title={t("coach2.delete")}
+                        disabled={disabled}
+                        className="mr-1 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100"
+                        onClick={() => {
+                          setConfirming(c.id);
+                          setFailed(null);
+                        }}
+                        data-coach-sidebar-delete
+                      >
+                        <Trash2 className="size-3.5" aria-hidden />
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </aside>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { BarChart3, ClipboardList, Stethoscope, Target } from "lucide-react";
 import { DEMO_DATA } from "@/config/app";
 
@@ -12,7 +13,14 @@ import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/config";
 import { getAnalysis, getProScore } from "@/services/playerService";
 
+/** VGL 5.0: the floating chat opens /coach on the conversation it was showing. */
+const conversationParam = z.string().uuid();
+
 export const Route = createFileRoute("/_authenticated/coach")({
+  validateSearch: (search: Record<string, unknown>): { conversation?: string } => {
+    const parsed = conversationParam.safeParse(search["conversation"]);
+    return parsed.success ? { conversation: parsed.data } : {};
+  },
   head: () => ({
     meta: [
       { title: "AI Coach — CS2 PRO AI COACH" },
@@ -33,6 +41,7 @@ export const Route = createFileRoute("/_authenticated/coach")({
 
 function RealCoachPage() {
   const t = useT();
+  const { conversation } = Route.useSearch();
   return (
     <AppShell>
       <div className="space-y-6">
@@ -43,8 +52,8 @@ function RealCoachPage() {
         />
         {/* UX-1.0 M-10: below lg the composer must stay above the fixed bottom navigation
             (3.5 rem + safe area), also on short phones; the header above takes ~14 rem. */}
-        <section className="surface-panel flex h-[68vh] min-h-[460px] flex-col rounded-lg border border-border max-lg:h-[calc(100dvh-19rem-env(safe-area-inset-bottom))] max-lg:min-h-[500px]">
-          <RealCoachChat className="flex-1" />
+        <section className="surface-panel flex h-[68vh] min-h-[460px] flex-col overflow-hidden rounded-lg border border-border max-lg:h-[calc(100dvh-19rem-env(safe-area-inset-bottom))] max-lg:min-h-[500px]">
+          <RealCoachChat className="flex-1" layout="page" initialConversationId={conversation} />
         </section>
       </div>
     </AppShell>
