@@ -78,7 +78,13 @@ export function GlossaryList({ ids }: { ids: readonly MetricId[] }) {
                 aria-hidden
                 className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
               >
-                <svg viewBox="0 0 20 20" fill="none" className="size-4" stroke="currentColor" strokeWidth="1.8">
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  className="size-4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
                   <path d="m5 7.5 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
