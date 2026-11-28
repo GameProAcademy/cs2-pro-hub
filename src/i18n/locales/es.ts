@@ -220,7 +220,7 @@ export const es: Dictionary = {
   "vgl4.overview.flash": "Asist. de flash",
   "vgl4.overview.go": "Explorar la partida",
   "vgl4.tabIntro.rounds": "Cada round con lado, economía, eventos y posiciones registradas.",
-  "vgl4.tabIntro.rounds.title": "Detalles de cada ronda",
+  "vgl4.tabIntro.rounds.title": "Rounds",
   "vgl4.tabIntro.duels": "Tus duelos: a quién eliminaste, quién te eliminó y con qué.",
   "vgl4.tabIntro.deaths": "Cada muerte tuya, con arma, contexto y replay en el tick.",
   "vgl4.tabIntro.utility": "Granadas lanzadas y sus efectos registrados.",
