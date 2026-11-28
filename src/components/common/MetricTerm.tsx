@@ -63,20 +63,30 @@ export function MetricTerm({
 export function GlossaryList({ ids }: { ids: readonly MetricId[] }) {
   const glossary = useGlossary();
   return (
-    <dl className="grid gap-4 sm:grid-cols-2">
+    <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3" data-metric-glossary>
       {ids.map((id) => {
         const term = glossary(id);
         return (
-          <div
+          <details
             key={id}
-            className="rounded-md border border-border bg-background/40 p-3"
+            className="group min-w-0 rounded-md border border-border bg-background/40 p-3"
             data-glossary-entry={id}
           >
-            <dt className="text-sm font-semibold text-foreground">{term.label}</dt>
-            <dd className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-foreground marker:hidden [&::-webkit-details-marker]:hidden">
+              <span>{term.label}</span>
+              <span
+                aria-hidden
+                className="shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+              >
+                <svg viewBox="0 0 20 20" fill="none" className="size-4" stroke="currentColor" strokeWidth="1.8">
+                  <path d="m5 7.5 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </summary>
+            <dd className="mt-2 border-t border-border/70 pt-2 text-xs leading-relaxed text-muted-foreground">
               {term.definition}
             </dd>
-          </div>
+          </details>
         );
       })}
     </dl>
