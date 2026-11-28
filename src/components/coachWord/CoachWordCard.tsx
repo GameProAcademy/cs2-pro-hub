@@ -1,6 +1,6 @@
 /**
  * VGL 5.0 — "Palavra do Treinador" card. Pre-written guidance (i18n bank `cw.*`) chosen by the
- * deterministic rules of `coach-word-v1`; nothing here calls an AI provider. The data comes from
+ * deterministic rules of `coach-word-v1.1`; nothing here calls an AI provider. The data comes from
  * queries the pages already use (same query keys, so they are shared from the cache).
  * "Talk to the Coach" opens the AI Coach drawer on the current page, so the existing screen
  * context (area, own match, tab) goes with the question — the Coach's prompts are unchanged.
@@ -22,7 +22,6 @@ import { dnaLabelKey } from "@/lib/dna";
 import { fill } from "@/lib/format";
 import { COACH_DNA_HISTORY_KEY, openCoachWith } from "@/lib/coachWord/coachWordBridge";
 import {
-  COACH_WORD_VERSION,
   coachWordFor,
   type CoachWord,
   type CoachWordContext,
@@ -33,16 +32,17 @@ import { listGoals } from "@/lib/notifications/notifications.functions";
 import { getProScore } from "@/lib/proScore.functions";
 import { getTrainingPriorities } from "@/lib/trainingPriority.functions";
 import { DNA_VERSION_V3 } from "@/lib/playerDnaV3";
-import { getDnaHistory } from "@/lib/xray.functions";
+import type { XRayDiagnosis } from "@/lib/diagnostics/xray";
+import { getDnaHistory, getXRay, XRAY_QUERY_KEY } from "@/lib/xray.functions";
 import type { DnaDimension } from "@/types";
 import { cn } from "@/lib/utils";
 
 const NEEDS: Record<
   CoachWordSection,
-  { overview?: true; dna?: true; score?: true; training?: true; goals?: true }
+  { overview?: true; dna?: true; score?: true; training?: true; goals?: true; xray?: true }
 > = {
   dashboard: { overview: true, training: true },
-  analysis: { overview: true, dna: true },
+  analysis: { overview: true, xray: true },
   playerDna: { dna: true },
   performance: { overview: true, score: true },
   evolution: { overview: true },
@@ -58,6 +58,22 @@ const TONE: Record<CoachWord["tone"], BadgeTone> = {
   neutral: "context",
   insufficient: "neutral",
 };
+
+/** Reduces the Raio-X diagnosis to what the Coach's Word may talk about (its own page only). */
+export function xrayContext(x: XRayDiagnosis): NonNullable<CoachWordContext["xray"]> {
+  const top = x.inferences.find((i) => i.rank === 1) ?? null;
+  const rating = (o: { status: string; value: number | null }) =>
+    o.status === "MEASURED" ? o.value : null;
+  return {
+    state: x.state,
+    matches: x.sample.matches,
+    minMatches: x.sample.dnaMinimumMatches,
+    inference: top ? { dimension: top.dimension, index: top.index } : null,
+    notObserved: x.dimensions.filter((d) => d.status === "NOT_OBSERVED").length,
+    ctRating: rating(x.sides.ct.rating),
+    tRating: rating(x.sides.t.rating),
+  };
+}
 
 /** Gathers the context a section needs from the shared queries. */
 function useCoachWordContext(section: CoachWordSection, match?: CoachWordMatch | null) {
@@ -85,6 +101,11 @@ function useCoachWordContext(section: CoachWordSection, match?: CoachWordMatch |
     queryFn: () => getTrainingPriorities(),
     enabled: Boolean(need.training),
   });
+  const xray = useQuery({
+    queryKey: XRAY_QUERY_KEY,
+    queryFn: () => getXRay(),
+    enabled: Boolean(need.xray),
+  });
   const goals = useQuery({
     queryKey: ["goals"],
     queryFn: () => listGoals(),
@@ -95,7 +116,8 @@ function useCoachWordContext(section: CoachWordSection, match?: CoachWordMatch |
     (need.dna && dna.isPending) ||
     (need.score && score.isPending) ||
     (need.training && training.isPending) ||
-    (need.goals && goals.isPending);
+    (need.goals && goals.isPending) ||
+    (need.xray && xray.isPending);
   const ctx = useMemo<CoachWordContext>(() => {
     const spec = dna.data ? latestSpecialties(dna.data, DNA_VERSION_V3) : null;
     const snap = dna.data?.filter((e) => e.dnaVersion === DNA_VERSION_V3).at(-1) ?? null;
@@ -122,8 +144,9 @@ function useCoachWordContext(section: CoachWordSection, match?: CoachWordMatch |
           }
         : null,
       match: match ?? null,
+      xray: xray.data ? xrayContext(xray.data) : null,
     };
-  }, [matches, ranking, dna.data, score.data, training.data, goals.data, match]);
+  }, [matches, ranking, dna.data, score.data, training.data, goals.data, match, xray.data]);
   return { ctx, loading: Boolean(loading) };
 }
 
@@ -145,13 +168,14 @@ export function CoachWordCard({
   if (typeof vars["map"] === "string") vars["map"] = mapDisplayName(vars["map"]);
   if (typeof vars["dimension"] === "string")
     vars["dimension"] = t(dnaLabelKey(vars["dimension"] as DnaDimension));
+  for (const k of ["weakSide", "strongSide"])
+    if (typeof vars[k] === "string") vars[k] = t(`cw.side.${vars[k]}` as TranslationKey);
   const text = fill(t(`cw.${w.id}.text` as TranslationKey), vars);
   const tip = fill(t(`cw.${w.id}.tip` as TranslationKey), vars);
   return (
     <section
       className={cn(
-        "surface-panel vgl-grid relative isolate overflow-hidden rounded-xl border p-4 sm:p-5",
-        w.tone === "negative" ? "border-warning/35" : "border-primary/30",
+        "surface-panel vgl-grid relative isolate overflow-hidden rounded-xl border border-border p-4 sm:p-5",
         className,
       )}
       aria-labelledby={`coach-word-${section}`}
@@ -159,13 +183,6 @@ export function CoachWordCard({
       data-coach-word-section={section}
       data-coach-word-tone={w.tone}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "absolute inset-y-0 left-0 w-1",
-          w.tone === "negative" ? "bg-warning" : "bg-primary",
-        )}
-      />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
           id={`coach-word-${section}`}
@@ -191,10 +208,7 @@ export function CoachWordCard({
           {tip}
         </p>
       </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-xl text-xs text-muted-foreground">
-          {fill(t("cw.source"), { version: COACH_WORD_VERSION })}
-        </p>
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
         <Button
           type="button"
           variant="outline"

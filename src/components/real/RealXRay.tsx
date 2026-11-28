@@ -29,11 +29,11 @@ import { NOT_AVAILABLE_MARK, fill, formatNumber, formatPooledPart } from "@/lib/
 import { METRIC_IDS, type MetricId } from "@/lib/glossary";
 import { canonicalMetric } from "@/lib/metrics/canonicalMetrics";
 import type { SideSummary } from "@/lib/roundContext";
-import { getXRay } from "@/lib/xray.functions";
+import { getXRay, XRAY_QUERY_KEY } from "@/lib/xray.functions";
 import { cn } from "@/lib/utils";
 import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
-export const XRAY_QUERY_KEY = ["player", "xray"] as const;
+export { XRAY_QUERY_KEY };
 
 function MetricName({ metric }: { metric: string }) {
   const t = useT();

@@ -57,8 +57,6 @@ export const vgl5PtBR = {
   "cw.priority.HIGH": "Prioridade alta",
   "cw.priority.MEDIUM": "Ponto forte",
   "cw.priority.INFO": "Orientação",
-  "cw.source":
-    "Mensagem escolhida por regras fixas a partir dos seus números ({version}); não é gerada por IA.",
   "cw.insufficient.text":
     "Ainda conheço pouco do seu jogo: tenho {n} partida(s) analisada(s). Com {min} partidas completas eu consigo apontar seus padrões com segurança.",
   "cw.insufficient.tip":
@@ -260,4 +258,22 @@ export const vgl5PtBR = {
   "vgl5.faceit.more": "Mostrando {shown} de {total}.",
   "vgl5.faceit.linked":
     "{n} partida(s) FACEIT também enviada(s) como demo aparece(m) uma vez só, com os dados da demo.",
+  "cw.side.ct": "CT",
+  "cw.side.t": "TR",
+  "cw.xrayForming.text":
+    "Seu Raio-X ainda está se formando: {n} de {min} partidas para a inferência. Por enquanto, leia o bloco Observado — são os seus números reais, sem conclusão ainda.",
+  "cw.xrayForming.tip":
+    "Envie mais demos completas: cada partida analisada entra no Observado e aproxima a inferência.",
+  "cw.xrayInference.text":
+    "O seu Raio-X aponta {dimension} como a área observada mais fraca ({v}/100). É dela que sai a recomendação no fim desta página.",
+  "cw.xrayInference.tip":
+    "Abra o bloco da área no Raio-X, veja quais números a puxam para baixo e treine um deles por vez.",
+  "cw.xraySideGap.text":
+    "No Raio-X, o seu lado {weakSide} rende menos que o {strongSide}: rating {weak} contra {strong}. A diferença entre os lados é o que mais chama atenção hoje.",
+  "cw.xraySideGap.tip":
+    "Revise rounds do lado {weakSide} no bloco Lados CT e TR: posições iniciais, rotações e quando você morre.",
+  "cw.xrayGaps.text":
+    "O seu Raio-X está equilibrado no que mede, mas {n} área(s) ainda não têm observação nas suas demos.",
+  "cw.xrayGaps.tip":
+    "Confira no fim da página o que o CS2 PRO ainda não mede e envie demos completas para fechar as lacunas.",
 } as const;
