@@ -120,10 +120,7 @@ export function MatchOverview({ m }: { m: OverviewMatch }) {
               >
                 <GameIcon
                   name={ROOM_TAB_ICON[tab]}
-                  className={cn(
-                    "size-4",
-                    tab === "utility" ? "text-category-utility" : "text-primary",
-                  )}
+                  className="size-4 text-primary"
                 />
                 {t(`room.tab.${tab}` as TranslationKey)}
               </Link>
