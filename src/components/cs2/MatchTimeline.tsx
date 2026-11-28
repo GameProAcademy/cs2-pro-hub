@@ -244,7 +244,7 @@ export function RoundJump({
       className="mb-4 min-h-[71px] overflow-y-hidden"
       data-round-jump
     >
-      <ol className="flex min-h-[71px] items-center gap-1.5 overflow-x-auto overflow-y-hidden">
+      <ol className="flex min-h-[71px] items-center gap-1.5 overflow-x-auto overflow-y-hidden pl-1">
         {rounds.map((r) => {
           const state = r.side && r.won !== null ? (r.won ? "won" : "lost") : "unknown";
           const label = fill(t("room.strip.round"), {
