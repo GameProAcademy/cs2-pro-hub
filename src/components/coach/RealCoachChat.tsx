@@ -530,31 +530,36 @@ export function RealCoachChat({
         {layout === "drawer" ? (
           <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-20 bg-primary" />
         ) : null}
-        <div className={cn("min-w-0 flex-1 max-sm:contents", layout === "page" && "hidden")}>
-          <p className="flex items-center gap-2 text-xs font-semibold text-foreground max-sm:order-1 sm:text-sm">
-            <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-              <GameIcon name="crosshair" className="size-3.5" />
-            </span>
-            {t("coach2.persona.identity")}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label={t("glossary.open").replace("{term}", t("coach2.persona.identity"))}
-                  data-coach-disclaimer-trigger
+        {layout === "drawer" ? (
+          <div className="min-w-0 flex-1 max-sm:contents">
+            <p className="flex items-center gap-2 text-xs font-semibold text-foreground max-sm:order-1 sm:text-sm">
+              <span className="flex size-6 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
+                <GameIcon name="crosshair" className="size-3.5" />
+              </span>
+              {t("coach2.persona.identity")}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={t("glossary.open").replace("{term}", t("coach2.persona.identity"))}
+                    data-coach-disclaimer-trigger
+                  >
+                    <CircleHelp className="size-3.5" aria-hidden />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-72 text-left normal-case tracking-normal"
+                  align="start"
                 >
-                  <CircleHelp className="size-3.5" aria-hidden />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 text-left normal-case tracking-normal" align="start">
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {t("real.aicoach.disclaimer")}
-                </p>
-              </PopoverContent>
-            </Popover>
-          </p>
-        </div>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {t("real.aicoach.disclaimer")}
+                  </p>
+                </PopoverContent>
+              </Popover>
+            </p>
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-1 max-sm:order-2" data-coach-actions>
           <div className="lg:hidden">
             <ConversationMenu

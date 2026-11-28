@@ -147,7 +147,7 @@ export function InstallInvite() {
       <aside
         role="region"
         aria-label={t("vgl51.pwa.button")}
-        className="surface-panel vgl-grid fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 overflow-hidden rounded-xl border border-border p-4 shadow-[var(--shadow-elevated)] sm:inset-x-auto sm:right-4 sm:w-96 lg:bottom-6"
+        className="vgl-grid fixed inset-x-3 top-[calc(4rem+env(safe-area-inset-top))] z-40 overflow-hidden rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-elevated)] sm:inset-x-auto sm:bottom-6 sm:right-4 sm:top-auto sm:w-96"
         data-pwa-invite={pwa.platform.device}
       >
         <button

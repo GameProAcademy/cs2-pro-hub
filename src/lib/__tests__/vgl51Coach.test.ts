@@ -21,9 +21,15 @@ describe("Coach page", () => {
   it("the chat top bar has no title nor 'delete conversation' on the page; desktop hides the bar", () => {
     expect(chat).toContain('layout === "page" && "py-1.5 lg:hidden"');
     expect(chat).toContain(
-      'className={cn("min-w-0 flex-1 max-sm:contents", layout === "page" && "hidden")}',
+      '{layout === "drawer" ? (\n          <div className="min-w-0 flex-1 max-sm:contents">',
     );
     expect(chat).toMatch(/\{layout === "drawer" \? \(\s*<DeleteConversationButton/);
+  });
+
+  it("on phones the page chat shows no title either (max-sm:contents used to override hidden)", () => {
+    const bar = chat.slice(chat.indexOf("data-coach-topbar"), chat.indexOf("data-coach-actions"));
+    expect(bar).not.toMatch(/layout === "page" && "hidden"/);
+    expect(bar).toContain('{layout === "drawer" ? (');
   });
 
   it("Personalizar sits under Nova conversa in the sidebar; per-conversation delete stays two-step", () => {
