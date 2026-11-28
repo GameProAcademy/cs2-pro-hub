@@ -595,3 +595,35 @@ describe("5. enemies flashed copy is limited to the evidence", () => {
       ).toBeGreaterThan(10);
   });
 });
+
+describe("VGL 5.0 — Player DNA card in focus beside the radar", () => {
+  it("READY: the default focus is the highest index; it is not repeated in the list below", () => {
+    const page = render(<DnaBody dna={publishableDna(dna("READY"))} />);
+    expect(page).toContain("data-dna-focus-layout");
+    expect(page).toContain("lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]");
+    const top = Object.entries(VALUES)
+      .filter((e): e is [string, number] => e[1] !== null)
+      .sort((a, b) => b[1] - a[1])[0]![0];
+    expect(page).toContain(`data-dna-focus="${top}"`);
+    expect(page).toContain(`data-dna-focus-card="${top}"`);
+    // Every other dimension still has its card below; the focused one appears only once.
+    const cards = page.match(/data-dna-card="[a-z_]+"/g) ?? [];
+    expect(cards.length).toBe(10);
+    expect(cards.filter((c) => c === `data-dna-card="${top}"`).length).toBe(1);
+    // The index legend is a tooltip now (same text, five languages).
+    expect(page).toContain('data-info-tip="dna-legend"');
+    for (const l of LOCALES) expect(dictionaries[l]["vgl5.dna.focusDefault"], l).toBeTruthy();
+  });
+
+  it("in formation: no radar, so no focus card", () => {
+    const page = render(<DnaBody dna={publishableDna(dna("INSUFFICIENT_SAMPLE"))} />);
+    expect(page).not.toContain("data-dna-focus=");
+  });
+
+  it("specialties in the technical signature select the focus (buttons, aria-pressed)", () => {
+    const page = render(<DnaBody dna={publishableDna(dna("READY"))} />);
+    expect(page).toMatch(
+      /data-signature-dim="[a-z_]+"[^>]*><button type="button" aria-pressed="false"/,
+    );
+  });
+});

@@ -48,4 +48,7 @@ export const vgl5Fr = {
   "vgl5.training.above": "{d} points au-dessus de la référence",
   "vgl5.training.legend":
     "Comment lire : la barre est ta valeur, le trait est la référence fixe du signal et la bande claire est l’intervalle de confiance. Plus tu es sous la référence, plus la priorité est élevée.",
+  "vgl5.dna.legendTip": "Comment lire les indices",
+  "vgl5.dna.focusDefault": "En focus : ton indice le plus élevé",
+  "vgl5.dna.focusSelected": "En focus : dimension sélectionnée",
 } as const;
