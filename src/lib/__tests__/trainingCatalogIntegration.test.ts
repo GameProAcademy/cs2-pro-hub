@@ -13,7 +13,14 @@ import {
   type DimensionReading,
 } from "../catalog/catalogSelect";
 import { coachSystemPrompt } from "../coach/coachContext";
-import { buildTrainingPlan, planTopics, type TrainingPlanInput } from "../training/trainingPlan";
+import {
+  COMPLEMENTARY,
+  COMPLEMENTARY_MAX,
+  COMPLEMENTARY_MIN,
+  buildTrainingPlan,
+  planTopics,
+  type TrainingPlanInput,
+} from "../training/trainingPlan";
 
 // The owner's real catalog, as the database holds it after the initial load.
 const seed = normalizeCatalog(
@@ -59,13 +66,14 @@ const all: CatalogCandidate[] = [
 ];
 const byUrl = new Map(all.map((c) => [c.url, c]));
 /** What the database read returns for these topics (locale/topic filter; RLS active rows). */
+// VGL 5.1: like the server read, every course of the complementary categories is a candidate.
 const fetchLike = (locale: CatalogLocale, topics: string[]) =>
   all.filter(
     (c) =>
-      c.locale === c.locale &&
       c.active &&
-      c.topics.some((t) => topics.includes(t)) &&
-      c.locale === locale,
+      c.locale === locale &&
+      (c.topics.some((t) => topics.includes(t)) ||
+        (c.kind === "course" && COMPLEMENTARY.includes(c.track))),
   );
 
 // The owner's production DNA (2026-11-03): clutch 16, teamplay 35, utility 45 lowest.
@@ -117,11 +125,11 @@ describe("Meu Treinamento: personalized plan from the real catalog", () => {
     expect(week.items.every((r) => r.track === "counter_strike_in_game")).toBe(true);
   });
 
-  it("Strategic Knowledge for teamplay/communication (case 2) and consistency (case 3)", () => {
+  it("Strategic Knowledge for the plan (case 2, VGL 5.1: never via in-game comms) and consistency (case 3)", () => {
     const comp = plan("pt-BR").complementary;
-    expect(
-      comp.some((r) => r.track === "strategic_knowledge" && r.need.topic === "communication"),
-    ).toBe(true);
+    expect(comp.some((r) => r.track === "strategic_knowledge")).toBe(true);
+    // VGL 5.1: "communication" on teamplay means in-game calls, not the public-speaking course.
+    expect(comp.some((r) => r.need.topic === "communication")).toBe(false);
     const consistency = plan("pt-BR", {
       dimensions: [{ dimension: "consistency", index: 30 }],
     }).complementary;
@@ -280,28 +288,94 @@ describe("integration wiring (source)", () => {
   });
 });
 
-describe("VGL 5.0 — whole courses, never single lessons", () => {
-  it.each(CATALOG_LOCALES)("%s: every recommendation is a real catalog course page", (locale) => {
-    const p = plan(locale, { coursesOnly: true });
-    const recs = items(p);
-    expect(recs.length, locale).toBeGreaterThan(0);
-    for (const r of recs) {
-      expect(r.kind, r.url).toBe("course");
-      expect(r.url).toMatch(/^https:\/\/hub\.gamepro\.academy\/courses\/[a-z0-9-]+\/$/);
-      // Real catalog row, not a URL built by assumption.
-      expect(byUrl.get(r.url)?.kind).toBe("course");
+describe("VGL 5.1 — lessons in the weeks, whole courses only in Trilhas complementares", () => {
+  it.each(CATALOG_LOCALES)("%s: weekly cards hold real lessons of the In-Game track", (locale) => {
+    const p = plan(locale);
+    const weekItems = p.weeks.flatMap((w) => w.items);
+    expect(weekItems.length, locale).toBeGreaterThan(0);
+    for (const r of weekItems) {
+      expect(r.kind, r.url).toBe("lesson");
+      expect(r.track).toBe("counter_strike_in_game");
+      expect(r.url).toMatch(
+        /^https:\/\/hub\.gamepro\.academy\/courses\/[a-z0-9-]+\/lessons\/[a-z0-9-]+\/$/,
+      );
+      expect(byUrl.get(r.url)?.kind).toBe("lesson");
     }
   });
-  it("with no fitting course the week is empty (honest state), never a lesson", () => {
-    const p = plan("pt-BR", {
-      coursesOnly: true,
-      dimensions: OWNER.map((d) => ({ ...d, index: d.dimension === "economy" ? 10 : 99 })),
-    });
-    for (const r of items(p)) expect(r.kind).toBe("course");
+
+  it.each(CATALOG_LOCALES)(
+    "%s: ≥3 distinct whole courses, both complementary categories, same language",
+    (locale) => {
+      const p = plan(locale);
+      const c = p.complementary;
+      expect(c.length, locale).toBeGreaterThanOrEqual(COMPLEMENTARY_MIN);
+      expect(c.length).toBeLessThanOrEqual(COMPLEMENTARY_MAX);
+      expect(new Set(c.map((r) => r.url)).size).toBe(c.length);
+      expect(new Set(c.map((r) => r.track))).toEqual(
+        new Set(["strategic_knowledge", "extra_skills"]),
+      );
+      for (const r of c) {
+        expect(r.kind).toBe("course");
+        expect(r.url).toMatch(/^https:\/\/hub\.gamepro\.academy\/courses\/[a-z0-9-]+\/$/);
+        const row = byUrl.get(r.url)!;
+        expect(row.kind).toBe("course");
+        expect(row.locale).toBe(locale);
+      }
+    },
+  );
+
+  it("a teamplay priority never pulls the public-speaking course (Oratória e Comunicação)", () => {
+    for (const locale of CATALOG_LOCALES) {
+      const p = plan(locale);
+      expect(p.priorities.map((x) => x.dimension)).toContain("teamplay");
+      for (const r of p.complementary) {
+        const group = all.find((x) => x.url === r.url)?.group_key;
+        expect(group, `${locale} ${r.title}`).not.toBe("communication");
+      }
+    }
   });
-  it("the server builds the plan with courses only", () => {
-    expect(readFileSync(resolve(process.cwd(), "src/lib/training.functions.ts"), "utf8")).toContain(
-      "coursesOnly: true",
-    );
+
+  it("courses never appear inside a weekly card; an empty catalog gives empty, honest states", () => {
+    const p = plan("pt-BR");
+    expect(p.weeks.flatMap((w) => w.items).some((r) => r.kind === "course")).toBe(false);
+    const none = buildTrainingPlan({
+      locale: "pt-BR",
+      dataState: "READY",
+      dimensions: OWNER,
+      goals: [],
+      maps: [],
+      candidates: [],
+    });
+    expect(none.weeks.every((w) => w.items.length === 0)).toBe(true);
+    expect(none.complementary).toEqual([]);
+  });
+
+  it("a language with too few courses shows only what exists in that language (never another language)", () => {
+    const fewEs = fetchLike(
+      "es",
+      planTopics({
+        locale: "es",
+        dataState: "READY",
+        dimensions: OWNER,
+        goals: [],
+        maps: [],
+      }),
+    ).filter((c) => !(c.kind === "course" && c.track === "extra_skills"));
+    const p = buildTrainingPlan({
+      locale: "es",
+      dataState: "READY",
+      dimensions: OWNER,
+      goals: [],
+      maps: [],
+      candidates: fewEs,
+    });
+    for (const r of p.complementary) expect(byUrl.get(r.url)?.locale).toBe("es");
+    expect(p.complementary.every((r) => r.track === "strategic_knowledge")).toBe(true);
+  });
+
+  it("the server loads every complementary course and no longer forces courses into the weeks", () => {
+    const fn = readFileSync(resolve(process.cwd(), "src/lib/training.functions.ts"), "utf8");
+    expect(fn).not.toContain("coursesOnly");
+    expect(fn).toContain("allCoursesOf: COMPLEMENTARY");
   });
 });

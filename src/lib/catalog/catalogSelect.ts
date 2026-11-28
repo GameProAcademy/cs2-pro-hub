@@ -17,7 +17,8 @@ import {
   type LanguageStatus,
 } from "./catalogCore.ts";
 
-export type NeedSource = "dna" | "goal" | "message" | "map";
+/** "catalog": a complementary course chosen for breadth, not by a specific need (VGL 5.1). */
+export type NeedSource = "dna" | "goal" | "message" | "map" | "catalog";
 
 export interface Need {
   topic: string;

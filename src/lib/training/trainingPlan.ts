@@ -10,7 +10,7 @@
  * teamplay → communication, consistency → productive routine, PRO_CAREER → career skills).
  * Nothing is added to fill the plan: no evidence → no item.
  */
-import type { CatalogLocale, CatalogTrack } from "../catalog/catalogCore.ts";
+import { isRecommendable, type CatalogLocale, type CatalogTrack } from "../catalog/catalogCore.ts";
 import {
   DIMENSION_TOPICS,
   needsFromPlayer,
@@ -40,13 +40,47 @@ export interface TrainingPlanInput {
    */
   focus?: string[];
   candidates: CatalogCandidate[];
-  /**
-   * VGL 5.0: recommend whole catalog COURSES (their own /courses/<slug>/ page), never a single
-   * lesson. Only real course rows from the catalog are used; with no fitting course the week
-   * shows the honest empty state.
-   */
-  coursesOnly?: boolean;
 }
+
+/**
+ * VGL 5.1 (Frente 9): the weekly cards recommend LESSONS of the CS2 In-Game track (as before
+ * VGL 5.0); whole COURSES appear only in "Trilhas complementares", from the two complementary
+ * categories of the real catalog: Conhecimentos Estratégicos and Habilidades Extras.
+ */
+export const COMPLEMENTARY_MIN = 3;
+export const COMPLEMENTARY_MAX = 4;
+
+/**
+ * Fill order after relevance (stable, deterministic): mindset and routine first, then the
+ * creator / career skills most useful to a competitive player. Keys are catalog group keys.
+ */
+export const COMPLEMENTARY_ORDER: readonly string[] = [
+  "champion_mindset",
+  "mental_drives",
+  "success_fundamentals",
+  "productive_routine",
+  "personal_development",
+  "stretching_mobility",
+  "youtube",
+  "video_editing",
+  "branding",
+  "capcut",
+  "tiktok",
+  "chatgpt",
+  "midjourney",
+  "wordpress",
+  "google_ads",
+  "facebook_ads",
+  "pinterest",
+  "communication",
+];
+
+/**
+ * DNA topics that name an IN-GAME skill only. "communication" on teamplay means calls and comms
+ * in a match; in the complementary categories the same tag belongs to a public-speaking course,
+ * so a DNA need never selects that course (the "Oratória e Comunicação" defect).
+ */
+const IN_GAME_ONLY_TOPICS = new Set(["communication"]);
 
 export interface PlanPriority {
   dimension: string;
@@ -128,19 +162,13 @@ export function buildTrainingPlan(input: TrainingPlanInput): TrainingPlanModel {
   if (!needs.length)
     return { ...base, state: "NO_PRIORITY", priorities: [], weeks: [], complementary: [] };
 
-  const pool = input.coursesOnly
-    ? input.candidates.filter((c) => c.kind === "course")
-    : input.candidates;
-  const inGame = pickRecommendations(pool, needs, input.locale, {
+  const lessons = input.candidates.filter((c) => c.kind === "lesson");
+  const inGame = pickRecommendations(lessons, needs, input.locale, {
     max: 6,
     tracks: IN_GAME,
     perGroup: 3,
   });
-  const complementary = pickRecommendations(pool, needs, input.locale, {
-    max: 3,
-    tracks: COMPLEMENTARY,
-    onePerNeed: true,
-  });
+  const complementary = pickComplementaryCourses(input.candidates, needs, input.locale);
 
   const weeks: PlanWeek[] = [];
   const placed = new Set<string>();
@@ -172,4 +200,78 @@ export function buildTrainingPlan(input: TrainingPlanInput): TrainingPlanModel {
   });
 
   return { ...base, state: "READY", priorities, weeks, complementary };
+}
+
+/**
+ * "Trilhas complementares": whole courses only, from Conhecimentos Estratégicos AND Habilidades
+ * Extras (at least one of each when the language has them), COMPLEMENTARY_MIN..MAX distinct
+ * courses, in the player's language only (never a course of another language shown as if it
+ * were translated). Relevance to the player's needs first, then COMPLEMENTARY_ORDER.
+ */
+export function pickComplementaryCourses(
+  candidates: ReadonlyArray<CatalogCandidate>,
+  needs: ReadonlyArray<Need>,
+  locale: CatalogLocale,
+): Recommendation[] {
+  const usable = needs.filter((n) => !(n.source === "dna" && IN_GAME_ONLY_TOPICS.has(n.topic)));
+  const order = (key: string) => {
+    const i = COMPLEMENTARY_ORDER.indexOf(key);
+    return i === -1 ? COMPLEMENTARY_ORDER.length : i;
+  };
+  const seen = new Set<string>();
+  const scored = candidates
+    .filter(
+      (c) =>
+        c.kind === "course" &&
+        COMPLEMENTARY.includes(c.track) &&
+        isRecommendable(c, locale) &&
+        c.locale === locale,
+    )
+    .filter((c) => {
+      if (seen.has(c.group_key) || seen.has(c.url)) return false;
+      seen.add(c.group_key);
+      seen.add(c.url);
+      return true;
+    })
+    .map((c) => {
+      let need: Need | null = null;
+      let score = 0;
+      for (const n of usable)
+        if (c.topics.includes(n.topic)) {
+          score += n.weight;
+          if (!need || n.weight > need.weight) need = n;
+        }
+      return { c, score, need };
+    })
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        order(a.c.group_key) - order(b.c.group_key) ||
+        a.c.title.localeCompare(b.c.title),
+    );
+  const out: typeof scored = [];
+  // One of each category first (the owner asks for both), then the rest by the same ranking.
+  for (const track of COMPLEMENTARY) {
+    const best = scored.find((x) => x.c.track === track);
+    if (best) out.push(best);
+  }
+  for (const x of scored) {
+    if (out.length >= COMPLEMENTARY_MAX) break;
+    if (!out.includes(x)) out.push(x);
+  }
+  return out
+    .sort((a, b) => b.score - a.score || order(a.c.group_key) - order(b.c.group_key))
+    .map(({ c, need }) => ({
+      id: c.id,
+      kind: c.kind,
+      title: c.title,
+      url: c.url,
+      track: c.track,
+      need: need ?? {
+        topic: c.topics[0] ?? c.track,
+        weight: 0,
+        source: "catalog",
+        detail: c.track,
+      },
+    }));
 }

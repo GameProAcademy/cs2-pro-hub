@@ -217,9 +217,12 @@ describe("recommendations come from CS2 PRO data and logic only", () => {
   });
 
   it("needs only come from DNA, declared goals, maps played or the Coach message", () => {
+    // VGL 5.1: "catalog" marks a complementary course picked for breadth (our own fixed order),
+    // never data from the LMS.
     expect(read("src/lib/catalog/catalogSelect.ts")).toMatch(
-      /export type NeedSource = "dna" \| "goal" \| "message" \| "map";/,
+      /export type NeedSource = "dna" \| "goal" \| "message" \| "map" \| "catalog";/,
     );
+    expect(read("src/lib/training/trainingPlan.ts")).toContain("export const COMPLEMENTARY_ORDER");
   });
 
   it("the Coach receives title, URL, track and CS2 PRO's own reason, nothing from the LMS", () => {

@@ -50,8 +50,9 @@ export async function fetchCatalogCandidates(
   db: SupabaseClient<never> | SupabaseClient,
   locale: CatalogLocale,
   topics: string[],
+  options: { allCoursesOf?: ReadonlyArray<CatalogTrack> } = {},
 ): Promise<CatalogCandidate[]> {
-  if (!topics.length) return [];
+  if (!topics.length && !options.allCoursesOf?.length) return [];
   const client = db as unknown as AnyDb;
   const [lessons, courses] = await Promise.all([
     client
@@ -96,7 +97,9 @@ export async function fetchCatalogCandidates(
     });
   }
   for (const c of (courses.data ?? []) as unknown as CourseRow[]) {
-    if (!c.group || !(c.group.topics ?? []).some((t) => topics.includes(t))) continue;
+    if (!c.group) continue;
+    const byTrack = options.allCoursesOf?.includes(c.group.track) ?? false;
+    if (!byTrack && !(c.group.topics ?? []).some((t) => topics.includes(t))) continue;
     out.push({
       id: c.id,
       kind: "course",

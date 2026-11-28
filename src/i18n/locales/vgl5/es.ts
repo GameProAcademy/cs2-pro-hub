@@ -280,4 +280,8 @@ export const vgl5Es = {
   "real.dna.statusShort.NO_SAMPLE": "Sin muestra",
   "real.dna.statusShort.NOT_MEASURED": "No medido",
   "vgl51.dna.dimensions": "Todas las dimensiones",
+  "vgl51.training.complementaryHint":
+    "Cursos completos de Conocimientos Estratégicos y Habilidades Extra para complementar tu entrenamiento dentro del juego.",
+  "vgl51.training.complementaryFew":
+    "Aún no hay suficientes cursos de estas rutas en tu idioma; solo mostramos los que existen en él.",
 } as const;
