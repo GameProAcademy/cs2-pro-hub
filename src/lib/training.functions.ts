@@ -7,6 +7,7 @@
  * plan's topics. The plan is computed on request (deterministic for the same data), so it
  * follows every new demo and every catalog change without a republish.
  */
+import { COMPLEMENTARY } from "@/lib/training/trainingPlan";
 import { computePrioritiesV2 } from "@/lib/training/priorityV2";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -78,7 +79,11 @@ export const getTrainingPlan = createServerFn({ method: "GET" })
     let candidates: Awaited<ReturnType<typeof fetchCatalogCandidates>> = [];
     let catalogUnavailable = false;
     try {
-      candidates = await fetchCatalogCandidates(db, data.locale, planTopics(input));
+      // VGL 5.1: every course of the two complementary categories is a candidate for
+      // "Trilhas complementares", whatever its topics (the read already loads all courses).
+      candidates = await fetchCatalogCandidates(db, data.locale, planTopics(input), {
+        allCoursesOf: COMPLEMENTARY,
+      });
     } catch (error) {
       catalogUnavailable = true;
       console.error("[training] catalog read failed", {
@@ -87,7 +92,7 @@ export const getTrainingPlan = createServerFn({ method: "GET" })
     }
     return {
       player: "OK",
-      plan: buildTrainingPlan({ ...input, candidates, coursesOnly: true }),
+      plan: buildTrainingPlan({ ...input, candidates }),
       matches: overview.matches.length,
       catalogUnavailable,
     };

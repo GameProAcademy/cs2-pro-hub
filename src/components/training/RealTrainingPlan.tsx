@@ -15,7 +15,7 @@ import type { Recommendation } from "@/lib/catalog/catalogSelect";
 import { dnaLabelKey } from "@/lib/dna";
 import type { DnaDimension } from "@/types";
 import { getTrainingPlan } from "@/lib/training.functions";
-import type { TrainingPlanModel } from "@/lib/training/trainingPlan";
+import { COMPLEMENTARY_MIN, type TrainingPlanModel } from "@/lib/training/trainingPlan";
 import { CoachWordCard } from "@/components/coachWord/CoachWordCard";
 
 function fill(text: string, vars: Record<string, string | number>): string {
@@ -196,21 +196,30 @@ function PlanView({
               </li>
             ))}
           </ol>
-          {plan.complementary.length ? (
-            <section className="surface-panel rounded-lg border border-border p-4">
-              <h2 className="text-sm font-semibold text-foreground">
-                {t("training.real.complementary")}
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t("training.real.complementaryHint")}
-              </p>
+          {/* VGL 5.1 (Frente 9): whole courses only here, never inside a weekly card. */}
+          <section
+            className="surface-panel rounded-lg border border-border p-4"
+            data-training-complementary={plan.complementary.length}
+          >
+            <h2 className="text-sm font-semibold text-foreground">
+              {t("training.real.complementary")}
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("vgl51.training.complementaryHint")}
+            </p>
+            {plan.complementary.length ? (
               <ul className="mt-3 space-y-2">
                 {plan.complementary.map((r) => (
                   <CatalogItem key={r.id} item={r} why={why(r)} />
                 ))}
               </ul>
-            </section>
-          ) : null}
+            ) : null}
+            {plan.complementary.length < COMPLEMENTARY_MIN && !catalogUnavailable ? (
+              <p className="mt-3 text-xs text-muted-foreground" data-training-complementary-few>
+                {t("vgl51.training.complementaryFew")}
+              </p>
+            ) : null}
+          </section>
         </>
       )}
     </div>

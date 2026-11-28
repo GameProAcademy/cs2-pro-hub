@@ -272,4 +272,8 @@ export const vgl5En = {
   "real.dna.statusShort.NO_SAMPLE": "No sample",
   "real.dna.statusShort.NOT_MEASURED": "Not measured",
   "vgl51.dna.dimensions": "All dimensions",
+  "vgl51.training.complementaryHint":
+    "Whole courses from Strategic Knowledge and Extra Skills to complement your in-game training.",
+  "vgl51.training.complementaryFew":
+    "There are not enough courses from these tracks in your language yet; only the ones available in it are shown.",
 } as const;
