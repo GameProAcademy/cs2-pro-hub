@@ -5,11 +5,12 @@
  */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
-import { Plus, RotateCcw, Send, User } from "lucide-react";
+import { CircleHelp, Plus, RotateCcw, Send, User } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/i18n";
 import { COACH_STATE_KEY, coachErrorKey } from "@/components/coach/coachErrors";
@@ -487,9 +488,23 @@ export function RealCoachChat({ className }: { className?: string | undefined })
               <GameIcon name="crosshair" className="size-3.5" />
             </span>
             {t("coach2.persona.identity")}
-          </p>
-          <p className="text-xs leading-snug text-muted-foreground max-sm:order-3 max-sm:w-full">
-            {t("real.aicoach.disclaimer")}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={t("glossary.open").replace("{term}", t("coach2.persona.identity"))}
+                  data-coach-disclaimer-trigger
+                >
+                  <CircleHelp className="size-3.5" aria-hidden />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 text-left normal-case tracking-normal" align="start">
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t("real.aicoach.disclaimer")}
+                </p>
+              </PopoverContent>
+            </Popover>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-1 max-sm:order-2" data-coach-actions>
