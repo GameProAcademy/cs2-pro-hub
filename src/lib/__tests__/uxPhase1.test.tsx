@@ -212,9 +212,10 @@ describe("wiring", () => {
   it("the Dashboard Pro Score panel links to its explanation", () => {
     // Fundação 4.2: the panel is now the real Score card; the link lives in that component.
     expect(read("src/routes/_authenticated/dashboard.tsx")).toContain("<RealProScoreCard />");
-    expect(read("src/components/real/RealProScore.tsx")).toContain(
-      '<Link to="/performance" hash="cs2-pro-score">',
-    );
+    // VGL 5.1: the link is the card's footer action (same target).
+    const card = read("src/components/real/RealProScore.tsx");
+    expect(card).toContain('to="/performance"');
+    expect(card).toContain('hash="cs2-pro-score"');
   });
 
   it("VGL 5.0: the catalogue access note was removed by the owner (no empty box left)", () => {

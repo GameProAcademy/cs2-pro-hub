@@ -18,6 +18,7 @@ import { Link } from "@tanstack/react-router";
 import { ChartCard } from "@/components/common/ChartCard";
 import { InfoTip } from "@/components/common/InfoTip";
 import { ScoreHero } from "@/components/score/ScoreHero";
+import { Cs2Mask } from "@/components/cs2/Cs2Art";
 import {
   Accordion,
   AccordionContent,
@@ -72,32 +73,88 @@ export function ScoreTips({ withRating = false }: { withRating?: boolean }) {
 }
 
 /** Dashboard card: the number (or the honest state) and the way to the details. */
+/**
+ * VGL 5.1 — the Home Score card in the same visual family as the Player DNA identity card
+ * (`DnaIdentityCard`): tactical grid panel, faint CS2 art, badge, protagonist number, ranked
+ * rows and the same footer action. Presentation only: the value, meter, confidence, matches,
+ * rounds, coverage and tooltips are exactly what `ScoreHero` shows from `getProScore`; the
+ * "largest contributions" rows read the components' own `contribution` (pro-score-v1).
+ */
 export function RealProScoreCard() {
-  const { t } = useI18n();
+  const { t, intlTag } = useI18n();
   const query = useProScore();
+  const score = query.data;
+  const top =
+    score && score.state === "READY"
+      ? [...score.components]
+          .filter((c) => c.available && c.contribution > 0)
+          .sort((a, b) => b.contribution - a.contribution || a.id.localeCompare(b.id))
+          .slice(0, 3)
+      : [];
   return (
-    <ChartCard showDemoTag={false} icon="target" title={t("real.proScore.title")}>
+    <section
+      className="surface-panel vgl-grid relative isolate flex h-full flex-col overflow-hidden rounded-xl border border-border p-5 sm:p-6"
+      aria-label={t("real.proScore.title")}
+      data-score-identity
+    >
+      <Cs2Mask
+        src={SCORE_ART}
+        className="pointer-events-none absolute -right-6 -top-4 -z-10 h-40 w-72 text-primary opacity-[0.08]"
+      />
       {query.isPending ? (
         <LoadingState label={t("score.loading")} />
-      ) : query.isError || !query.data ? (
+      ) : query.isError || !score ? (
         <ErrorState
           title={t("real.error.title")}
           description={t("real.error.description")}
           onRetry={() => void query.refetch()}
         />
       ) : (
-        <div className="space-y-4">
-          <ScoreHero score={query.data} tips={<ScoreTips />} />
-          <Button asChild size="sm" variant="outline">
-            <Link to="/performance" hash="cs2-pro-score">
+        <>
+          <ScoreHero score={score} tips={<ScoreTips />} />
+          {top.length ? (
+            <div className="mt-5">
+              <h3 className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                {t("vgl51.score.top")}
+              </h3>
+              <ol className="grid gap-2" data-score-top>
+                {top.map((c, i) => (
+                  <li
+                    key={c.id}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-background/50 px-3 py-2"
+                  >
+                    <span className="font-mono text-xs text-muted-foreground">#{i + 1}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {t(`score.c.${c.id}` as TranslationKey)}
+                    </span>
+                    <span className="font-mono text-sm tabular-nums text-primary">
+                      +
+                      {new Intl.NumberFormat(intlTag, { maximumFractionDigits: 1 }).format(
+                        c.contribution,
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+          <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-5">
+            <Link
+              to="/performance"
+              hash="cs2-pro-score"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              data-score-identity-cta
+            >
               {t("score.details")}
             </Link>
-          </Button>
-        </div>
+          </div>
+        </>
       )}
-    </ChartCard>
+    </section>
   );
 }
+
+const SCORE_ART = "/cs2/weapons/ak47.svg";
 
 /**
  * VGL: the points column of the table drawn as one segmented bar. Decorative (the table holds the

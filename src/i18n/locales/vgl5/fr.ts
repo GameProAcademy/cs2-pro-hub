@@ -278,4 +278,5 @@ export const vgl5Fr = {
     "Ta Radiographie est équilibrée sur ce qu’elle mesure, mais {n} zone(s) n’ont encore aucune observation dans tes démos.",
   "cw.xrayGaps.tip":
     "Regarde en bas de page ce que CS2 PRO ne mesure pas encore et envoie des démos complètes pour combler les manques.",
+  "vgl51.score.top": "Plus fortes contributions",
 } as const;
