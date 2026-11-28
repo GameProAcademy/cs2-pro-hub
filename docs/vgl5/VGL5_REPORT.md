@@ -89,7 +89,6 @@ Fora da classificação: "Amostra insuficiente" (1–2 partidas) ou "Aguardando 
 
 Início e Mapas usam a mesma função, então mostram o mesmo melhor mapa. A classificação é recalculada sempre que o overview muda (nova demo analisada).
 
-
 PRs: #436 (Frente 1, merged em `0e27ec9a`).
 
 ## Frente 4 — CS2 PRO Score (#437)
@@ -134,16 +133,16 @@ Texto pré-escrito e determinístico, **sem IA**: `src/lib/coachWord/coachWord.t
 
 Mínimo global para falar: 3 partidas e 60 rounds. Limiares:
 
-| Sinal | Regra |
-| --- | --- |
-| ADR | < 65 baixo, ≥ 85 alto |
-| KAST | < 65 baixo, ≥ 75 alto |
-| K/D | < 0,85 baixo, ≥ 1,15 alto |
-| Mira sem sobrevivência | HS ≥ 45 e ADR ≥ 80, com KAST < 68 ou DPR > 0,75 |
-| Tendência | ± 10 %, últimas 3 contra as 3 anteriores (exige ≥ 6 partidas) |
-| Inconsistência | CV > 0,35 com ≥ 5 partidas |
-| Mapa | ± 10 % |
-| DNA | ≥ 65 ponto forte, < 40 ponto fraco |
+| Sinal                  | Regra                                                         |
+| ---------------------- | ------------------------------------------------------------- |
+| ADR                    | < 65 baixo, ≥ 85 alto                                         |
+| KAST                   | < 65 baixo, ≥ 75 alto                                         |
+| K/D                    | < 0,85 baixo, ≥ 1,15 alto                                     |
+| Mira sem sobrevivência | HS ≥ 45 e ADR ≥ 80, com KAST < 68 ou DPR > 0,75               |
+| Tendência              | ± 10 %, últimas 3 contra as 3 anteriores (exige ≥ 6 partidas) |
+| Inconsistência         | CV > 0,35 com ≥ 5 partidas                                    |
+| Mapa                   | ± 10 %                                                        |
+| DNA                    | ≥ 65 ponto forte, < 40 ponto fraco                            |
 
 Por partida (aba Resumo da sala), por ordem de prioridade:
 
@@ -192,3 +191,74 @@ O botão "Falar com o Treinador" abre o chat flutuante da página atual com um r
 **Parser não tocado.**
 
 **Pendente:** a validação end-to-end exige uma conta FACEIT com partidas de CS2.
+
+## Relatório final (2026-11-28)
+
+### A. Resumo
+
+As 10 frentes estão implementadas, integradas em `main` (`ab1cb961`), publicadas (deploy Lovable `a28754af`, bundle `index-BYzvy3f2`) e validadas em produção, com as ressalvas de G.
+
+### B. PRs
+
+| PR   | Frente(s) |
+| ---- | --------- |
+| #436 | 1         |
+| #437 | 4 e 10    |
+| #438 | 5 e 6     |
+| #439 | 7         |
+| #440 | 9         |
+| #441 | 2         |
+| #442 | 3         |
+| #443 | 8         |
+
+Todos tiveram CI verde no head antes do merge. Nenhum PR vermelho foi integrado.
+
+### C. Banco
+
+Uma migration: `20261128120000_vgl5_public_profile`.
+
+- **Dry-run em produção** (com rollback): 4 IDs válidos e distintos, 0 públicos.
+- **Aplicação** a partir de `764ca825`, registrada em `schema_migrations` (`direct-lovable-cloud-apply`, `direct-main-764ca825-20261128120000`).
+- **Verificação pós-aplicação**, em transação com rollback e papel `authenticated`:
+  - o dono não consegue mudar o `public_id`;
+  - o dono consegue alternar `public_profile`.
+- RLS inalterada.
+
+### D. Segurança e privacidade
+
+- **Perfil público:**
+  - privado por padrão em todas as camadas: default no banco, trigger e servidor;
+  - perfil privado e ID inexistente têm resposta e tela idênticas, confirmadas em produção;
+  - IDs aleatórios de ~50 bits, sem sequência;
+  - whitelist de campos, sem e-mail, auth, IDs internos, demos ou Coach.
+- **Segredos:** nenhum no frontend, em commits, logs ou relatórios. A service role é importada só dentro de handlers.
+- **FACEIT:** corrigido um defeito latente. A FACEIT poderia sobrescrever métricas de demo ao convergir para uma partida de demo.
+
+### E. O que não mudou
+
+- Parser, worker, contratos, RAW e attestation.
+- Fórmula do CS2 PRO Score.
+- Provedor, modelo, prompts e lógica do Coach.
+- Fluxo `/upload`.
+- Railway.
+- Nenhuma mensagem foi enviada ao agente do Lovable.
+
+### F. Validação
+
+- **Testes locais:** suíte completa verde, com uma exceção pré-existente: `uploadLifecycleConcurrency` precisa de `initdb`, que não existe neste ambiente.
+- **Testes novos:** cobrem Melhor Mapa, Palavra do Treinador, Score, navegação e Coach, Treino, DNA, perfil público (12) e FACEIT (7).
+- **Produção:** ver `docs/checkpoints/VGL5_CHECKPOINT.md`. As 10 frentes foram observadas no app publicado com sessão real.
+
+### G. Limitações e pendências
+
+1. O perfil público **ligado** não foi exibido em produção. Ligar exige a ação do dono, pelo switch em Perfil; tornar público um perfil real direto pelo banco não foi feito.
+2. A importação FACEIT ponta a ponta continua sem prova: a conta conectada não tem partidas de CS2 no FACEIT.
+3. O mapeamento prioridade → curso recomendou "Oratória e Comunicação" na conta testada. Precisa de revisão de conteúdo.
+4. Responsividade: medidos 360, 768 e 1440 px, sem overflow horizontal. 390, 430, 1024, 1280 e 1920 px não foram medidos individualmente.
+5. O hash do bundle não serve de prova de paridade: o build local (`index-BuqtCmTo`) difere do build do Lovable (`index-BYzvy3f2`). A paridade foi provada pela presença, em produção, de rotas e atributos que só existem em `ab1cb961` (`/p/$publicId`, `data-public-settings`, `data-faceit-matches`).
+
+### H. Próximos passos
+
+1. Dono: ligar o perfil público numa conta de teste, abrir `/p/<ID>`, comparar com outro ID e desligar.
+2. Conectar uma conta FACEIT com partidas de CS2 para validar a importação nativa e o vínculo com demos (`linked_to_demo`).
+3. Revisar o mapeamento de prioridades para cursos.

@@ -4,31 +4,31 @@
 > da fase ativa. Protocolo: `docs/checkpoints/README.md`. Este arquivo não é verdade
 > absoluta: confira o estado real do GitHub (seção 24) e corrija-o se divergir.
 
-Atualizado em: 2026-11-25 (America/Sao_Paulo) — R-07 e FASE UI/UX VISUAL CONCLUÍDOS E VALIDADOS EM PRODUÇÃO · por: sessão Claude
-`session_012i4uaf82YyjhPZuSt2ZHhn`
+Atualizado em: 2026-11-28 (America/Sao_Paulo) — VGL 5.0 CONCLUÍDA, PUBLICADA E VALIDADA EM PRODUÇÃO · por: sessão Claude
+`session_012aG79D5h8yCsYxNjWpDaHG`
 
 Estados usados: CONFIRMADO · IMPLEMENTADO, NÃO VALIDADO · VALIDADO EM TESTE · VALIDADO EM
 PRODUÇÃO · PENDENTE · BLOQUEADO · NÃO APLICÁVEL · HISTÓRICO (registro de uma data passada, não o estado atual).
 
 ## ESTADO EXATO PARA RETOMADA
 
-| Item                               | Valor                                                                                                                                                                                                                            |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fase atual                         | **UX-1.0 — estabilização técnica** (missão ativa) — `docs/checkpoints/UX1_0_CHECKPOINT.md`                                                                                                                                       |
-| Etapa atual                        | R-07 (R5.8.32) e fase UI/UX visual concluídos e validados em produção                                                                                                                                                            |
-| Última etapa concluída             | Fase visual: #389 Início, #390 Treino, #391 Raio-X, #392 Coach e correções #393 — UX-1.0 §2.16, `docs/ux1/VISUAL_PHASE_VALIDATION.md`                                                                                            |
-| Operações em andamento             | Nenhuma                                                                                                                                                                                                                          |
-| Processos em execução              | Nenhum                                                                                                                                                                                                                           |
-| Branch ativa                       | `docs/visual-phase-closure`                                                                                                                                                                                                      |
-| Último commit confirmado em `main` | `d8ab7445` (merge do #395)                                                                                                                                                                                                       |
-| Build validado em produção         | App: deploy `9b547406` de `d8ab7445` (bundle `index-BETTPx_q`). Worker: Railway `c372485e` (R5.8.32, `git:4f7466ec`), attestation `3ee7f9e8` VERIFIED                                                                            |
-| Gates mais recentes                | `98d10f9c`: H.3-E PASS 44250709151, attestation 44250676832, E2E 44249188759 12/12. HISTÓRICO `f1cb9e8e` (PM4): H.3-E 44218097807, E2E 44215050582                                                                               |
-| Problemas abertos                  | Não bloqueiam: amostra de produção ≤ 5 partidas por jogador (evolução PARTIAL); partidas pré-R5.8.31 sem compra classificada; Coach sem conversa real observada (riscos no PM4 C6)                                               |
-| **Próxima ação exata**             | Aguardam o dono: escolher o jogador da demo Inferno (job `febd9846`) e o Experimento B (R-15)                                                                                                                                    |
-| Ações que NÃO devem ser repetidas  | PM1–PM5; Steam (#343–#348); UX-1.0 #350–#354; migrations `20261118120000/140000/160000/180000`, `20261119000000`, `20261119010000`, `20261124060000`; backfill `enemy-hp-v1` (11 linhas, guardado por `damage_enemy_hp IS NULL`) |
-| Ações manuais necessárias          | Nenhuma                                                                                                                                                                                                                          |
+| Item                               | Valor                                                                                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Fase atual                         | **VGL 5.0 — concluída, publicada e validada em produção** — `docs/checkpoints/VGL5_CHECKPOINT.md`                                                            |
+| Etapa atual                        | Encerramento documental da VGL 5.0                                                                                                                           |
+| Última etapa concluída             | VGL 5.0: #436–#443, migration `20261128120000`, deploy Lovable `a28754af` (bundle `index-BYzvy3f2`)                                                          |
+| Operações em andamento             | Nenhuma                                                                                                                                                      |
+| Processos em execução              | Nenhum                                                                                                                                                       |
+| Branch ativa                       | `vgl5/9-docs`                                                                                                                                                |
+| Último commit confirmado em `main` | `ab1cb961` (merge do #443)                                                                                                                                   |
+| Build validado em produção         | App: deploy `a28754af` de `ab1cb961` (bundle `index-BYzvy3f2`). Worker: inalterado (Railway `c372485e`, R5.8.32)                                             |
+| Gates mais recentes                | CI verde em todos os PRs #436–#443 antes do merge                                                                                                            |
+| Problemas abertos                  | Perfil público "ligado" sem validação ponta a ponta (depende do switch do dono); FACEIT sem conta com partidas CS2; revisão do mapeamento prioridade → curso |
+| **Próxima ação exata**             | Dono: ligar o perfil público numa conta de teste e conferir `/p/<ID>` e a comparação; depois desligar                                                        |
+| Ações que NÃO devem ser repetidas  | Tudo da tabela anterior, mais: migration `20261128120000`, merges #436–#443, deploy `a28754af`                                                               |
+| Ações manuais necessárias          | Validar o perfil público ligado (acima)                                                                                                                      |
 
-Missão ativa: UX-1.0 — `docs/checkpoints/UX1_0_CHECKPOINT.md`. Missão anterior: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
+Última missão: VGL 5.0 — `docs/checkpoints/VGL5_CHECKPOINT.md` e `docs/vgl5/VGL5_REPORT.md`. Antes: UX-1.0 — `docs/checkpoints/UX1_0_CHECKPOINT.md`. Missão anterior: Steam/Valve — `docs/steam/STEAM_CHECKPOINT.md`. Última fase concluída: PM5 — `docs/pm5/PM5_CHECKPOINT.md` e `docs/pm5/PM5_REPORT.md`.
 
 ## 1. Identificação
 
@@ -292,7 +292,7 @@ build pin, H.3-E, runtime attestation, gates de ativação. Coach: OpenRouter
 
 ## 23. Checkpoints individuais
 
-`docs/checkpoints/UX1_0_CHECKPOINT.md` (fase ativa: UX-1.0) · `docs/pm3/PM3_CHECKPOINT.md` · `docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
+`docs/checkpoints/VGL5_CHECKPOINT.md` (última missão: VGL 5.0) · `docs/checkpoints/UX1_0_CHECKPOINT.md` · `docs/pm3/PM3_CHECKPOINT.md` · `docs/checkpoints/FOUNDATION_CHECKPOINT.md` (fundação, concluída) ·
 `docs/checkpoints/PHASE_{1..5}_CHECKPOINT.md` · protocolo em `docs/checkpoints/README.md`.
 Preexistente e preservado: `docs/A9_1_CONTINUITY_CHECKPOINT.md`.
 Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
@@ -309,6 +309,11 @@ Documentos de referência: `docs/product/CS2_PRO_PRODUCT_METHODOLOGY.md`,
 
 ## RESUMO PARA PRÓXIMA SESSÃO
 
+> Atualização 2026-11-28 (VGL 5.0):
+>
+> - `main` `ab1cb961` + o PR documental. 10 frentes publicadas (deploy `a28754af`) e validadas em produção (#436–#443). Ver
+>   `docs/checkpoints/VGL5_CHECKPOINT.md`. Pendente: validar o perfil público ligado (switch do dono).
+>
 > Atualização 2026-11-27 (VGL 4.0):
 >
 > - `main` `c9ca9c99` + o PR de fechamento. Publicado e validado em produção (#426–#429). Ver
