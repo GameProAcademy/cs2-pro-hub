@@ -265,11 +265,7 @@ function RoomTabs({ matchId, active }: { matchId: string; active: MatchRoomTab }
                 name={TAB_ICON[tab]}
                 className={cn(
                   "mr-1.5 size-4",
-                  tab === "utility"
-                    ? "text-category-utility"
-                    : tab === active
-                      ? "text-primary"
-                      : "text-muted-foreground",
+                  tab === active ? "text-primary" : "text-muted-foreground",
                 )}
               />
               {t(`room.tab.${tab}` as TranslationKey)}
