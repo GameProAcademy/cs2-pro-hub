@@ -158,6 +158,17 @@ describe("service worker never caches private data", () => {
   });
 });
 
+describe("invite placement (production check on a 375 px phone)", () => {
+  it("is opaque and sits at the top on phones, so it never covers the message box", () => {
+    const ui = read("src/components/pwa/InstallApp.tsx");
+    const aside = ui.slice(ui.indexOf("<aside"), ui.indexOf("data-pwa-invite="));
+    expect(aside).toContain("bg-card");
+    expect(aside).toContain("top-[calc(4rem+env(safe-area-inset-top))]");
+    expect(aside).toContain("sm:bottom-6");
+    expect(aside).not.toContain("surface-panel");
+  });
+});
+
 describe("wiring", () => {
   it("head links the manifest and iOS metadata; the shell shows the invite and the menu entry", () => {
     const root = read("src/routes/__root.tsx");
