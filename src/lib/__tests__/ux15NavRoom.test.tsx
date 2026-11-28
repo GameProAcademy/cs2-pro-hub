@@ -55,9 +55,11 @@ describe("five areas", () => {
       expect(d[k], k).toBeTruthy();
   });
 
-  it("M-3: the bottom bar shows the five areas with full labels and aria-current", () => {
+  it("M-3: the bottom bar shows four primary destinations; Coach remains available via the floating button", () => {
     const shell = read("src/components/layout/AppShell.tsx");
-    expect(shell).toContain("grid grid-cols-5");
+    expect(shell).toContain("grid grid-cols-4");
+    expect(shell).toContain('navAreas.filter((area) => area.id !== "coach")');
+    expect(shell).toContain("<CoachFab />");
     expect(shell).not.toContain('.split(" ").at(-1)');
     expect(shell).toContain('aria-current={isActive ? "page" : undefined}');
   });
