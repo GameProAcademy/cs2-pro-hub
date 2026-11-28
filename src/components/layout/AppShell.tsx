@@ -266,29 +266,32 @@ export function AppShell({ children }: { children: ReactNode }) {
           </main>
         </div>
 
-        {/* Mobile bottom navigation — the five areas, full labels (UX-1 M-3). */}
+        {/* Mobile bottom navigation — four primary destinations; Coach remains available via CoachFab. */}
         <nav
           aria-label={t("nav.quickLabel")}
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+          data-mobile-bottom-nav
         >
-          {navAreas.map((area) => {
-            const isActive = areaOf(pathname)?.id === area.id;
-            return (
-              <Link
-                key={area.id}
-                to={area.to}
-                aria-current={isActive ? "page" : undefined}
-                data-bottom-area={area.id}
-                className={cn(
-                  "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center text-xs font-medium leading-tight text-muted-foreground transition-colors",
-                  isActive && "text-primary",
-                )}
-              >
-                <area.icon className="size-5" aria-hidden />
-                <span className="break-words">{t(area.labelKey)}</span>
-              </Link>
-            );
-          })}
+          {navAreas
+            .filter((area) => area.id !== "coach")
+            .map((area) => {
+              const isActive = areaOf(pathname)?.id === area.id;
+              return (
+                <Link
+                  key={area.id}
+                  to={area.to}
+                  aria-current={isActive ? "page" : undefined}
+                  data-bottom-area={area.id}
+                  className={cn(
+                    "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-0.5 py-2 text-center text-xs font-medium leading-tight text-muted-foreground transition-colors",
+                    isActive && "text-primary",
+                  )}
+                >
+                  <area.icon className="size-5" aria-hidden />
+                  <span className="break-words">{t(area.labelKey)}</span>
+                </Link>
+              );
+            })}
         </nav>
 
         {/* Floating Coach access at every width (UX-1 R-12 / M-10). */}

@@ -224,6 +224,7 @@ export const ptBR = {
   "vgl4.overview.flash": "Assist. de flash",
   "vgl4.overview.go": "Explorar a partida",
   "vgl4.tabIntro.rounds": "Cada round com lado, economia, eventos e posições registradas.",
+  "vgl4.tabIntro.rounds.title": "Detalhes de cada rodada",
   "vgl4.tabIntro.duels": "Seus confrontos: quem você eliminou, quem te eliminou e com o quê.",
   "vgl4.tabIntro.deaths": "Cada morte sua, com arma, contexto e replay no tick.",
   "vgl4.tabIntro.utility": "Granadas lançadas e seus efeitos registrados.",

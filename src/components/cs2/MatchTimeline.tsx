@@ -239,8 +239,12 @@ export function RoundJump({
     el.classList.add("vgl-focus");
   };
   return (
-    <nav aria-label={t("vgl3.jump.label")} className="mb-4" data-round-jump>
-      <ol className="flex gap-1.5 overflow-x-auto pb-1">
+    <nav
+      aria-label={t("vgl3.jump.label")}
+      className="mb-4 min-h-14 overflow-y-hidden"
+      data-round-jump
+    >
+      <ol className="flex min-h-14 items-start gap-1.5 overflow-x-auto overflow-y-hidden pb-1">
         {rounds.map((r) => {
           const state = r.side && r.won !== null ? (r.won ? "won" : "lost") : "unknown";
           const label = fill(t("room.strip.round"), {

@@ -187,6 +187,13 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
   const excluded = r.rounds.filter((x) => !x.valid || !x.side);
   return (
     <div className="space-y-6">
+      <RoundFocus
+        rounds={r.rounds}
+        matchId={r.matchId}
+        map={r.map}
+        describe={(e, side) => eventText(t, e, side)}
+      />
+
       <Note id="COVERAGE">
         {fill(t("rounds.coverage"), { used: m.playedRounds, total: s.rounds })}
         {excluded.length
@@ -204,13 +211,6 @@ function RoundsReportView({ r }: { r: Extract<RoundsResponse, { status: "OK" }> 
       {s.disconnectRounds ? (
         <Note id="DISCONNECT">{fill(t("rounds.note.disconnect"), { n: s.disconnectRounds })}</Note>
       ) : null}
-
-      <RoundFocus
-        rounds={r.rounds}
-        matchId={r.matchId}
-        map={r.map}
-        describe={(e, side) => eventText(t, e, side)}
-      />
 
       <ChartCard title={t("rounds.section.list")} subtitle={t("rounds.section.list.subtitle")}>
         <ol className="divide-y divide-border" data-round-list>

@@ -69,9 +69,11 @@ export function RealHeatmapPage({
   onSearch: (next: HeatmapSearch) => void;
 }) {
   const t = useT();
+  // Default map view is the player's eliminations; an explicit URL/filter choice always wins.
+  const effectiveSearch: HeatmapSearch = { ...clean(search), layer: search.layer ?? "KILLS" };
   const query = useQuery({
-    queryKey: spatialQueryKey(clean(search)),
-    queryFn: () => getSpatialHeatmap({ data: clean(search) }),
+    queryKey: spatialQueryKey(effectiveSearch),
+    queryFn: () => getSpatialHeatmap({ data: clean(effectiveSearch) }),
   });
   return (
     <MaybeShell>

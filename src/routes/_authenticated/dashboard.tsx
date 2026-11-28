@@ -195,6 +195,7 @@ function DemoDashboardPage() {
         </ChartCard>
 
         <ChartCard
+          icon="rounds"
           title={t("dashboard.lastMatches")}
           subtitle={t("dashboard.lastMatchesSub")}
           actions={

@@ -58,7 +58,7 @@ function RealMatchesPage() {
               <RealAggregates overview={overview} />
               <MatchCardGrid rows={overview.matches} />
               {overview.matches.length ? (
-                <ChartCard showDemoTag={false} title={t("matches.tableTitle")}>
+                <ChartCard showDemoTag={false} icon="rounds" title={t("matches.tableTitle")}>
                   <RealMatchesTable rows={overview.matches} />
                 </ChartCard>
               ) : null}
@@ -104,7 +104,7 @@ function DemoMatchesPage() {
           <MetricCard label={t("matches.avgAdr")} value={avgAdr} />
         </div>
 
-        <ChartCard title={t("matches.tableTitle")} subtitle={t("matches.tableSub")}>
+        <ChartCard icon="rounds" title={t("matches.tableTitle")} subtitle={t("matches.tableSub")}>
           <MatchesTable rows={rows} />
         </ChartCard>
       </div>

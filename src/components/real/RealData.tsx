@@ -7,7 +7,15 @@ import { MapTile } from "@/components/common/GameVisuals";
 import { ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Ban, CircleDashed, Clock3, Fingerprint, ShieldAlert, Upload } from "lucide-react";
+import {
+  Ban,
+  CircleDashed,
+  CircleHelp,
+  Clock3,
+  Fingerprint,
+  ShieldAlert,
+  Upload,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ChartCard } from "@/components/common/ChartCard";
@@ -16,6 +24,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { MetricCard } from "@/components/common/MetricCard";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -239,13 +248,46 @@ const RESULT_TONE: Record<keyof typeof RESULT_KEY, BadgeTone> = {
   draw: "context",
 };
 
+function MatchColumnInfo({ label, help }: { label: string; help: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {label}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={label}
+              data-match-column-help={label}
+            >
+              <CircleHelp className="size-3.5" aria-hidden />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs text-left leading-relaxed">
+            {help}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </span>
+  );
+}
+
 export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
   const t = useT();
   const { intlTag } = useI18n();
   const columns: Array<TranslationKey | ReactNode> = [
-    "matches.col.date",
+    <MatchColumnInfo
+      key="date"
+      label={t("matches.col.date")}
+      help={t("real.date.processedNote")}
+    />,
     "matches.col.map",
-    "matches.col.result",
+    <MatchColumnInfo
+      key="result"
+      label={t("matches.col.result")}
+      help={t("real.result.unresolvedNote")}
+    />,
     "matches.col.kills",
     "matches.col.deaths",
     <MetricTerm key="adr" id="adr" />,
@@ -370,11 +412,19 @@ function MatchTableNotes({ rows }: { rows: OverviewMatch[] }) {
   const partialAdr = rows.some((r) => r.adr !== null && r.adrPartial);
   if (!processed && !unresolved && !partialAdr) return null;
   return (
-    <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground" data-match-notes>
-      {processed ? <p>* {t("real.date.processedNote")}</p> : null}
-      {unresolved ? <p>{t("real.result.unresolvedNote")}</p> : null}
-      {partialAdr ? <p data-adr-partial-note>{t("adr.partial.hint")}</p> : null}
-    </div>
+    <>
+      {processed || unresolved ? (
+        <div className="sr-only" data-match-notes>
+          {processed ? <p>{t("real.date.processedNote")}</p> : null}
+          {unresolved ? <p>{t("real.result.unresolvedNote")}</p> : null}
+        </div>
+      ) : null}
+      {partialAdr ? (
+        <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground">
+          <p data-adr-partial-note>{t("adr.partial.hint")}</p>
+        </div>
+      ) : null}
+    </>
   );
 }
 

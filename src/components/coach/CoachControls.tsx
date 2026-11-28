@@ -123,6 +123,7 @@ export function DeleteConversationButton({
         }}
       >
         <Trash2 className="size-3.5" aria-hidden />
+        <span>{t("coach2.delete")}</span>
       </Button>
     );
   return (
