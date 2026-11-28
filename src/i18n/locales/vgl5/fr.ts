@@ -250,4 +250,16 @@ export const vgl5Fr = {
   "vgl5.pub.settings.open": "Ouvrir le profil public",
   "vgl5.pub.settings.noPlayer": "Complète ton profil de joueur pour obtenir un ID public.",
   "vgl5.pub.settings.error": "Enregistrement impossible. Réessaie.",
+  "vgl5.faceit.title": "Matchs FACEIT",
+  "vgl5.faceit.description":
+    "Données fournies par FACEIT lui-même (score, résultat et, quand FACEIT les publie, K/D et ADR). Elles restent séparées du CS2 PRO Score, du Player DNA et des chiffres de démo, issus uniquement des démos analysées.",
+  "vgl5.faceit.loading": "Chargement des matchs FACEIT…",
+  "vgl5.faceit.error": "Impossible de charger les matchs FACEIT pour le moment.",
+  "vgl5.faceit.empty":
+    "Aucun match CS2 trouvé sur FACEIT pour ce compte à la dernière synchronisation.",
+  "vgl5.faceit.partial":
+    "FACEIT n’a pas encore publié toutes les données de ce match ; la prochaine synchronisation réessaiera.",
+  "vgl5.faceit.more": "{shown} sur {total} affichés.",
+  "vgl5.faceit.linked":
+    "{n} match(s) FACEIT aussi envoyé(s) en démo n’apparaissent qu’une fois, avec les données de la démo.",
 } as const;

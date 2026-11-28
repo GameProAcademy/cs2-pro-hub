@@ -20,6 +20,7 @@ import { SteamPanel } from "@/components/integrations/SteamPanel";
 import { IdentitiesCard } from "@/components/profile/IdentitiesCard";
 import { PasswordCard } from "@/components/profile/PasswordCard";
 import { PublicProfileCard } from "@/components/profile/PublicProfileCard";
+import { FaceitMatchesCard } from "@/components/integrations/FaceitMatchesCard";
 import { VerificationCard } from "@/components/profile/VerificationCard";
 import { NicknameHistoryCard } from "@/components/profile/NicknameHistoryCard";
 import { Button } from "@/components/ui/button";
@@ -404,6 +405,9 @@ function ProfilePage() {
 
             <div className="lg:col-span-3" id="faceit">
               <FaceitPanel callback={faceitCallback} />
+              <div className="mt-4">
+                <FaceitMatchesCard />
+              </div>
             </div>
 
             <ProfileMapPool />
