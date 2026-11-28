@@ -6,6 +6,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent, type ReactNode } from "react";
 
+import fallbackSymbol from "@/assets/gamepro-symbol.png";
 import { DnaRadarA, type RadarAxis } from "@/components/charts/DnaRadarA";
 import { GameIcon } from "@/components/common/GameIcon";
 import { Cs2Mask, MapArt, MapEmblem } from "@/components/cs2/Cs2Art";
@@ -176,7 +177,7 @@ function Hero({ p }: { p: PublicProfile }) {
             <div className="relative size-24 shrink-0 sm:size-28">
               <div className="size-full overflow-hidden rounded-2xl border-2 border-primary/60 bg-elevated shadow-[0_0_32px_-8px_var(--primary)]">
                 <img
-                  src={p.identity.avatarUrl ?? "/gamepro-symbol.png"}
+                  src={p.identity.avatarUrl ?? fallbackSymbol}
                   alt=""
                   className={cn(
                     "size-full",
