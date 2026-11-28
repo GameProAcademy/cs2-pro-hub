@@ -1,7 +1,7 @@
 import type { adaptivePtBR } from "./pt-BR";
 
 export const adaptiveEn: Record<keyof typeof adaptivePtBR, string> = {
-  "training.adaptive.catalogHeading": "Recommended catalog lessons",
+  "training.adaptive.catalogHeading": "Recommended catalog courses",
   "training.adaptive.noPromise":
     "The plan organises your practice from your own data; it does not guarantee better performance. Take breaks and fit the volume to your time.",
   "training.adaptive.state.NO_EVIDENCE.title": "No evidence for a plan yet",

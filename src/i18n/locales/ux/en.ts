@@ -68,6 +68,4 @@ export const uxEn: Record<keyof typeof uxPtBR, string> = {
   "real.proScoreContext.instead":
     "The rating shown in the match table applies to each match alone and does not replace the CS2 PRO Score.",
   "real.proScore.where": "Learn more in Performance",
-  "training.real.accessNote":
-    "CS2 PRO only recommends lessons from the GamePro catalog, chosen from your matches and goals, and shows the link. The lesson opens on hub.gamepro.academy in a new tab, with your own login for that platform. CS2 PRO receives no information from it: it does not know whether you opened, watched or finished a lesson, and none of that feeds your metrics or recommendations.",
 };

@@ -1,6 +1,6 @@
 /** PM5 / 4.2.9 — adaptive training (module H) and the exercise catalog cs2.exercises.v1. */
 export const adaptivePtBR = {
-  "training.adaptive.catalogHeading": "Aulas recomendadas do catálogo",
+  "training.adaptive.catalogHeading": "Cursos recomendados do catálogo",
   "training.adaptive.noPromise":
     "O plano organiza o seu treino a partir dos seus dados; ele não garante melhora de desempenho. Faça pausas e ajuste o volume ao seu tempo.",
   "training.adaptive.state.NO_EVIDENCE.title": "Ainda não há evidência para um plano",

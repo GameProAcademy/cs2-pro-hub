@@ -50,11 +50,16 @@ describe("visual phase — Treino", () => {
       observing: [],
     });
     expect(html).toContain('data-priority-rank="1"');
-    expect(html).toContain("data-reference-gauge");
+    expect(html).toContain("data-priority-bar");
     // Positions come from the same numbers the text shows: 33%, 47%, 40% and 60%.
+    // VGL 5.0: band from 33% (interval), bar filled to 40% (value), reference line at 60%.
     expect(html).toContain("left:33%");
-    expect(html).toContain("left:40%");
+    expect(html).toContain("width:40%");
     expect(html).toContain("left:60%");
+    // Labelled: the player's value, the reference and the gap in points (what it means).
+    expect(html).toContain('data-priority-gap="below"');
+    expect(html).toContain("20,0 pontos abaixo da referência");
+    expect(html).toContain("data-priority-legend");
     expect(html).toContain('data-card-icon="target"');
   });
 
@@ -75,7 +80,7 @@ describe("visual phase — Treino", () => {
     });
     expect(insufficient).toContain('data-state="INSUFFICIENT_SAMPLE"');
     expect(insufficient).toContain('data-tone="neutral"');
-    expect(insufficient).not.toContain("data-reference-gauge");
+    expect(insufficient).not.toContain("data-priority-bar");
     expect(insufficient).not.toContain("data-signal-value");
     const derived = line({
       status: "OBSERVE",
@@ -84,7 +89,8 @@ describe("visual phase — Treino", () => {
       interval: [0.62, 0.78],
     });
     expect(derived).toContain('data-state="DERIVED"');
-    expect(derived).toContain("data-reference-gauge");
+    expect(derived).toContain("data-priority-bar");
+    expect(derived).toContain('data-priority-gap="above"');
     expect(derived).not.toContain("data-priority-rank");
   });
 });

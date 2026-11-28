@@ -42,4 +42,10 @@ export const vgl5PtBR = {
   "vgl5.score.conf.HIGH": "Alta",
   "vgl5.dna.badge": "CS2 PRO Player DNA",
   "vgl5.dna.predominant": "Especialidade predominante",
+  "vgl5.training.you": "Você",
+  "vgl5.training.reference": "Referência",
+  "vgl5.training.below": "{d} pontos abaixo da referência",
+  "vgl5.training.above": "{d} pontos acima da referência",
+  "vgl5.training.legend":
+    "Como ler: a barra é o seu valor, o traço é a referência fixa do sinal e a faixa clara é o intervalo de confiança. Quanto mais abaixo da referência, mais alta a prioridade.",
 } as const;

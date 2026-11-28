@@ -87,7 +87,7 @@ export const getTrainingPlan = createServerFn({ method: "GET" })
     }
     return {
       player: "OK",
-      plan: buildTrainingPlan({ ...input, candidates }),
+      plan: buildTrainingPlan({ ...input, candidates, coursesOnly: true }),
       matches: overview.matches.length,
       catalogUnavailable,
     };

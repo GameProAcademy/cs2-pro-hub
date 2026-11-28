@@ -74,17 +74,16 @@ export const catalogEs: Record<keyof typeof catalogPtBR, string> = {
   "training.real.week": "Semana",
   "training.real.focusConsolidation": "Consolidación y revisión",
   "training.real.practice": "Práctica en CS2",
-  "training.real.lessons": "Clases recomendadas",
+  "training.real.lessons": "Cursos recomendados",
   "training.real.complementary": "Rutas complementarias",
-  "training.real.complementaryHint":
-    "Contenidos de otras rutas vinculados a tus prioridades. Sugerencia: una clase por semana.",
+  "training.real.complementaryHint": "Contenidos de otras rutas vinculados a tus prioridades.",
   "training.real.frequency": "Sugerencia: 3 a 4 sesiones por semana, en este orden.",
   "training.real.open": "Abrir clase",
   "training.real.openCourse": "Abrir curso",
   "training.real.why.dna": "Tu dimensión {dimension} está en {value}.",
   "training.real.why.goal": "Vinculada a tu objetivo: {goal}.",
   "training.real.why.map": "Posiciones del mapa {map}, que jugaste.",
-  "training.real.noLesson": "No hay clase del catálogo para esta prioridad en tu idioma.",
+  "training.real.noLesson": "No hay curso del catálogo para esta prioridad en tu idioma.",
   "training.practice.aim":
     "15 min de aim_botz con la mira a la altura de la cabeza + 10 min de deathmatch solo con one-taps.",
   "training.practice.dueling":

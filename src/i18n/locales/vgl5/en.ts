@@ -42,4 +42,10 @@ export const vgl5En = {
   "vgl5.score.conf.HIGH": "High",
   "vgl5.dna.badge": "CS2 PRO Player DNA",
   "vgl5.dna.predominant": "Predominant specialty",
+  "vgl5.training.you": "You",
+  "vgl5.training.reference": "Reference",
+  "vgl5.training.below": "{d} points below the reference",
+  "vgl5.training.above": "{d} points above the reference",
+  "vgl5.training.legend":
+    "How to read: the bar is your value, the line is the signal's fixed reference and the light band is the confidence interval. The further below the reference, the higher the priority.",
 } as const;
