@@ -289,4 +289,11 @@ export const vgl5PtBR = {
   "vgl51.coach.tip":
     "O Treinador CS2 PRO responde com base nas suas partidas analisadas, no seu Player DNA e no seu plano de treino: pergunte sobre erros, decisões de round, mapas e o que treinar a seguir. É uma IA e pode errar; confira os números nas páginas da plataforma.",
   "vgl51.coach.you": "Você",
+  "vgl51.pub.eyebrow": "Perfil público · CS2 PRO",
+  "vgl51.pub.specialty": "Especialidade: {dimension}",
+  "vgl51.pub.team": "Time: {team}",
+  "vgl51.pub.dnaTop": "Maiores índices",
+  "vgl51.pub.mapsRanked": "Classificação dos mapas",
+  "vgl51.pub.scoreBasis": "{n} partidas · cobertura {c}%",
+  "vgl51.pub.since": "Última partida analisada: {date}",
 } as const;
