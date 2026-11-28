@@ -14,7 +14,7 @@ import { InfoTip } from "@/components/common/InfoTip";
 import { GameIcon, type GameIconName } from "@/components/common/GameIcon";
 import { Cs2Mask, RadialGauge } from "@/components/cs2/Cs2Art";
 import { DNA_ICON, DnaSignature, DnaTrend } from "@/components/cs2/DnaVisuals";
-import { DimensionRank, IdentityCard, dimensionRanks } from "@/components/cs2/IdentityKit";
+import { DimensionRank, dimensionRanks } from "@/components/cs2/IdentityKit";
 import { DIMENSION_ART } from "@/lib/cs2/assets";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
@@ -67,9 +67,9 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
   const focusOn = stable && observed.length >= 3 && focusDim !== null;
   return (
     <div className="space-y-8">
-      {stable ? (
-        <IdentityCard dims={dna.dimensions} matches={dna.matches} rounds={dna.rounds} />
-      ) : null}
+      {/* VGL 5.1 (Frente 12.1): "Identidade técnica" (IdentityCard) is not shown on this page —
+          the Assinatura técnica below carries the same reading. The component stays in use
+          elsewhere. */}
       <details className="group rounded-lg border border-border px-4 py-3" data-dna-basis>
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-foreground">
           <span className="flex items-center gap-2">
@@ -122,10 +122,17 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
         </p>
       ) : null}
       {stable && observed.length >= 3 ? (
-        <ChartCard
-          showDemoTag={false}
-          title={t("dna.radarTitle")}
-          actions={
+        /* VGL 5.1 (Frente 12.2–12.6): the radar is the page's protagonist, on the page itself
+           (no outer card). Beside it: "Em foco" and, below it, every dimension as a wrapping
+           grid — complete labels, no horizontal strip. */
+        <section aria-labelledby="dna-radar-title" data-dna-radar-hero>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <h2
+              id="dna-radar-title"
+              className="font-display text-lg font-semibold uppercase tracking-wide text-foreground"
+            >
+              {t("dna.radarTitle")}
+            </h2>
             <InfoTip
               id="dna-legend"
               label={t("vgl5.dna.legendTip")}
@@ -133,41 +140,14 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
             >
               {t("real.dna.legend")}
             </InfoTip>
-          }
-        >
+          </div>
           <div
-            className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start"
+            className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start"
             data-dna-focus-layout
           >
             <div className="min-w-0">
               {/* UX-1.6 / R-14: radar A — ten axes always, empty axes dashed, one selection. */}
               <DnaRadarA axes={axes} selected={selected} onSelect={setSelected} />
-              <div
-                role="group"
-                aria-label={t("real.dna.select")}
-                className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1"
-                data-dna-chips
-              >
-                {axes.map((a) => (
-                  <button
-                    key={a.dimension}
-                    type="button"
-                    aria-pressed={selected === a.dimension}
-                    onClick={() => setSelected(a.dimension)}
-                    className={cn(
-                      "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs",
-                      selected === a.dimension
-                        ? "border-primary/60 bg-primary/10 text-foreground"
-                        : "border-border text-muted-foreground",
-                    )}
-                  >
-                    {t(dnaLabelKey(a.dimension))}
-                    <span className="font-mono">
-                      {a.value === null ? NOT_AVAILABLE_MARK : a.value}
-                    </span>
-                  </button>
-                ))}
-              </div>
               <p className="sr-only" aria-live="polite" data-dna-announce>
                 {selectedDim
                   ? fill(t("real.dna.selected"), {
@@ -183,30 +163,82 @@ export function DnaBody({ dna }: { dna: RealPlayerDna }) {
                   : ""}
               </p>
               {selected ? null : (
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground" data-dna-legend>
+                <p
+                  className="mt-3 text-center text-xs leading-relaxed text-muted-foreground"
+                  data-dna-legend
+                >
                   {t("real.dna.pick")}
                 </p>
               )}
             </div>
-            {focusOn && focusDim ? (
-              <div className="min-w-0" aria-live="polite" data-dna-focus={focusDim.dimension}>
-                <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-primary">
-                  {selected ? t("vgl5.dna.focusSelected") : t("vgl5.dna.focusDefault")}
+            <div className="min-w-0 space-y-5">
+              {focusOn && focusDim ? (
+                <div aria-live="polite" data-dna-focus={focusDim.dimension}>
+                  <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-primary">
+                    {selected ? t("vgl5.dna.focusSelected") : t("vgl5.dna.focusDefault")}
+                  </p>
+                  <DnaDimensionCard
+                    d={focusDim}
+                    i={0}
+                    stable={stable}
+                    selected={selected === focusDim.dimension}
+                    rank={ranks.get(focusDim.dimension)}
+                    dna={dna}
+                    clutchAttempts={clutchAttempts}
+                    focus
+                  />
+                </div>
+              ) : null}
+              <div>
+                <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  {t("vgl51.dna.dimensions")}
                 </p>
-                <DnaDimensionCard
-                  d={focusDim}
-                  i={0}
-                  stable={stable}
-                  selected={selected === focusDim.dimension}
-                  rank={ranks.get(focusDim.dimension)}
-                  dna={dna}
-                  clutchAttempts={clutchAttempts}
-                  focus
-                />
+                <div
+                  role="group"
+                  aria-label={t("real.dna.select")}
+                  className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2"
+                  data-dna-chips
+                >
+                  {axes.map((a) => {
+                    const statusKey = a.status === "NOT_MEASURED" ? "NOT_MEASURED" : "NO_SAMPLE";
+                    return (
+                      <button
+                        key={a.dimension}
+                        type="button"
+                        aria-pressed={selected === a.dimension}
+                        onClick={() => setSelected(a.dimension)}
+                        title={
+                          a.value === null
+                            ? t(`real.dna.status.${statusKey}` as TranslationKey)
+                            : undefined
+                        }
+                        className={cn(
+                          "flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          selected === a.dimension
+                            ? "border-primary/60 bg-primary/10 text-foreground"
+                            : "border-border bg-background/40 text-muted-foreground hover:text-foreground",
+                        )}
+                        data-dna-chip={a.dimension}
+                      >
+                        <span className="min-w-0 break-words">{t(dnaLabelKey(a.dimension))}</span>
+                        <span
+                          className={cn(
+                            "shrink-0 font-mono text-xs tabular-nums",
+                            a.value === null ? "italic text-muted-foreground" : "text-foreground",
+                          )}
+                        >
+                          {a.value === null
+                            ? t(`real.dna.statusShort.${statusKey}` as TranslationKey)
+                            : a.value}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            ) : null}
+            </div>
           </div>
-        </ChartCard>
+        </section>
       ) : null}
       {stable ? (
         <DnaSignature

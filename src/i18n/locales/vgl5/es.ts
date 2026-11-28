@@ -277,4 +277,7 @@ export const vgl5Es = {
   "cw.xrayGaps.tip":
     "Revisa al final de la página lo que CS2 PRO aún no mide y sube demos completas para cerrar los huecos.",
   "vgl51.score.top": "Mayores contribuciones",
+  "real.dna.statusShort.NO_SAMPLE": "Sin muestra",
+  "real.dna.statusShort.NOT_MEASURED": "No medido",
+  "vgl51.dna.dimensions": "Todas las dimensiones",
 } as const;

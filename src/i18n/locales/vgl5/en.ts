@@ -269,4 +269,7 @@ export const vgl5En = {
   "cw.xrayGaps.tip":
     "Check at the end of the page what CS2 PRO does not measure yet, and upload complete demos to close the gaps.",
   "vgl51.score.top": "Largest contributions",
+  "real.dna.statusShort.NO_SAMPLE": "No sample",
+  "real.dna.statusShort.NOT_MEASURED": "Not measured",
+  "vgl51.dna.dimensions": "All dimensions",
 } as const;

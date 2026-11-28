@@ -28,6 +28,8 @@ export interface RadarAxis {
 const SIZE = 520;
 const C = SIZE / 2;
 const R = 140;
+/** Side margin so left/right axis labels are never clipped by the viewBox (VGL 5.1). */
+const PAD_X = 64;
 const GRID = [25, 50, 75, 100];
 
 export function axisPoint(i: number, n: number, radius: number): [number, number] {
@@ -61,7 +63,7 @@ export function DnaRadarA({
   const uid = useId().replace(/:/g, "");
   return (
     <svg
-      viewBox={`0 0 ${SIZE} ${SIZE}`}
+      viewBox={`${-PAD_X} 0 ${SIZE + 2 * PAD_X} ${SIZE}`}
       className="mx-auto block h-auto w-full max-w-[560px]"
       role="group"
       aria-label={t("real.dna.select")}
@@ -116,9 +118,11 @@ export function DnaRadarA({
         const label = t(dnaLabelKey(a.dimension));
         const lines = splitAxisLabel(label);
         const anchor = Math.abs(lx - C) < 8 ? "middle" : lx > C ? "start" : "end";
-        const statusText = empty
-          ? t(`real.dna.status.${a.status === "MEASURED" ? "NO_SAMPLE" : a.status}`)
-          : null;
+        const statusKey = a.status === "MEASURED" ? "NO_SAMPLE" : a.status;
+        const statusText = empty ? t(`real.dna.status.${statusKey}`) : null;
+        // VGL 5.1: the axis shows the short status; the full sentence stays in the
+        // accessible name and in the native tooltip (<title>).
+        const statusShort = empty ? t(`real.dna.statusShort.${statusKey}`) : null;
         return (
           <g
             key={a.dimension}
@@ -137,6 +141,7 @@ export function DnaRadarA({
             }}
             className="cursor-pointer outline-none [&:focus-visible>text]:underline"
           >
+            <title>{`${label}: ${empty ? statusText : `${a.value} / 100`}`}</title>
             <line
               x1={C}
               y1={C}
@@ -172,7 +177,7 @@ export function DnaRadarA({
                 </tspan>
               ))}
               <tspan x={lx} dy={15} fontSize={13} className={cn(empty && "italic")}>
-                {empty ? statusText : String(a.value)}
+                {empty ? statusShort : String(a.value)}
               </tspan>
             </text>
           </g>

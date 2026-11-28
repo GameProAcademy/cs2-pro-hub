@@ -83,7 +83,7 @@ function DimChip({
         name={icon(d.dimension)}
         className={cn("size-5", tone === "top" ? "text-primary" : "text-warning")}
       />
-      <span className="min-w-0 flex-1 truncate text-left font-display text-sm font-semibold uppercase tracking-wide text-foreground">
+      <span className="min-w-0 flex-1 break-words text-left font-display text-sm font-semibold uppercase tracking-wide text-foreground">
         {t(dnaLabelKey(d.dimension))}
       </span>
       <span className="font-mono text-lg font-semibold tabular-nums text-foreground">
