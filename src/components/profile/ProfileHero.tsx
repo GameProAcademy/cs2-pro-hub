@@ -56,11 +56,11 @@ export function ProfileHero({
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
             {t("vgl.profile.hero.eyebrow")}
           </p>
-          <h2 className="mt-1 break-words font-display text-2xl font-semibold text-foreground sm:text-3xl">
-            {name || t("vgl.profile.hero.noName")}
+          <h2 className="mt-1 break-words font-display text-2xl font-semibold text-foreground sm:text-3xl" data-profile-nickname>
+            {nickname || displayName || t("vgl.profile.hero.noName")}
           </h2>
           {nickname && displayName && nickname !== displayName ? (
-            <p className="font-mono text-sm text-muted-foreground">{nickname}</p>
+            <p className="font-mono text-sm text-muted-foreground" data-profile-display-name>{displayName}</p>
           ) : null}
           <ul className="mt-3 flex flex-wrap gap-2 text-xs" data-profile-hero-tags>
             {team ? (
