@@ -7,6 +7,8 @@
  * recalculated here. The Summary reads the match row the overview already loaded and the round
  * report the Rounds tab already loads.
  */
+import { FaceitMatchRoom } from "@/components/integrations/FaceitMatchRoom";
+import { isImportedSource } from "@/lib/metrics/canonicalAggregate";
 import { MapTile } from "@/components/common/GameVisuals";
 import { MapArt, SideLogo } from "@/components/cs2/Cs2Art";
 import { RoundMarks, RoundMarksLegend, ScoreLine } from "@/components/cs2/MatchTimeline";
@@ -121,42 +123,53 @@ export function RealMatchRoomPage({
         ) : (
           <>
             <RoomHeader m={match} />
-            <RoomTabs matchId={matchId} active={tab} />
-            <div role="tabpanel" aria-label={t(`room.tab.${tab}` as TranslationKey)}>
-              {tab !== "summary" ? <TabIntro tab={tab} /> : null}
-              <EmbeddedScope>
-                {tab === "summary" ? (
-                  <RoomSummary m={match} />
-                ) : tab === "rounds" ? (
-                  <RealRoundsPage search={{ matchId }} onSearch={noop} />
-                ) : tab === "duels" ? (
-                  <RealCombatPage search={{ matchId }} onSearch={noop} />
-                ) : tab === "deaths" ? (
-                  <RealDeathReviewPage search={{ matchId, event: search.event }} onSearch={noop} />
-                ) : tab === "utility" ? (
-                  <RealUtilityPage search={{ matchId }} onSearch={noop} />
-                ) : tab === "map" ? (
-                  <RealHeatmapPage
-                    search={{
-                      matchId,
-                      ...(match.map ? { map: match.map } : {}),
-                      layer: search.layer,
-                      side: search.side,
-                      level: search.level,
-                      weapon: search.weapon,
-                    }}
-                    onSearch={(s) =>
-                      go({ layer: s.layer, side: s.side, level: s.level, weapon: s.weapon })
-                    }
-                  />
-                ) : (
-                  <RealReplayPage
-                    search={{ matchId, round: search.round, tick: search.tick }}
-                    onSearch={(s) => go({ round: s.round, tick: s.tick })}
-                  />
-                )}
-              </EmbeddedScope>
-            </div>
+            {isImportedSource(match.source) ? (
+              // VGL 5.1 (Frente 2): an imported FACEIT match has its own room — only what FACEIT
+              // reported; the demo tabs (rounds, duels, map, replay…) do not exist for it.
+              <FaceitMatchRoom matchId={matchId} />
+            ) : (
+              <>
+                <RoomTabs matchId={matchId} active={tab} />
+                <div role="tabpanel" aria-label={t(`room.tab.${tab}` as TranslationKey)}>
+                  {tab !== "summary" ? <TabIntro tab={tab} /> : null}
+                  <EmbeddedScope>
+                    {tab === "summary" ? (
+                      <RoomSummary m={match} />
+                    ) : tab === "rounds" ? (
+                      <RealRoundsPage search={{ matchId }} onSearch={noop} />
+                    ) : tab === "duels" ? (
+                      <RealCombatPage search={{ matchId }} onSearch={noop} />
+                    ) : tab === "deaths" ? (
+                      <RealDeathReviewPage
+                        search={{ matchId, event: search.event }}
+                        onSearch={noop}
+                      />
+                    ) : tab === "utility" ? (
+                      <RealUtilityPage search={{ matchId }} onSearch={noop} />
+                    ) : tab === "map" ? (
+                      <RealHeatmapPage
+                        search={{
+                          matchId,
+                          ...(match.map ? { map: match.map } : {}),
+                          layer: search.layer,
+                          side: search.side,
+                          level: search.level,
+                          weapon: search.weapon,
+                        }}
+                        onSearch={(s) =>
+                          go({ layer: s.layer, side: s.side, level: s.level, weapon: s.weapon })
+                        }
+                      />
+                    ) : (
+                      <RealReplayPage
+                        search={{ matchId, round: search.round, tick: search.tick }}
+                        onSearch={(s) => go({ round: s.round, tick: s.tick })}
+                      />
+                    )}
+                  </EmbeddedScope>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

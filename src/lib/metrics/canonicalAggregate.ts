@@ -64,6 +64,31 @@ export interface PooledMatchInput {
    */
   ratingUnfloored?: number | null;
   roundsPlayed: number | null;
+  /** `matches.data_source` ("demo", "faceit", …); absent/null = demo (legacy rows). */
+  source?: string | null;
+}
+
+/**
+ * VGL 5.1 (Frente 2) — which sources may enter each pooled metric. A FACEIT match contributes
+ * only where its number means the same thing as the demo's:
+ *  - adr (damage ÷ rounds), kd (kills ÷ deaths), hsPercent (headshot kills ÷ kills): same
+ *    definitions → every source;
+ *  - kast: the standard KAST definition → every source, but only when the source reported it
+ *    (FACEIT usually does not: then the match simply has no KAST — never 0);
+ *  - rating: CS2 PRO's own formula on demo counts. A "rating" from another source is another
+ *    formula, so it never enters → demo only.
+ */
+export const METRIC_SOURCE_POLICY: Record<PooledMetricKey, "all" | "demo-only"> = {
+  adr: "all",
+  kast: "all",
+  hsPercent: "all",
+  kd: "all",
+  rating: "demo-only",
+};
+
+/** A match from an imported source (not a parsed demo). Legacy rows without a source are demos. */
+export function isImportedSource(source: string | null | undefined): boolean {
+  return source != null && source !== "demo";
 }
 
 export interface PooledParts {
@@ -95,6 +120,7 @@ export const POOLED_DENOMINATOR: Record<PooledMetricKey, string> = {
 
 /** One match's contribution, or null when the match does not carry the value or its denominator. */
 export function pooledParts(m: PooledMatchInput, key: PooledMetricKey): PooledParts | null {
+  if (METRIC_SOURCE_POLICY[key] === "demo-only" && isImportedSource(m.source)) return null;
   const rounds = finite(m.roundsPlayed) && m.roundsPlayed > 0 ? m.roundsPlayed : null;
   switch (key) {
     case "adr":

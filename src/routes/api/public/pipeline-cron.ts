@@ -31,7 +31,8 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
 
         const { reconcileDurableDemoQueue, reconcileOrphanDemoUploads, recoverStaleJobs } =
           await import("@/lib/pipeline/jobs.server");
-        const { runFaceitSyncWorker } = await import("@/lib/faceit/faceit.sync.server");
+        const { enqueueDueFaceitAutoSyncs, runFaceitSyncWorker } =
+          await import("@/lib/faceit/faceit.sync.server");
 
         const [recovered, reconciled, orphansReconciled] = await Promise.all([
           recoverStaleJobs(),
@@ -41,14 +42,19 @@ export const Route = createFileRoute("/api/public/pipeline-cron")({
 
         // FACEIT synchronisation shares the scheduler but not the demo queue.
         let faceit: {
+          autoQueued?: number;
           recovered: number;
           processed: { status: string; errorCode: string | null }[];
           budgetReached: boolean;
           error?: string;
         };
         try {
+          // VGL 5.1: players who opted in get an incremental sync queued periodically. Queueing
+          // only; the same worker below executes it within its budget.
+          const auto = await enqueueDueFaceitAutoSyncs().catch(() => ({ queued: 0, skipped: 0 }));
           const result = await runFaceitSyncWorker({ timeBudgetMs: FACEIT_WORKER_BUDGET_MS });
           faceit = {
+            autoQueued: auto.queued,
             recovered: result.recovered,
             processed: result.processed.map((outcome) => ({
               status: outcome.status,

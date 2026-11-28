@@ -3,6 +3,8 @@
  * (the signed-in player's own rows under RLS) or is an explicit, honest state.
  * No component in this file renders a demonstration value.
  */
+import { isImportedSource } from "@/lib/metrics/canonicalAggregate";
+import { cn } from "@/lib/utils";
 import { MapTile } from "@/components/common/GameVisuals";
 import { ToneBadge, type BadgeTone } from "@/components/common/VisualBadges";
 import { useQuery } from "@tanstack/react-query";
@@ -271,9 +273,38 @@ function MatchColumnInfo({ label, help }: { label: string; help: string }) {
   );
 }
 
+/** VGL 5.1 — where a match came from: a parsed demo or an automatic FACEIT import. */
+export function MatchSourceTag({ source }: { source: string | null }) {
+  const t = useT();
+  const imported = isImportedSource(source);
+  return (
+    <span
+      className={cn(
+        "ml-1 inline-flex items-center rounded-md border px-1.5 py-0.5 align-middle font-mono text-xs",
+        imported
+          ? "border-warning/40 bg-warning/10 text-warning"
+          : "border-border text-muted-foreground",
+      )}
+      data-match-source={imported ? (source ?? "imported") : "demo"}
+      title={imported ? t("vgl51.faceit.tag") : undefined}
+    >
+      {imported ? (
+        <>
+          <span className="sm:hidden">{t("vgl51.faceit.tagShort")}</span>
+          <span className="max-sm:hidden">{t("vgl51.faceit.tag")}</span>
+        </>
+      ) : (
+        t("vgl51.faceit.demoTag")
+      )}
+    </span>
+  );
+}
+
 export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
   const t = useT();
   const { intlTag } = useI18n();
+  // VGL 5.1 (Frente 2): with imported matches in the list, every row says where it came from.
+  const mixed = rows.some((r) => isImportedSource(r.source));
   const columns: Array<TranslationKey | ReactNode> = [
     <MatchColumnInfo
       key="date"
@@ -345,6 +376,7 @@ export function RealMatchesTable({ rows }: { rows: OverviewMatch[] }) {
                     {row.map ? mapDisplayName(row.map) : NOT_AVAILABLE_MARK}
                   </span>
                 </Link>
+                {mixed ? <MatchSourceTag source={row.source} /> : null}
               </TableCell>
               <TableCell>
                 {row.result ? (

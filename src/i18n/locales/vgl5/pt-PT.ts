@@ -247,7 +247,7 @@ export const vgl5PtPT = {
   "vgl5.pub.settings.error": "Não foi possível guardar. Tente novamente.",
   "vgl5.faceit.title": "Jogos FACEIT",
   "vgl5.faceit.description":
-    "Dados reportados pelo próprio FACEIT (resultado, marcador e, quando o FACEIT os publica, K/D e ADR). Ficam separados do CS2 PRO Score, do Player DNA e dos números de demo, que vêm só de demos analisadas.",
+    "Dados reportados pela própria FACEIT. Estes jogos também aparecem em Os meus jogos, com a etiqueta FACEIT, e entram nos números gerais só onde a métrica é comparável (K/D, ADR, HS%, taxa de vitória). O CS2 PRO Score, o Player DNA e o Melhor mapa continuam a vir só de demos analisadas.",
   "vgl5.faceit.loading": "A carregar jogos FACEIT…",
   "vgl5.faceit.error": "Não foi possível carregar os jogos FACEIT agora.",
   "vgl5.faceit.empty":
@@ -328,4 +328,38 @@ export const vgl5PtPT = {
   "vgl51.pwa.unsupported":
     "Este navegador não instala aplicações web no computador. Abra o CS2 PRO no Google Chrome ou no Microsoft Edge para instalar, ou continue a usar normalmente aqui.",
   "vgl51.pwa.done": "Pronto",
+  "vgl51.faceit.tag": "FACEIT · Importado automaticamente",
+  "vgl51.faceit.tagShort": "FACEIT",
+  "vgl51.faceit.demoTag": "Demo",
+  "vgl51.faceit.auto.title": "Sincronização automática de jogos FACEIT",
+  "vgl51.faceit.auto.on": "Ativada",
+  "vgl51.faceit.auto.off": "Desativada",
+  "vgl51.faceit.auto.explain":
+    "Ativada: os novos jogos de CS2 da FACEIT entram sozinhos em Os meus jogos, algumas vezes por dia. Desativada: a plataforma não sincroniza sozinha; pode usar “Sincronizar agora”. Em qualquer caso, continua a enviar as suas demos normalmente — a importação FACEIT não substitui a análise da demo e nada do que já foi importado é apagado.",
+  "vgl51.faceit.auto.choose": "Escolha como quer receber os seus jogos FACEIT:",
+  "vgl51.faceit.auto.enable": "Ativar sincronização automática",
+  "vgl51.faceit.auto.keepManual": "Manter só envio manual",
+  "vgl51.faceit.auto.error": "Não foi possível guardar a sua escolha. Tente novamente.",
+  "vgl51.faceit.room.sourceTitle": "Origem do jogo",
+  "vgl51.faceit.room.sourceBody":
+    "Dados reportados pela FACEIT através da API oficial. Não há demo deste jogo no CS2 PRO.",
+  "vgl51.faceit.room.synced": "Sincronizado em {date}",
+  "vgl51.faceit.room.competition": "Competição",
+  "vgl51.faceit.room.region": "Região",
+  "vgl51.faceit.room.open": "Abrir jogo na FACEIT",
+  "vgl51.faceit.room.stats": "O seu desempenho neste jogo",
+  "vgl51.faceit.room.teams": "Equipas e resultado",
+  "vgl51.faceit.room.notReported": "Não reportado pela FACEIT",
+  "vgl51.faceit.room.pending":
+    "A FACEIT ainda não publicou as estatísticas deste jogo; a próxima sincronização tenta novamente.",
+  "vgl51.faceit.room.unavailableTitle": "Disponível só com a demo",
+  "vgl51.faceit.room.unavailableBody":
+    "Rondas, duelos, mortes, utilitários, mapa de eventos e replay dependem dos eventos da demo e não estão disponíveis na origem FACEIT. Envie a demo deste jogo para ver a análise completa — fica ligada ao mesmo jogo.",
+  "vgl51.faceit.room.upload": "Enviar a demo",
+  "vgl51.faceit.room.loading": "A carregar dados da FACEIT…",
+  "vgl51.faceit.room.error": "Não foi possível carregar os dados deste jogo agora.",
+  "vgl51.faceit.metric.kills": "Abates",
+  "vgl51.faceit.metric.deaths": "Mortes",
+  "vgl51.faceit.metric.assists": "Assistências",
+  "vgl51.faceit.metric.rounds": "Rondas",
 } as const;
