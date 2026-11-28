@@ -122,7 +122,9 @@ export function MatchOverview({ m }: { m: OverviewMatch }) {
                   name={ROOM_TAB_ICON[tab]}
                   className="size-4 text-primary"
                 />
-                {t(`room.tab.${tab}` as TranslationKey)}
+                {tab === "rounds"
+            ? t("vgl4.tabIntro.rounds.title")
+            : t(`room.tab.${tab}` as TranslationKey)}
               </Link>
             </li>
           ))}
