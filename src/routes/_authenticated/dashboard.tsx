@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { MapPoolCard } from "@/components/real/MapPool";
 import { BestMapHero } from "@/components/cs2/BestMap";
-import { SpecialtyStrip } from "@/components/cs2/IdentityKit";
+import { DnaIdentityCard } from "@/components/cs2/IdentityKit";
 import { HomeCommandRow } from "@/components/cs2/HudKit";
 import { PendingActionsBanner } from "@/components/pipeline/PendingActionsBanner";
 import { BottleneckList } from "@/components/panels/BottleneckList";
@@ -75,8 +75,12 @@ function RealDashboardPage() {
           {(overview) => (
             <div className="space-y-8">
               <OverviewStatePanel overview={overview} />
+              {/* VGL 5.0 (Frente 10): the two headline indicators first, then the best map. */}
+              <div className="grid gap-5 lg:grid-cols-2" data-home-headline>
+                <RealProScoreCard />
+                <DnaIdentityCard fallback={<RealDnaSummary />} />
+              </div>
               <BestMapHero matches={overview.matches} />
-              <SpecialtyStrip />
               <HomeCommandRow matches={overview.matches} />
               <RealAggregates overview={overview} />
               {overview.matches.length ? (
@@ -94,10 +98,6 @@ function RealDashboardPage() {
                 </ChartCard>
               ) : null}
               <MapPoolCard rows={overview.matches} />
-              <div className="grid gap-5 lg:grid-cols-2">
-                <RealProScoreCard />
-                <RealDnaSummary />
-              </div>
               {overview.latestJobs.length ? (
                 <ChartCard
                   showDemoTag={false}

@@ -88,7 +88,8 @@ describe("Home and matches layout contracts", () => {
     expect(m).toContain('<Score m={m} className="text-lg" showUnknown />');
   });
   it("home and profile show the specialties strip", () => {
-    expect(src("src/routes/_authenticated/dashboard.tsx")).toContain("<SpecialtyStrip />");
+    // VGL 5.0: on Início the specialties live in the Player DNA identity card.
+    expect(src("src/routes/_authenticated/dashboard.tsx")).toContain("<DnaIdentityCard");
     expect(src("src/routes/_authenticated/profile.tsx")).toContain("<SpecialtyStrip");
   });
 });

@@ -5,7 +5,8 @@
  * reads; it never computes the DNA. No snapshot → nothing is shown.
  */
 import { useQuery } from "@tanstack/react-query";
-import type { CSSProperties } from "react";
+import { Link } from "@tanstack/react-router";
+import type { CSSProperties, ReactNode } from "react";
 
 import { GameIcon } from "@/components/common/GameIcon";
 import { Cs2Mask } from "@/components/cs2/Cs2Art";
@@ -403,6 +404,103 @@ export function SnapshotTimeline() {
           </li>
         ))}
       </ol>
+    </section>
+  );
+}
+
+/**
+ * VGL 5.0 — Início: the Player DNA as a competitive identity card (no radar). The predominant
+ * specialty is the highest measured index of the latest comparable snapshot (same signature rule
+ * as the DNA page); the chips are the same top / lowest dimensions the specialties strip showed.
+ * Nothing is computed here and no tag is invented. No snapshot → the honest DNA summary state.
+ */
+export function DnaIdentityCard({ fallback }: { fallback: ReactNode }) {
+  const { t, intlTag } = useI18n();
+  const q = useQuery({ queryKey: ["player", "dna", "history"], queryFn: () => getDnaHistory() });
+  const s = q.data ? latestSpecialties(q.data, DNA_VERSION_V3) : null;
+  if (!s) return <>{fallback}</>;
+  const lead = s.top[0]!;
+  const art = DIMENSION_ART[lead.dimension];
+  const icon = (DNA_ICON as Record<string, Parameters<typeof GameIcon>[0]["name"]>)[lead.dimension];
+  return (
+    <section
+      className="surface-panel vgl-grid relative isolate flex h-full flex-col overflow-hidden rounded-xl border border-border p-5 sm:p-6"
+      aria-labelledby="dna-identity-title"
+      data-dna-identity={lead.dimension}
+    >
+      {art ? (
+        <Cs2Mask
+          src={art}
+          className="pointer-events-none absolute -right-6 -top-4 -z-10 h-40 w-72 text-primary opacity-[0.08]"
+        />
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+          <GameIcon name="dna" className="size-3.5" />
+          {t("vgl5.dna.badge")}
+        </span>
+      </div>
+      <p className="mt-4 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        {t("vgl5.dna.predominant")}
+      </p>
+      <h2
+        id="dna-identity-title"
+        className="mt-1 flex items-center gap-3 font-display text-3xl font-semibold uppercase leading-tight tracking-wide text-foreground sm:text-4xl"
+      >
+        <GameIcon name={icon ?? "dna"} className="size-7 shrink-0 text-primary" />
+        <span className="min-w-0 break-words">{t(dnaLabelKey(lead.dimension))}</span>
+        <span className="ml-auto font-mono text-2xl tabular-nums text-primary">
+          {Math.round(lead.value * 100)}
+        </span>
+      </h2>
+      <div className="mt-5 space-y-3">
+        <ol className="grid gap-2" aria-label={t("vgl.dna.signature.top")}>
+          {s.top.map((d, i) => (
+            <Chip
+              key={d.dimension}
+              dimension={d.dimension}
+              value={d.value}
+              tone="top"
+              i={i}
+              rank={i + 1}
+            />
+          ))}
+        </ol>
+        {s.low.length ? (
+          <div>
+            <h3 className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-warning">
+              {t("vgl.dna.signature.low")}
+            </h3>
+            <ol className="grid gap-2 sm:grid-cols-2">
+              {s.low.map((d, i) => (
+                <Chip
+                  key={d.dimension}
+                  dimension={d.dimension}
+                  value={d.value}
+                  tone="low"
+                  i={i + 3}
+                  rank={s.measured - i}
+                />
+              ))}
+            </ol>
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-5">
+        <p className="text-xs text-muted-foreground">
+          {fill(t("vgl3.specialty.source"), {
+            date: formatDate(s.at, intlTag),
+            matches: s.matches ?? "—",
+          })}
+        </p>
+        <Link
+          to="/player-dna"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          data-dna-identity-cta
+        >
+          {t("real.dna.open")}
+        </Link>
+      </div>
     </section>
   );
 }

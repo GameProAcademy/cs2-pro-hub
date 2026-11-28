@@ -392,7 +392,10 @@ describe("one value on every surface", () => {
     expect(read("src/config/app.ts")).toMatch(/DEMO_DATA\s*=\s*false/);
     const ui = read("src/components/real/RealProScore.tsx");
     expect(ui).not.toMatch(/@\/data\/|playerService|ProScoreCard"/);
-    expect(ui).toContain('score.state !== "READY" || score.score === null');
+    // VGL 5.0: the number is drawn only by ScoreHero, and only for a READY Score.
+    const hero = read("src/components/score/ScoreHero.tsx");
+    expect(hero).not.toMatch(/@\/data\/|playerService/);
+    expect(hero).toContain('const ready = score.state === "READY" && score.score !== null;');
   });
 
   it.each(LOCALES)(

@@ -206,10 +206,8 @@ function ProScoreContext() {
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {t("real.proScoreContext.body")}
       </p>
+      {/* VGL 5.0: the three explanations are tooltips beside the Score (ScoreTips). */}
       <RealProScoreDetails />
-      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-        {t("real.proScoreContext.instead")}
-      </p>
     </section>
   );
 }
