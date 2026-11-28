@@ -273,7 +273,11 @@ function UtilityReportView({ r }: { r: Extract<UtilityResponse, { status: "OK" }
         </div>
       </ChartCard>
 
-      <ChartCard title={t("nade.section.list")} subtitle={t("nade.section.list.subtitle")}>
+      <ChartCard
+        title={t("nade.section.list")}
+        subtitle={t("nade.section.list.subtitle")}
+        icon="flash"
+      >
         {!tel.blindsRecorded || !tel.detonationsAttributed ? (
           <p className="text-sm text-muted-foreground" data-flash-list="NOT_OBSERVED">
             {t("nade.list.notObserved")}
