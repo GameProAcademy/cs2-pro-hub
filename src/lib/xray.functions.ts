@@ -27,6 +27,9 @@ import {
 } from "@/lib/roundContext";
 import type { DnaDimension } from "@/types";
 
+/** Shared React Query key of the Raio-X (page and Coach's Word read the same cache entry). */
+export const XRAY_QUERY_KEY = ["player", "xray"] as const;
+
 export const getXRay = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<XRayDiagnosis> => {

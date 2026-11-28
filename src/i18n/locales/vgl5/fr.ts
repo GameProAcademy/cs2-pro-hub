@@ -57,8 +57,6 @@ export const vgl5Fr = {
   "cw.priority.HIGH": "Priorité haute",
   "cw.priority.MEDIUM": "Point fort",
   "cw.priority.INFO": "Conseil",
-  "cw.source":
-    "Message choisi par des règles fixes à partir de tes chiffres ({version}) ; il n’est pas généré par une IA.",
   "cw.insufficient.text":
     "Je connais encore peu ton jeu : {n} match(s) analysé(s). Avec {min} matchs complets, je peux montrer tes tendances de façon fiable.",
   "cw.insufficient.tip":
@@ -262,4 +260,22 @@ export const vgl5Fr = {
   "vgl5.faceit.more": "{shown} sur {total} affichés.",
   "vgl5.faceit.linked":
     "{n} match(s) FACEIT aussi envoyé(s) en démo n’apparaissent qu’une fois, avec les données de la démo.",
+  "cw.side.ct": "CT",
+  "cw.side.t": "T",
+  "cw.xrayForming.text":
+    "Ta Radiographie est encore en formation : {n} sur {min} matchs pour l’inférence. Pour l’instant, lis le bloc Observé : ce sont tes vrais chiffres, sans conclusion pour le moment.",
+  "cw.xrayForming.tip":
+    "Envoie plus de démos complètes : chaque match analysé alimente le bloc Observé et rapproche l’inférence.",
+  "cw.xrayInference.text":
+    "Ta Radiographie désigne {dimension} comme la zone observée la plus faible ({v}/100). C’est d’elle que vient la recommandation en bas de cette page.",
+  "cw.xrayInference.tip":
+    "Ouvre le bloc de cette zone dans la Radiographie, repère les chiffres qui la tirent vers le bas et travailles-en un à la fois.",
+  "cw.xraySideGap.text":
+    "Dans la Radiographie, ton côté {weakSide} rend moins que le côté {strongSide} : rating {weak} contre {strong}. L’écart entre les côtés est ce qui ressort le plus aujourd’hui.",
+  "cw.xraySideGap.tip":
+    "Revois les rounds côté {weakSide} dans le bloc Côtés CT et T : positions de départ, rotations et moment de tes morts.",
+  "cw.xrayGaps.text":
+    "Ta Radiographie est équilibrée sur ce qu’elle mesure, mais {n} zone(s) n’ont encore aucune observation dans tes démos.",
+  "cw.xrayGaps.tip":
+    "Regarde en bas de page ce que CS2 PRO ne mesure pas encore et envoie des démos complètes pour combler les manques.",
 } as const;

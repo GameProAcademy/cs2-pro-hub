@@ -26,9 +26,16 @@ import { pooledValue, type PooledMatchInput } from "@/lib/metrics/canonicalAggre
 import type { MapRanking } from "@/lib/maps/mapRanking";
 import type { ProScoreState } from "@/lib/proScore";
 
-export const COACH_WORD_VERSION = "coach-word-v1";
+/**
+ * v1.1 (VGL 5.1): the Raio-X ("analysis") speaks from the Raio-X diagnosis itself (its
+ * formation state, inference, CT/TR sides and unmeasured areas) instead of falling back to the
+ * Player DNA message. Every other section and every threshold are unchanged from v1.
+ */
+export const COACH_WORD_VERSION = "coach-word-v1.1";
 export const CW_MIN_MATCHES = 3;
 export const CW_MIN_ROUNDS = 60;
+/** Raio-X: rating gap between CT and TR worth naming. */
+export const CW_SIDE_GAP = 0.1;
 
 export const CW_T = {
   adrLow: 65,
@@ -86,6 +93,22 @@ export interface CoachWordContext {
   goals?: { total: number; reached: number; inProgress: number; waiting: number } | null;
   /** The match of the Match Room summary (match section only). */
   match?: CoachWordMatch | null;
+  /** The Raio-X diagnosis, reduced to what its own page shows (analysis section only). */
+  xray?: CoachWordXRay | null;
+}
+
+export interface CoachWordXRay {
+  state: "EMPTY" | "IN_FORMATION" | "READY";
+  matches: number;
+  /** Matches the Raio-X inference needs (the DNA minimum it reports). */
+  minMatches: number;
+  /** Rank-1 inference of the Raio-X ("weakest observed DNA dimension"), when it has one. */
+  inference: { dimension: string; index: number } | null;
+  /** Raio-X areas with no measured observation. */
+  notObserved: number;
+  /** Rating on each side as the Raio-X "CT and TR sides" block shows it; null = not measured. */
+  ctRating: number | null;
+  tRating: number | null;
 }
 
 export interface CoachWord {
@@ -298,16 +321,13 @@ export function coachWordFor(section: CoachWordSection, ctx: CoachWordContext): 
       );
     }
     case "analysis":
+      return xrayWord(ctx.xray ?? null, s, enough, insufficient);
     case "performance": {
-      if (section === "performance" && ctx.scoreState && ctx.scoreState !== "READY" && !enough)
+      if (ctx.scoreState && ctx.scoreState !== "READY" && !enough)
         return word("scorePending", "insufficient", ["proScore"], { min: CW_MIN_MATCHES });
       if (!enough) return insufficient;
       const metric = first(METRIC_RULES, s);
       if (metric?.tone === "negative") return metric;
-      if (section === "analysis") {
-        const low = weakestDna(ctx.dna);
-        if (low) return low;
-      }
       return metric ?? word("balanced", "neutral", []);
     }
     case "playerDna": {
@@ -353,6 +373,45 @@ export function coachWordFor(section: CoachWordSection, ctx: CoachWordContext): 
       return word("goalsWaiting", "insufficient", ["goals"]);
     }
   }
+}
+
+/**
+ * Raio-X: talks only about what the Raio-X page shows — whether the diagnosis is still forming,
+ * the observed numbers, its inference, the CT/TR sides and the areas it cannot measure. It never
+ * borrows the Player DNA page's message.
+ */
+function xrayWord(
+  x: CoachWordXRay | null,
+  s: Stats,
+  enough: boolean,
+  insufficient: CoachWord,
+): CoachWord {
+  if (!x || x.state === "EMPTY" || !enough) return insufficient;
+  if (x.state === "IN_FORMATION")
+    return word("xrayForming", "insufficient", ["xray"], { n: x.matches, min: x.minMatches });
+  const metric = first(METRIC_RULES, s);
+  if (metric?.tone === "negative") return metric;
+  if (x.inference)
+    return word("xrayInference", "negative", ["xray"], {
+      dimension: x.inference.dimension,
+      v: Math.round(x.inference.index),
+    });
+  if (
+    x.ctRating !== null &&
+    x.tRating !== null &&
+    Math.abs(x.ctRating - x.tRating) >= CW_SIDE_GAP
+  ) {
+    const ctWeak = x.ctRating < x.tRating;
+    return word("xraySideGap", "neutral", ["ctRating", "tRating"], {
+      weakSide: ctWeak ? "ct" : "t",
+      strongSide: ctWeak ? "t" : "ct",
+      weak: Math.round((ctWeak ? x.ctRating : x.tRating) * 100) / 100,
+      strong: Math.round((ctWeak ? x.tRating : x.ctRating) * 100) / 100,
+    });
+  }
+  if (metric) return metric;
+  if (x.notObserved > 0) return word("xrayGaps", "neutral", ["xray"], { n: x.notObserved });
+  return word("balanced", "neutral", []);
 }
 
 function weakestDna(dna: CoachWordContext["dna"]): CoachWord | null {
@@ -407,6 +466,10 @@ export function matchWord(m: CoachWordMatch | null): CoachWord {
 /** Every message id the engine can return (the i18n bank must hold `cw.<id>.text/.tip`). */
 export const COACH_WORD_IDS = [
   "insufficient",
+  "xrayForming",
+  "xrayInference",
+  "xraySideGap",
+  "xrayGaps",
   "aimSurvival",
   "kastLow",
   "adrLow",

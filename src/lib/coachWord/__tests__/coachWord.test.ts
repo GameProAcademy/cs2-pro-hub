@@ -14,6 +14,7 @@ import {
   matchWord,
   type CoachWordMatch,
   type CoachWordSection,
+  type CoachWordXRay,
 } from "@/lib/coachWord/coachWord";
 
 const LOCALES: Locale[] = ["pt-BR", "pt-PT", "en", "es", "fr"];
@@ -46,24 +47,24 @@ describe("selection by section", () => {
   });
 
   it("metric thresholds: low, high and intermediate values", () => {
-    expect(coachWordFor("analysis", { matches: many(4, { adr: 55 }) }).id).toBe("adrLow");
-    expect(coachWordFor("analysis", { matches: many(4, { kast: 58 }) }).id).toBe("kastLow");
-    expect(coachWordFor("analysis", { matches: many(4, { kills: 12, deaths: 18 }) }).id).toBe(
+    expect(coachWordFor("performance", { matches: many(4, { adr: 55 }) }).id).toBe("adrLow");
+    expect(coachWordFor("performance", { matches: many(4, { kast: 58 }) }).id).toBe("kastLow");
+    expect(coachWordFor("performance", { matches: many(4, { kills: 12, deaths: 18 }) }).id).toBe(
       "kdLow",
     );
-    expect(coachWordFor("analysis", { matches: many(4, { adr: 92 }) }).id).toBe("adrHigh");
+    expect(coachWordFor("performance", { matches: many(4, { adr: 92 }) }).id).toBe("adrHigh");
     expect(coachWordFor("performance", { matches: many(4) }).id).toBe("balanced");
   });
 
   it("aim without survival wins over the single-metric messages", () => {
-    const w = coachWordFor("analysis", {
+    const w = coachWordFor("performance", {
       matches: many(4, { hsPercent: 55, adr: 86, kast: 60, kills: 18, deaths: 21 }),
     });
     expect(w.id).toBe("aimSurvival");
   });
 
   it("missing values are never read as a problem", () => {
-    const w = coachWordFor("analysis", {
+    const w = coachWordFor("performance", {
       matches: many(4, { adr: null, kast: null, hsPercent: null }),
     });
     expect(["adrLow", "kastLow", "aimSurvival"]).not.toContain(w.id);
@@ -146,7 +147,7 @@ describe("selection by section", () => {
   });
 
   it("one message per section, so a screen never shows two contradicting messages", () => {
-    const w = coachWordFor("analysis", { matches: many(4, { adr: 92, kast: 55 }) });
+    const w = coachWordFor("performance", { matches: many(4, { adr: 92, kast: 55 }) });
     expect(w.id).toBe("kastLow");
   });
 
@@ -228,5 +229,81 @@ describe("content and safety", () => {
       expect(readFileSync(resolve(process.cwd(), file), "utf8"), file).toContain(
         `<CoachWordCard section="${section}"`,
       );
+  });
+});
+
+describe("VGL 5.1 — Raio-X speaks from the Raio-X", () => {
+  const ready = (over: Partial<CoachWordXRay> = {}): CoachWordXRay => ({
+    state: "READY",
+    matches: 6,
+    minMatches: 5,
+    inference: null,
+    notObserved: 0,
+    ctRating: 1.05,
+    tRating: 1.0,
+    ...over,
+  });
+  const ok = many(6);
+
+  it("never falls back to the Player DNA message", () => {
+    const dna = [{ dimension: "utility", value: 20 }];
+    for (const x of [ready(), ready({ notObserved: 2 }), null]) {
+      const w = coachWordFor("analysis", { matches: ok, dna, xray: x });
+      expect(["dnaLow", "dnaTop", "dnaEven", "trainingFocus"]).not.toContain(w.id);
+    }
+  });
+
+  it("forming, inference, sides, gaps, balanced — in that order", () => {
+    expect(
+      coachWordFor("analysis", { matches: ok, xray: ready({ state: "IN_FORMATION", matches: 3 }) })
+        .id,
+    ).toBe("xrayForming");
+    expect(
+      coachWordFor("analysis", {
+        matches: ok,
+        xray: ready({ inference: { dimension: "utility", index: 28 } }),
+      }),
+    ).toMatchObject({ id: "xrayInference", vars: { dimension: "utility", v: 28 } });
+    expect(
+      coachWordFor("analysis", { matches: ok, xray: ready({ ctRating: 0.82, tRating: 1.1 }) }),
+    ).toMatchObject({
+      id: "xraySideGap",
+      vars: { weakSide: "ct", strongSide: "t" },
+    });
+    expect(coachWordFor("analysis", { matches: ok, xray: ready({ notObserved: 2 }) }).id).toBe(
+      "xrayGaps",
+    );
+    expect(coachWordFor("analysis", { matches: ok, xray: ready() }).id).toBe("balanced");
+  });
+
+  it("a measured weakness in the observed numbers still wins; empty or thin samples stay insufficient", () => {
+    expect(coachWordFor("analysis", { matches: many(6, { adr: 55 }), xray: ready() }).id).toBe(
+      "adrLow",
+    );
+    expect(coachWordFor("analysis", { matches: ok, xray: ready({ state: "EMPTY" }) }).id).toBe(
+      "insufficient",
+    );
+    expect(coachWordFor("analysis", { matches: many(2), xray: ready() }).id).toBe("insufficient");
+  });
+
+  it("a side with no measured rating is never compared", () => {
+    expect(
+      coachWordFor("analysis", { matches: ok, xray: ready({ ctRating: null, tRating: 1.4 }) }).id,
+    ).toBe("balanced");
+  });
+
+  it("the card no longer shows the technical source line nor a permanent colored border", () => {
+    const card = readFileSync("src/components/coachWord/CoachWordCard.tsx", "utf8");
+    expect(card).not.toMatch(/cw\.source|COACH_WORD_VERSION/);
+    expect(card).not.toMatch(
+      /border-warning\/35|"border-primary\/30",|absolute inset-y-0 left-0 w-1/,
+    );
+    expect(card).toContain("analysis: { overview: true, xray: true }");
+    for (const loc of ["pt-BR", "en", "es", "fr", "pt-PT"]) {
+      const bank = readFileSync(`src/i18n/locales/vgl5/${loc}.ts`, "utf8");
+      expect(bank).not.toMatch(/coach-word-v1|regras fixas|fixed rules|reglas fijas|règles fixes/);
+      for (const id of ["xrayForming", "xrayInference", "xraySideGap", "xrayGaps"])
+        expect(bank).toContain(`"cw.${id}.text"`);
+    }
   });
 });
